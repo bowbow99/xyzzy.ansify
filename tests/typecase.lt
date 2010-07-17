@@ -1,0 +1,56 @@
+;;; -*- mode: lisp; package: cl.test.typecase -*-
+;;;
+
+(defpackage :cl.test.typecase)
+(in-package :cl.test.typecase)
+
+(require "cl")
+(cl::install)
+
+(require "lisp-unit")
+(use-package :lisp-unit)
+
+(remove-all-tests)
+
+
+
+(define-test typecase
+
+  (defun typecase-test-1 (x)
+    (typecase x
+      (integer :integer)
+      (string :string)
+      (symbol :symbol)
+      (t :other)))
+
+  (assert-eql :integer (typecase-test-1 3))
+  (assert-eql :string (typecase-test-1 "foo"))
+  (assert-eql :symbol (typecase-test-1 'foo))
+  (assert-eql :other (typecase-test-1 '(foo bar)))
+
+
+  (defun typecase-test-2 (x)
+    (typecase x
+      (float "a float")
+      (null "a symbol, boolean false, or the empty list")
+      (list "a list")
+      (t (format nil "a(n) ~A" (type-of x)))))
+
+  (assert-equal "a float" (typecase-test-2 3.2))
+  (assert-equal "a symbol, boolean false, or the empty list" (typecase-test-2 nil))
+  (assert-equal "a list" (typecase-test-2 '(foo bar)))
+  (assert-equal "a(n) simple-string" (typecase-test-2 "foo"))
+  (assert-equal "a(n) hash-table" (typecase-test-2 (make-hash-table)))
+
+  (assert-equal :other
+      (typecase 3
+        (symbol :symbol)
+        (list :list)
+        (otherwise :other)))
+  )
+
+
+
+
+
+
