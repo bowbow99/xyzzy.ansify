@@ -47,6 +47,14 @@
         (symbol :symbol)
         (list :list)
         (otherwise :other)))
+
+  (assert-eql :number
+      (typecase 3
+        (symbol :symbol)
+        (string :string)
+        (otherwise :other)
+        (number :number)))
+             
   ) ; define-test typecase
 
 (define-test etypecase

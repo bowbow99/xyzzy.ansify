@@ -16,18 +16,17 @@
           ctypecase
           otherwise))
 
-(defun %otherwise-clause-p (clause)
-  (member (car clause) '(t otherwise)))
-
 (defmacro typecase (key &body clauses)
   (let (($key (gensym)))
     `(let ((,$key ,key))
        (cond
         ,@(mapcar (lambda (clause)
-                    (if (%otherwise-clause-p clause)
-                        `(t ,@(cdr clause))
-                      `((typep ,$key ',(car clause)) ,@(cdr clause))))
-            clauses)))))
+                    `((typep ,$key ',(car clause)) ,@(cdr clause)))
+            (butlast clauses))
+        ,(let ((last (car (last clauses))))
+           (if (member (car last) '(t otherwise))
+               `(t ,@(cdr last))
+             `((typep ,$key ',(car last)) ,@(cdr last))))))))
 
 (defmacro etypecase (key &body clauses)
   (let (($key (gensym)))
