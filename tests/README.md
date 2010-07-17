@@ -15,12 +15,12 @@ lisp-unit を使ってるけど、そのうち lisp-unit を何とかしたい�
 
 テストの書き方
 ==============
-テストは tests/<target>.lt に書いてる。
+テストは tests/${target}.lt に書いてる。
 
 1. 専用のパッケージを用意
 
-    (defpackage :cl.test.<target>)
-    (in-package :cl.test.<target>)
+    (defpackage :cl.test.${target})
+    (in-package :cl.test.${target})
 
 2. cl を使えるように準備
 
