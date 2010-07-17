@@ -69,6 +69,14 @@
             (princ "something" out))))
     )
 
+  (let ((*terminal-io* (make-string-output-stream)))
+    (assert-equal
+        "#<integer 3>"
+        (progn
+          (print-unreadable-object (3 t :type t)
+            (princ 3 t))
+          (get-output-stream-string *terminal-io*))))
+
 
   )
 
