@@ -7,5 +7,7 @@
 
 (require "common-lisp/typecase")
 (require "common-lisp/print-unreadable-object")
+(require "common-lisp/progv")
+
 
 ;;; cl.l ends here.

@@ -1,0 +1,38 @@
+;;; -*- mode: lisp; package: cl.test.progv -*-
+;;;
+;;; test/progv.lt
+;;;
+
+(defpackage :cl.test.progv)
+(in-package :cl.test.progv)
+
+(require "cl")
+(cl::install)
+
+(require "lisp-unit")
+(use-package :lisp-unit)
+
+(remove-all-tests)
+
+(define-test progv
+  (setq x :global)
+
+  (assert-eql 2 (progv '(x) '(2) x))
+
+  (assert-equal
+      '(3 4)
+      (let ((x 3))
+        (progv '(x) '(4)
+          (list x (symbol-value 'x)))))
+
+  (assert-eql :global x)
+
+  (defparameter *var* :global)
+  (assert-equal
+      '(:let :let)
+      (progv '(*var*) '(:progv)
+        (let ((*var* :let))
+          (list *var* (symbol-value '*var*)))))
+  )
+
+;;; test/progv.lt ends here.
