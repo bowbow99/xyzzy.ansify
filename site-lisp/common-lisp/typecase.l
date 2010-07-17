@@ -28,5 +28,14 @@
                       `((typep ,$key ',(car clause)) ,@(cdr clause))))
             clauses)))))
 
+(defmacro etypecase (key &body clauses)
+  (let (($key (gensym)))
+    `(let ((,$key ,key))
+       (cond
+        ,@(mapcar (lambda (clause)
+                    `((typep ,$key ',(car clause)) ,@(cdr clause)))
+            clauses)
+        (t (error 'type-error :datum ,$key
+                  :expected-type '(or ,@(mapcar #'car clauses))))))))
 
 ;;; common-lisp/typecase.l ends here.

@@ -49,6 +49,46 @@
         (otherwise :other)))
   )
 
+(define-test etypecase
+
+  (defun etypecase-test-1 (x)
+    (etypecase x
+      (integer :integer)
+      (string :string)
+      (symbol :symbol)))
+
+  (assert-eql :integer (etypecase-test-1 3))
+  (assert-eql :string (etypecase-test-1 "foo"))
+  (assert-eql :symbol (etypecase-test-1 'foo))
+  (assert-error 'type-error (etypecase-test-1 #(1 2 3)))
+
+  (defun etypecase-test-2 (x)
+    (etypecase x
+      (float "a float")
+      (null "a symbol, boolean false, or the empty list")
+      (list "a list")))
+
+  (assert-equal "a float" (etypecase-test-2 3.2))
+  (assert-equal "a symbol, boolean false, or the empty list" (etypecase-test-2 nil))
+  (assert-equal "a list" (etypecase-test-2 '(foo bar)))
+
+  (let ((err (handler-case
+                 (etypecase 3
+                   (string :string) (symbol :symbol))
+               (type-error (e) e))))
+    (assert-true (typep err 'type-error))
+    (assert-eql 3 (type-error-datum err))
+    (assert-equal '(or string symbol) (type-error-expected-type err)))
+
+  ;; etypecase allow t as type, which effectively work as otherwise-clause
+  (assert-eql :other
+      (etypecase 3 (string :string) (cons :cons) (t :other)))
+
+
+
+  )
+
+
 
 
 
