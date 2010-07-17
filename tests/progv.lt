@@ -33,6 +33,7 @@
       (progv '(*var*) '(:progv)
         (let ((*var* :let))
           (list *var* (symbol-value '*var*)))))
+  (assert-eql *var* :global)
   )
 
 ;;; test/progv.lt ends here.
