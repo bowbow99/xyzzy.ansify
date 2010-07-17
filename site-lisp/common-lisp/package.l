@@ -28,6 +28,7 @@
                        ((symbolp symbols) (list symbols))
                        (t (error 'type-error :datum symbols
                                  :expected-type '(or list symbol))))))
+    (shadow symbols)
     (setf *shadowing-exported-symbols*
           (append *shadowing-exported-symbols* symbols))
     (dolist (pkg (package-used-by-list :common-lisp))
