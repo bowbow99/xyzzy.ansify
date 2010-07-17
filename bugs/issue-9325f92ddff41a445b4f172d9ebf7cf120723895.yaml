@@ -8,7 +8,7 @@ desc: |-
   - defun
 type: :feature
 component: xyzzy.common-lisp
-release: 
+release: "0.1"
 reporter: bowbow99 <bowbow99@gmail.com>
 status: :unstarted
 disposition: 
@@ -21,3 +21,7 @@ log_events:
   - bowbow99 <bowbow99@gmail.com>
   - created
   - see http://www.lispworks.com/documentation/lw50/CLHS/Issues/iss174_w.htm
+- - 2010-07-17 23:15:06.008280 Z
+  - bowbow99 <bowbow99@gmail.com>
+  - assigned to release 0.1 from unassigned
+  - ""
