@@ -19,22 +19,22 @@ lisp-unit を使ってるけど、そのうち lisp-unit を何とかしたい�
 
 1. 専用のパッケージを用意
 
-    (defpackage :cl.test.${target})
-    (in-package :cl.test.${target})
+        (defpackage :cl.test.${target})
+        (in-package :cl.test.${target})
 
-2. cl を使えるように準備
+2. cl を使えるように準備。
 
-    (require "cl")
-    (cl::install)
+        (require "cl")
+        (cl::install)
 
-3. lisp-unit を使えるように準備
+3. lisp-unit を使えるように準備。
    lisp-unit はテストをパッケージごとにまとめて管理してて、テストファイルを再読み込みしたときに古いテストは一旦全部消してから定義し直す。
-
-    (require "lisp-unit")
-    (use-package :lisp-unit)
     
-    (remove-all-tests)
+        (require "lisp-unit")
+        (use-package :lisp-unit)
+        
+        (remove-all-tests)
 
-4. define-test で気が済むまでテストを書く
+4. define-test で気が済むまでテストを書く。
 
 
