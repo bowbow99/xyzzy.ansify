@@ -42,4 +42,6 @@
          (format ,out "~D" (si:address-of ,obj)))
        (format ,out ">"))))
 
+(provide "common-lisp/print-unreadable-object")
+
 ;;; common-lisp/print-unreadable-object.l ends here

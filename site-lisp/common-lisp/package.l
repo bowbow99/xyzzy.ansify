@@ -40,4 +40,6 @@
     (use-package :common-lisp package))
   (shadowing-import *shadowing-exported-symbols* package))
 
+(provide "common-lisp/package")
+
 ;;; common-lisp/package.l ends here.

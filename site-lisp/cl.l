@@ -9,5 +9,6 @@
 (require "common-lisp/print-unreadable-object")
 (require "common-lisp/progv")
 
+(provide "cl")
 
 ;;; cl.l ends here.

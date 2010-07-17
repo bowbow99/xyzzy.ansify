@@ -37,4 +37,6 @@
                       (setf (symbol-value sym) val)))
                   ,$origs)))))
 
+(provide "common-lisp/progv")
+
 ;;; common-lisp/progv.l ends here.

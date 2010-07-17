@@ -65,4 +65,6 @@
       (get 'etypecase 'ed:lisp-indent-hook) 1
       (get 'ctypecase 'ed:lisp-indent-hook) 1)
 
+(provide "common-lisp/typecase")
+
 ;;; common-lisp/typecase.l ends here.
