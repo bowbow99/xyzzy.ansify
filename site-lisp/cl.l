@@ -5,6 +5,7 @@
 
 (require "common-lisp/package")
 
-(in-package :common-lisp)
+(require "common-lisp/typecase")
+(require "common-lisp/print-unreadable-object")
 
 ;;; cl.l ends here.

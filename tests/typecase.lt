@@ -47,7 +47,7 @@
         (symbol :symbol)
         (list :list)
         (otherwise :other)))
-  )
+  ) ; define-test typecase
 
 (define-test etypecase
 
@@ -84,13 +84,44 @@
   (assert-eql :other
       (etypecase 3 (string :string) (cons :cons) (t :other)))
 
+  ) ; define-test etypecase
 
 
+(define-test ctypecase
+
+  (defun ctypecase-test-1 (x)
+    (ctypecase x
+      (integer :integer)
+      (string :string)
+      (cons :cons)))
+
+  (assert-eql :integer (ctypecase-test-1 1))
+  (assert-eql :string  (ctypecase-test-1 "foo"))
+  (assert-eql :cons    (ctypecase-test-1 '(foo bar)))
+  (assert-error 'type-error (ctypecase-test-1 'fred))
+
+  (assert-true (block #1=#:ctypecase-test-2
+                 (handler-bind
+                     ((type-error (lambda (e)
+                                    (return-from #1#
+                                      (find-restart 'store-value e)))))
+                   (ctypecase 33
+                     (string :string)
+                     (cons :cons)))))
+
+  (let ((foo 33))
+    (assert-eql :ok
+        (handler-bind ((type-error
+                        (lambda (e)
+                          (invoke-restart (find-restart 'store-value e)
+                                          "Finally!!"))))
+          (ctypecase foo
+            (string :ok))))
+    (assert-equal foo "Finally!!"))
   )
 
 
 
 
 
-
-
+;;; test/typecase.lt ends here.
