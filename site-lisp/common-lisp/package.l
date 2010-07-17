@@ -23,6 +23,7 @@
 (defvar *shadowing-exported-symbols* nil)
 
 (defun shadowing-export (symbols)
+  "SYMBOLS get SHADOWING-IMPORT'ed into the package using CL."
   (let ((symbols (cond ((listp symbols) symbols)
                        ((symbolp symbols) (list symbols))
                        (t (error 'type-error :datum symbols
@@ -33,6 +34,7 @@
       (shadowing-import symbols pkg))))
 
 (defun install (&optional (package *package*))
+  "Install CL into PACKAGE."
   (unless (member package (package-use-list package))
     (use-package :common-lisp package))
   (shadowing-import *shadowing-exported-symbols* package))
