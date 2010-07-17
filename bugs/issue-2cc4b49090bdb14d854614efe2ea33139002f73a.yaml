@@ -1,0 +1,18 @@
+--- !ditz.rubyforge.org,2008-03-06/issue 
+title: pprint
+desc: add function pprint.
+type: :feature
+component: xyzzy.common-lisp
+release: 
+reporter: bowbow99 <bowbow99@gmail.com>
+status: :unstarted
+disposition: 
+creation_time: 2010-07-17 22:53:51.029780 Z
+references: []
+
+id: 2cc4b49090bdb14d854614efe2ea33139002f73a
+log_events: 
+- - 2010-07-17 22:54:20.107780 Z
+  - bowbow99 <bowbow99@gmail.com>
+  - created
+  - ""

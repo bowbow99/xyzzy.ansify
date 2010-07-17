@@ -1,0 +1,18 @@
+--- !ditz.rubyforge.org,2008-03-06/issue 
+title: describe
+desc: Add function describe and inspect
+type: :feature
+component: xyzzy.common-lisp
+release: 
+reporter: bowbow99 <bowbow99@gmail.com>
+status: :unstarted
+disposition: 
+creation_time: 2010-07-17 22:53:00.451405 Z
+references: []
+
+id: 1eb7c7936fab49b38031f3ab57eabeeba42a7ea4
+log_events: 
+- - 2010-07-17 22:53:02.373405 Z
+  - bowbow99 <bowbow99@gmail.com>
+  - created
+  - ""
