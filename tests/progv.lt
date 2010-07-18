@@ -35,6 +35,15 @@
           (list *var* (symbol-value '*var*)))))
   (assert-eql *var* :global)
 
+  (setf foo :global)
+  (defun foo-value () foo)
+  (assert-eql :progv
+      (progv '(foo) '(:progv) (foo-value)))
+  (let ((foo :let))
+    (assert-eql :progv
+        (progv '(foo) '(:progv) (foo-value))))
+  (assert-eql :global foo)
+
   (makunbound 'foo)
   (assert-false (progn '(foo) '() (boundp 'foo)))
 
