@@ -34,6 +34,12 @@
         (let ((*var* :let))
           (list *var* (symbol-value '*var*)))))
   (assert-eql *var* :global)
+
+  (makunbound 'foo)
+  (assert-false (progn '(foo) '() (boundp 'foo)))
+
+  (setf foo :global)
+  (assert-false (progv '(foo) '() (boundp 'foo)))
   )
 
 ;;; test/progv.lt ends here.

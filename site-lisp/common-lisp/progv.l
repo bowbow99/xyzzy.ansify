@@ -30,6 +30,7 @@
                      (setf (gethash sym ,$origs) (%safe-symbol-value sym)
                            (symbol-value sym) val))
                    ,$syms ,$vals)
+             (mapc #'makunbound (nthcdr (length ,$vals) ,$syms))
              ,@body)
          (maphash (lambda (sym val)
                     (if (eq val +unbound-value+)

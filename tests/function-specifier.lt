@@ -1,0 +1,45 @@
+;;; -*- mode: lisp; package: cl.test.function-specifier -*-
+;;;
+;;; test/function-specifier.lt
+;;;
+;;; [CLHS: Issue FUNCTION-NAME Writeup]
+;;; - http://www.lispworks.com/documentation/lw50/CLHS/Issues/iss174_w.htm
+;;;
+
+(defpackage :cl.test.function-specifier)
+(in-package :cl.test.function-specifier)
+
+(require "cl")
+(cl::install)
+
+(require "lisp-unit")
+(use-package :lisp-unit)
+
+(remove-all-tests)
+
+;;;;
+;;;; * fdefinition
+
+(define-test fdefinition
+
+  (assert-true (functionp (fdefinition 'car)))
+  (assert-eql #'car (fdefinition 'car))
+
+  (assert-error 'type-error
+      (fdefinition '(foo bar baz)))
+
+  (fmakunbound 'foo)
+  (assert-error 'undefined-function
+      (fdefinition 'foo))
+
+  (let ((f (lambda () :dummy)))
+    (assert-eq f (setf (fdefinition 'foo) f))
+    (assert-eq f (fdefinition 'foo))
+    (assert-eq :dummy (funcall 'foo))
+    (assert-eq :dummy (funcall #'foo))
+    )
+  )
+
+
+
+;;; test/function-specifier.lt ends here.
