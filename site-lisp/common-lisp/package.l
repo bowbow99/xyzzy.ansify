@@ -23,16 +23,14 @@
 (defvar *shadowing-exported-symbols* nil)
 
 (defun shadowing-export (symbols)
-  "SYMBOLS get SHADOWING-IMPORT'ed into the package using CL."
-  (let ((symbols (cond ((listp symbols) symbols)
-                       ((symbolp symbols) (list symbols))
-                       (t (error 'type-error :datum symbols
-                                 :expected-type '(or list symbol))))))
-    (shadow symbols)
-    (setf *shadowing-exported-symbols*
-          (append *shadowing-exported-symbols* symbols))
+  (shadow (mapcar #'string symbols) :common-lisp)
+  (let ((syms (let ((*package* (find-package :common-lisp)))
+                (mapcar (lambda (x) (intern (string x)))
+                        symbols))))
+    (dolist (sym syms)
+      (pushnew sym *shadowing-exported-symbols*))
     (dolist (pkg (package-used-by-list :common-lisp))
-      (shadowing-import symbols pkg))))
+      (shadowing-import syms pkg))))
 
 (defun install (&optional (package *package*))
   "Install CL into PACKAGE."
