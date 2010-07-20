@@ -1,0 +1,95 @@
+;;; -*- mode: lisp; package: cl.test.setf-function-name -*-
+;;;
+;;; test/setf-function-name.lt
+;;;
+;;; [CLHS: Issue FUNCTION-NAME Writeup]
+;;; - http://www.lispworks.com/documentation/lw50/CLHS/Issues/iss174_w.htm
+;;;
+
+;;; Related Files:
+;;; - site-lisp/common-lisp/setf-function-name.l
+
+
+(defpackage :cl.test.setf-function-name)
+(in-package :cl.test.setf-function-name)
+
+(require "cl")
+(cl::install)
+
+(require "lisp-unit")
+(use-package :lisp-unit)
+
+(remove-all-tests)
+
+;;;;
+;;;; * fdefinition
+
+(define-test %setf-function-name-p
+  (assert-true (cl::%setf-function-name-p '(setf foo)))
+  (assert-false (cl::%setf-function-name-p '(foo bar)))
+  (assert-false (cl::%setf-function-name-p '(setf foo bar)))
+  (assert-false (cl::%setf-function-name-p 'foo))
+  (assert-false (cl::%setf-function-name-p 'setf))
+  (assert-false (cl::%setf-function-name-p '(setf)))
+  )
+
+
+(define-test fdefinition
+
+  (assert-true (functionp (fdefinition 'car)))
+  (assert-eql #'car (fdefinition 'car))
+
+  (assert-error 'type-error
+      (fdefinition '(foo bar baz)))
+
+  (fmakunbound 'foo)
+  (assert-error 'undefined-function
+      (fdefinition 'foo))
+
+  (let ((f (lambda () :dummy)))
+    (assert-eq f (setf (fdefinition 'foo) f))
+    (assert-eq f (fdefinition 'foo))
+    (assert-eq :dummy (funcall 'foo))
+    (assert-eq :dummy (funcall #'foo))
+    ) )
+
+;;;;
+;;;; * fboundp
+
+(define-test fboundp
+  (assert-eql (find-package :common-lisp) (symbol-package 'fboundp))
+
+  (fmakunbound 'foo)
+  (assert-false (fboundp 'foo))
+
+  (defun foo () :foo)
+  (assert-true (fboundp 'foo))
+
+  (let ((f (lambda () :f)))
+    (assert-eql f (setf (fdefinition '(setf foo)) f))
+    (assert-true (fboundp '(setf foo))))
+  )
+
+;;;;
+;;;; * fmakunbound
+
+(define-test fmakunbound
+  (assert-eql (find-package :common-lisp) (symbol-package 'fmakunbound))
+
+  (defun foo () :foo)
+  (assert-eql 'foo (fmakunbound 'foo))
+  (assert-false (fboundp 'foo))
+
+  (setf (fdefinition '(setf foo)) (lambda (x) x))
+  (assert-equal '(setf foo) (fmakunbound '(setf foo)))
+  (assert-false (fboundp '(setf foo)))
+  )
+
+;;;;
+;;;; * defun
+
+(define-test defun-setf
+  (assert-equal '(setf defun-foo) (defun (setf defun-foo) (x) x))
+  (assert-true (fboundp '(setf defun-foo))))
+
+;;; test/setf-function-name.lt ends here.

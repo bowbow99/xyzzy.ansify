@@ -10,8 +10,8 @@ type: :feature
 component: xyzzy.common-lisp
 release: "0.1"
 reporter: bowbow99 <bowbow99@gmail.com>
-status: :unstarted
-disposition: 
+status: :closed
+disposition: :fixed
 creation_time: 2010-07-17 22:51:39.982905 Z
 references: []
 
@@ -24,4 +24,8 @@ log_events:
 - - 2010-07-17 23:15:06.008280 Z
   - bowbow99 <bowbow99@gmail.com>
   - assigned to release 0.1 from unassigned
+  - ""
+- - 2010-07-20 09:46:51.721250 Z
+  - bowbow99 <bowbow99@gmail.com>
+  - closed with disposition fixed
   - ""

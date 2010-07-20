@@ -9,6 +9,9 @@
 (require "common-lisp/print-unreadable-object")
 (require "common-lisp/progv")
 
+(require "common-lisp/setf-function-name")
+(require "common-lisp/defun")
+
 (provide "cl")
 
 ;;; cl.l ends here.
