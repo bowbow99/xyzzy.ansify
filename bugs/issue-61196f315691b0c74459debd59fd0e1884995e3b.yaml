@@ -1,0 +1,20 @@
+--- !ditz.rubyforge.org,2008-03-06/issue 
+title: renaming around setf
+desc: |-
+  define-setf-method -> define-setf-expander
+  get-setf-method-multiple-value -> get-setf-expansion
+type: :task
+component: xyzzy.common-lisp
+release: "0.1"
+reporter: bowbow99 <bowbow99@gmail.com>
+status: :unstarted
+disposition: 
+creation_time: 2010-07-21 02:56:27.161875 Z
+references: []
+
+id: 61196f315691b0c74459debd59fd0e1884995e3b
+log_events: 
+- - 2010-07-21 02:56:27.938875 Z
+  - bowbow99 <bowbow99@gmail.com>
+  - created
+  - ""
