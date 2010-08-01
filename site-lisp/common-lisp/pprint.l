@@ -358,5 +358,6 @@
   (values))
 
 
+(provide "common-lisp/pprint")
 
 ;;; common-lisp/pprint.l ends here.
