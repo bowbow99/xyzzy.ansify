@@ -298,6 +298,15 @@
      (LFD)
      (WRAP (pprint-forms o)))))
 
+(define-pprint quote (operator obj)
+  (princ #\')
+  (pprint-sexp obj))
+
+(define-pprint function (operator obj)
+  (princ #\#)
+  (princ #\')
+  (pprint-sexp obj))
+
 
 ;;;
 ;;; for macro call
