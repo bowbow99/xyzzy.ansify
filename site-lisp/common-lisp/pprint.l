@@ -144,7 +144,8 @@
 
 (define-pprint defun 2)
 (define-pprint defmacro defun)
-(define-pprint defsetf defun)
+
+(define-pprint defsetf 3)
 
 (define-pprint and 1)
 (define-pprint or and)
