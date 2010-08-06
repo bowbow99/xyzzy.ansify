@@ -170,11 +170,24 @@
       (LFD) (%pprint-flet-def def)))
    (pprint-body body)))
 
-(define-pprint let flet)
-(define-pprint let* flet)
 (define-pprint labels flet)
 (define-pprint macrolet flet)
-(define-pprint prog flet)
+
+;;; - let
+(define-pprint let (operator bindings &rest body)
+  (WRAP
+   (princ operator) (SPC)
+   (dolist (binding bindings)
+     (if (symbolp binding)
+         (princ binding)
+       (WRAP
+        (princ (car binding))
+        (when (cdr binding)
+          (pprint-sexp (cadr binding))))))
+   (pprint-body body)))
+
+(define-pprint let* let)
+(define-pprint prog let)
 
 ;;; - do
 (define-pprint do (operator bindings exit &rest body)
