@@ -177,13 +177,15 @@
 (define-pprint let (operator bindings &rest body)
   (WRAP
    (princ operator) (SPC)
-   (dolist (binding bindings)
-     (if (symbolp binding)
-         (princ binding)
-       (WRAP
-        (princ (car binding))
-        (when (cdr binding)
-          (pprint-sexp (cadr binding))))))
+   (WRAP
+    (dolist (binding bindings)
+      (if (symbolp binding)
+          (princ binding)
+        (WRAP
+         (princ (car binding))
+         (SPC)
+         (when (cdr binding)
+           (pprint-sexp (cadr binding)))))))
    (pprint-body body)))
 
 (define-pprint let* let)
