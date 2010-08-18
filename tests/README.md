@@ -9,7 +9,7 @@ lisp-unit を使ってるけど、そのうち lisp-unit を何とかしたい�
 0. lisp-unit が必要
 1. テストファイルを load
 2. (use-package :lisp-unit) する
-3. (run-all-tests cl.test.<target>) する
+3. (run-all-tests cl.test.${target}) する
 4. 結果が表示される
 
 

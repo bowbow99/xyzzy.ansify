@@ -17,6 +17,7 @@ lisp パッケージとぶつかるものは shadowing-import されて、lisp:x
 - ctypecase
 - print-unreadable-object
 - progv
+- pprint
 
 
 依存してるライブラリ
