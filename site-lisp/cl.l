@@ -13,6 +13,7 @@
 
 (require "common-lisp/setf-function-name")
 (require "common-lisp/defun")
+(require "common-lisp/new-setf")
 
 (require "common-lisp/pprint")
 (provide "cl")
