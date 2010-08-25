@@ -25,7 +25,7 @@
           (si:*structure-subtypep (si:*structure-definition object) f))))
     (let ((typespec~ (si:canonicalize-type typespec)))
       (unless (equal typespec~ typespec)
-        (typep object typespec~)))
+        (return-from typep (typep object typespec~))))
     nil))
 
 
