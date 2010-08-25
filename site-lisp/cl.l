@@ -5,7 +5,9 @@
 
 (require "common-lisp/package")
 
+(require "common-lisp/typespec+")
 (require "common-lisp/typecase")
+
 (require "common-lisp/print-unreadable-object")
 (require "common-lisp/progv")
 
