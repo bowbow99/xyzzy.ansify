@@ -28,6 +28,21 @@
         (return-from typep (typep object typespec~))))
     nil))
 
+
+;;;;
+;;;; * Typespec Optimizer
+
+(defvar *typespec-optimizer-table* (make-hash-table))
+
+(defmacro define-typespec-optimizer (spec (&rest args) &body body)
+  `(setf (gethash ',spec *typespec-optimizer-table*)
+         (lambda ,args ,@body)))
+
+(define-typespec-optimizer and (object &rest specs)
+  `(and ,@(mapcar (lambda (spec)
+                    (optimize-typep-call `(typep ,object ',spec)))
+            specs)))
+
 (defun optimize-typep-call (form)
   "Return a form which produces same result with original FORM, but (hopefully) faster."
   (unless (and (listp form)
