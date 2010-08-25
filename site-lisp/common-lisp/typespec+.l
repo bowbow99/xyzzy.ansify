@@ -11,7 +11,6 @@
 (shadowing-export '(typep))
 
 (defun typep (object typespec)
-  (ed:msgbox "object: ~S~%typespec: ~S" object typespec)
   (let (f)
     (multiple-value-bind (type r)
         (if (atom typespec)
