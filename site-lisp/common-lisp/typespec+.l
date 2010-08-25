@@ -28,6 +28,18 @@
         (return-from typep (typep object typespec~))))
     nil))
 
+(defun optimize-typep-call (form)
+  "Return a form which produces same result with original FORM, but (hopefully) faster."
+  (unless (and (listp form)
+               (= (list-length form) 3)
+               (member (car form) '(lisp:typep cl::typep)))
+    (error "Malformed call for typep: ~S" form))
+  (let ((typespec (third form))
+        (object (second form)))
+    (or (when (and (consp typespec) (eq (car typespec) 'quote))
+          (cond ((member (cadr typespec) si::typespec-alist :key #'car)
+                 `(,(cdr (assoc (cadr typespec) si::typespec-alist)) ,object))))
+        form)))
 
 (provide "typespec+")
 
