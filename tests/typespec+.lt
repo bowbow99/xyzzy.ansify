@@ -14,8 +14,13 @@
 
 (remove-all-tests)
 
-(defmacro typep! (obj spec)
-  (cl::optimize-typep-call `(typep ,obj ,spec)))
+(defmacro check-optimize (object typespec)
+  "Check if optimized form produces same result with normal typep."
+  (let (($object (gensym)))
+    `(let ((,$object ,object))
+       (logically-equal
+        (typep ,$object ',typespec)
+        ,(cl::optimize-typep-call `(typep ,$object ',typespec))))))
 
 ;;;;
 ;;;; * typep accepts deftype'd typespec
@@ -25,7 +30,6 @@
 
 (deftype bar (a &optional b)
   `(integer ,a ,b))
-
 
 (define-test typep-for-deftyped-typespec
   (assert-true (typep :foo 'foo))
