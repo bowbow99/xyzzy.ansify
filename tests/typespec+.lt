@@ -1,0 +1,37 @@
+;;; -*- mode: lisp; package: cl.test.typespec+ -*-
+;;;
+;;; tests/typespec+.lt
+;;;
+
+(defpackage cl.test.typespec+)
+(in-package :cl.test.typespec+)
+
+(require "cl")
+(cl::install)
+
+(require "lisp-unit")
+(use-package :lisp-unit)
+
+(remove-all-tests)
+
+(defmacro typep! (obj spec)
+  (cl::optimize-typep-call `(typep ,obj ,spec)))
+
+;;;;
+;;;; * typep accepts deftype'd typespec
+
+(deftype foo ()
+  `(eql :foo))
+
+(deftype bar (a &optional b)
+  `(integer ,a ,b))
+
+
+(define-test typep-for-deftyped-typespec
+  (assert-true (typep :foo 'foo))
+  (assert-false (typep "foo" 'foo))
+  (assert-true (typep 12 '(bar 3 33)))
+  (assert-false (typep 12 '(bar 33 44)))
+  (assert-false (typep :bar '(bar 33))))
+
+;;; tests/typespec+.lt ends here
