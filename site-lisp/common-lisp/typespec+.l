@@ -64,17 +64,6 @@
                        $obj (cdr typespec))))))
         form)))
 
-;;;;
-;;;; * Bugfixes
-
-;;; by default, eql has both deftype-definition and type-specifier-list,
-;;; and deftype-definition is unnecessary and broken.
-;;;
-;;;     (si:canonicalize-type '(eql 3))
-;;;     => (member (3))
-(remprop 'eql 'si::deftype-definition)
-
-
 (provide "typespec+")
 
 ;;; typespec+.l ends here.
