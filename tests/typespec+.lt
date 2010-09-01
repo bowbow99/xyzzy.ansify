@@ -3,7 +3,8 @@
 ;;; tests/typespec+.lt
 ;;;
 
-(defpackage cl.test.typespec+)
+(defpackage cl.test.typespec+
+  (:use :lisp :editor))
 (in-package :cl.test.typespec+)
 
 (require "cl")
@@ -14,28 +15,68 @@
 
 (remove-all-tests)
 
-(defmacro check-optimize (object typespec)
-  "Check if optimized form produces same result with normal typep."
-  (let (($object (gensym)))
-    `(let ((,$object ,object))
-       (logically-equal
-        (typep ,$object ',typespec)
-        ,(cl::optimize-typep-call `(typep ,$object ',typespec))))))
 
-;;;;
-;;;; * typep accepts deftype'd typespec
+(defparameter *typespec-test-data* nil)
 
-(deftype foo ()
-  `(eql :foo))
+(defmacro add-data (datum &rest typespecs)
+  `(pushnew (cons ,datum ',typespecs) *typespec-test-data*
+            :key #'car :test #'equal))
 
-(deftype bar (a &optional b)
-  `(integer ,a ,b))
+(defvar *data-bag* (make-hash-table))
 
-(define-test typep-for-deftyped-typespec
-  (assert-true (typep :foo 'foo))
-  (assert-false (typep "foo" 'foo))
-  (assert-true (typep 12 '(bar 3 33)))
-  (assert-false (typep 12 '(bar 33 44)))
-  (assert-false (typep :bar '(bar 33))))
+;; numbers: bignum fixnum number ration real
+(add-data 3 fixnum integer number atom)
+(add-data "hello" string atom sequence)
+(add-data :hello keyword symbol atom)
+(add-data 0 fixnum integer number atom)
+(add-data t symbol atom)
+(add-data nil symbol list atom null sequence)
+(add-data '(foo bar) cons list sequence)
+(add-data (find-package :lisp) package atom)
+(add-data *standard-output* stream atom)
+(add-data (make-string-output-stream) stream atom)
+(add-data #\a character base-character standard-char atom)
+(add-data (lambda (x) x) function atom)
+(add-data #'car function compiled-function atom)
+(add-data (make-hash-table) hash-table atom)
+(add-data (make-random-state) random-state atom)
+(add-data *random-state* random-state atom)
+(add-data *readtable* readtable atom)
+
+
+;;; * Editor stuff
+;;; uncovered: ed:process ed:syntax-table ed:menu ed:dde-handle ed:oledata
+(setf (gethash :marker *data-bag*) (make-marker))
+
+(add-data (selected-buffer) ed:buffer atom)
+(add-data (gethash :marker *data-bag*) ed:marker atom)
+(add-data (compile-regexp "^hel\\{2\\}o$") ed:regexp atom)
+(add-data (selected-window) window atom)
+
+;;; * Compound Typespecs
+(setf (gethash :gensym *data-bag*) (gensym))
+
+(add-data (gethash :gensym *data-bag*)
+          (satisfies (lambda (x) (eql x (gethash :gensym *data-bag*))))
+          symbol atom)
+(add-data 'foo (member foo bar baz) symbol atom)
+(add-data '#1=#:foo (eql #1#) symbol atom)
+
+(define-test typep-1
+  (let ((all-data (mapcar #'car *typespec-test-data*))
+        (all-typespecs (remove-duplicates
+                        (apply #'append (mapcar #'cdr *typespec-test-data*)))))
+    (dolist (datum all-data)
+      (dolist (typespec all-typespecs)
+        (assert-equality #'logically-equal
+            (member typespec (cdr (assoc datum *typespec-test-data*)))
+            (typep datum typespec)
+          datum typespec)))))
+
+(define-test typep-2
+  "Tests for some compound type specifiers."
+  (dolist (x '(hoge 33 "Bah!!"))
+    (assert-true (typep x '(or symbol fixnum string)))))
+
 
 ;;; tests/typespec+.lt ends here
