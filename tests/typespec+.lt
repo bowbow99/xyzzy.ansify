@@ -50,7 +50,7 @@
        ((make-random-state) 'random-state 'atom)
        (*random-state* 'random-state 'atom)
        (*readtable* 'readtable 'atom)
-       ((make-example-struct) 'example-struct 'structure 'atom)
+       ((make-example-struct) 'example-struct 'atom)
        )
     (assert-equality #'logically-equal found (typep datum typespec)
       datum typespec)))

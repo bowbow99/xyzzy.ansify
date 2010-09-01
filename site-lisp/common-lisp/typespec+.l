@@ -20,9 +20,10 @@
         (return-from typep (funcall f object)))
       (when (setq f (get type 'si::type-specifier-list))
         (return-from typep (funcall f object r)))
-      (when (setq f (get type 'si::structure-defintion))
+      (when (setq f (get type 'si::structure-definition))
         (return-from typep
-          (si:*structure-subtypep (si:*structure-definition object) f))))
+          (and (si:*structurep object)
+               (si:*structure-subtypep (si:*structure-definition object) f)))))
     (let ((typespec~ (si:canonicalize-type typespec)))
       (unless (equal typespec~ typespec)
         (return-from typep (typep object typespec~))))
