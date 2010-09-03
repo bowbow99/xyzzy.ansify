@@ -98,6 +98,39 @@
     (assert-equality #'logically-equal found (typep datum typespec)
       datum typespec)))
 
+;;; TODO: write tests: chars, numbers, arrays
 
+;;;;
+;;;; * Tests for optimize-typep-call
+
+(defmacro %assert-typespec-optimize (datum typespec &rest more)
+  (let (($x (gensym)))
+    `(assert-equality #'logically-equal
+         (typep ,datum ,typespec)
+         (funcall `(lambda (,',$x)
+                     ,(cl::optimize-typep-call `(typep ,',$x ',,typespec)))
+                  ,datum)
+       ,@more)))
+
+;;; expands into something like this:
+;; (let ((datum 3)
+;;       (typespec 'fixnum))
+;;   (assert-equality #'logically-equal
+;;       (typep datum typespec)
+;;       (funcall `(lambda (#1=#:Gxxx)
+;;                   (cl::optimize-typep-call `(typep ,#1# ',typespec)))
+;;                datum)))
+
+(define-test optimize-standard-atomic-typespecs
+  (do-datum/typespec (datum typespec found) *standard-atomic-typespecs/data*
+    (%assert-typespec-optimize datum typespec)))
+
+(define-test optimize-editor-typespecs
+  (do-datum/typespec (datum typespec found) *editor-atomic-typespecs/data*
+    (%assert-typespec-optimize datum typespec)))
+
+(define-test optimize-compound-typespecs
+  (do-datum/typespec (datum typespec found) *standard-compound-typespecs/data*
+    (%assert-typespec-optimize datum typespec)))
 
 ;;; tests/typespec+.lt ends here
