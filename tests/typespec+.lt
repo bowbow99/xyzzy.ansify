@@ -18,74 +18,86 @@
 ;;; helper macro
 
 (defmacro do-datum/typespec ((datum-var typespec-var assoc-var) data &body body)
-  (let (($data (gensym))
-        ($all-typespecs (gensym)))
-    `(let* ((,$data (list ,@(mapcar (lambda (d) `(cons ,(car d) (list ,@(cdr d)))) data)))
-            (,$all-typespecs (remove-duplicates
-                              (apply #'append (mapcar #'cdr ,$data)))))
-       (dolist (,datum-var (mapcar #'car ,$data))
+  (let (($all-typespecs (gensym)))
+    `(let* ((,$all-typespecs (remove-duplicates
+                              (apply #'append (mapcar #'cdr ,data)))))
+       (dolist (,datum-var (mapcar #'car ,data))
          (dolist (,typespec-var ,$all-typespecs)
-           (let ((,assoc-var (member ,typespec-var (cdr (assoc ,datum-var ,$data))
+           (let ((,assoc-var (member ,typespec-var (cdr (assoc ,datum-var ,data))
                                      :test #'equal)))
              ,@body))))))
 
+;;;
+;;; * Example typespecs/data
+
 (defstruct example-struct)
 
+(defparameter *standard-atomic-typespecs/data*
+  (list (list 3 'fixnum 'integer 'number 'atom)
+        (list "hello" 'string 'atom 'sequence)
+        (list :hello 'keyword 'symbol 'atom)
+        (list 0 'fixnum 'integer 'number 'atom)
+        (list t 'symbol 'atom)
+        (list nil 'symbol 'list 'atom 'null 'sequence)
+        (list '(foo bar) 'cons 'list 'sequence)
+        (list (find-package :lisp) 'package 'atom)
+        (list *standard-output* 'stream 'atom)
+        (list (make-string-output-stream) 'stream 'atom)
+        (list #\a 'character 'base-character 'standard-char 'atom)
+        (list (lambda (x) x) 'function 'atom)
+        (list #'car 'function 'compiled-function 'atom)
+        (list (make-hash-table) 'hash-table 'atom)
+        (list (make-random-state) 'random-state 'atom)
+        (list *random-state* 'random-state 'atom)
+        (list *readtable* 'readtable 'atom)
+        (list (make-example-struct) 'example-struct 'atom)
+        ))
+
+(defparameter *editor-atomic-typespecs/data*
+  (let ((marker (make-marker)))
+    (unwind-protect
+        (list (list (selected-buffer) 'ed:buffer 'atom)
+              (list marker 'ed:marker 'atom)
+              (list (compile-regexp "^hel\\{2\\}o$") 'ed:regexp 'atom)
+              (list (selected-window) 'window 'atom)
+              (list nil 'symbol 'null 'list 'atom)
+              ;; ed:process ed:syntax-table ed:menu ed:dde-handle ed:oledata
+              )
+      (delete-marker marker))))
+
+(defparameter *standard-compound-typespecs/data*
+  (let ((sym (gensym)))
+    (list (list sym `(satisfies ,#'(lambda (x) (eql x sym))) t '(not fixnum))
+          (list :foo '(member :foo :bar :baz) '(not fixnum) '(and symbol keyword) t)
+          (list 3 '(eql 3) t)
+          (list :hoge '(eql :hoge) '(not fixnum) '(and symbol keyword) t)
+          (list nil '(eql nil) '(not fixnum) '(or structure list hash-table) t)
+          (list "hello" '(not fixnum) t)
+          (list :whatever '(and symbol keyword) '(not fixnum) t)
+          (list (make-hash-table) '(or structure list hash-table) '(not fixnum) t)
+          (list '(foo bar baz) '(or structure list hash-table) '(not fixnum) t)
+          (list 33 t)
+          )))
+
+
+;;;;
+;;;; * for function typep
+
 (define-test typep-standard-atomic-typespecs
-  (do-datum/typespec (datum typespec found)
-      ((3 'fixnum 'integer 'number 'atom)
-       ("hello" 'string 'atom 'sequence)
-       (:hello 'keyword 'symbol 'atom)
-       (0 'fixnum 'integer 'number 'atom)
-       (t 'symbol 'atom)
-       (nil 'symbol 'list 'atom 'null 'sequence)
-       ('(foo bar) 'cons 'list 'sequence)
-       ((find-package :lisp) 'package 'atom)
-       (*standard-output* 'stream 'atom)
-       ((make-string-output-stream) 'stream 'atom)
-       (#\a 'character 'base-character 'standard-char 'atom)
-       ((lambda (x) x) 'function 'atom)
-       (#'car 'function 'compiled-function 'atom)
-       ((make-hash-table) 'hash-table 'atom)
-       ((make-random-state) 'random-state 'atom)
-       (*random-state* 'random-state 'atom)
-       (*readtable* 'readtable 'atom)
-       ((make-example-struct) 'example-struct 'atom)
-       )
+  (do-datum/typespec (datum typespec found) *standard-atomic-typespecs/data*
     (assert-equality #'logically-equal found (typep datum typespec)
       datum typespec)))
 
 (define-test typep-editor-atomic-typespecs
-  (let ((marker (make-marker)))
-    (unwind-protect
-        (do-datum/typespec (datum typespec found)
-            (((selected-buffer) 'ed:buffer 'atom)
-             (marker 'ed:marker 'atom)
-             ((compile-regexp "^hel\\{2\\}o$") 'ed:regexp 'atom)
-             ((selected-window) 'window 'atom)
-             (nil 'symbol 'null 'list 'atom)
-             ;; ed:process ed:syntax-table ed:menu ed:dde-handle ed:oledata
-             )
-          (assert-equality #'logically-equal found (typep datum typespec)
-            datum typespec))
-      (delete-marker marker))))
+  (do-datum/typespec (datum typespec found) *editor-atomic-typespecs/data*
+    (assert-equality #'logically-equal found (typep datum typespec)
+      datum typespec)))
 
 (define-test typep-compound-typespecs
-  (let ((sym (gensym)))
-    (do-datum/typespec (datum typespec found)
-        ((sym `(satisfies ,#'(lambda (x) (eql x sym))) t '(not fixnum))
-         (:foo '(member :foo :bar :baz) '(not fixnum) '(and symbol keyword) t)
-         (3 '(eql 3) t)
-         (:hoge '(eql :hoge) '(not fixnum) '(and symbol keyword) t)
-         (nil '(eql nil) '(not fixnum) '(or structure list hash-table) t)
-         ("hello" '(not fixnum) t)
-         (:whatever '(and symbol keyword) '(not fixnum) t)
-         ((make-hash-table) '(or structure list hash-table) '(not fixnum) t)
-         ('(foo bar baz) '(or structure list hash-table) '(not fixnum) t)
-         (33 t)
-         )
-      (assert-equality #'logically-equal found (typep datum typespec)
-        datum typespec))))
+  (do-datum/typespec (datum typespec found) *standard-compound-typespecs/data*
+    (assert-equality #'logically-equal found (typep datum typespec)
+      datum typespec)))
+
 
 
 ;;; tests/typespec+.lt ends here
