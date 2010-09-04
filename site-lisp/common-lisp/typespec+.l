@@ -44,26 +44,35 @@
                     (optimize-typep-call `(typep ,object ',spec)))
             specs)))
 
+(defun parse-typespec-form (form)
+  (case (car form)
+    (quote
+     (let ((typespec (cadr form)))
+       (cond ((consp typespec) (values (car typespec) (cdr typespec) t))
+             ((symbolp typespec) (values typespec nil t))
+             (t (error "Should not see me")))))
+    ))
+
 (defun optimize-typep-call (form)
-  "Return a form which produces same result with original FORM, but (hopefully) faster."
+  "Return a optimized version of typep form."
   (unless (and (listp form)
                (= (list-length form) 3)
-               (member (car form) '(lisp:typep cl::typep)))
+               (member (first form) '(lisp:typep cl::typep)))
     (error "Malformed call for typep: ~S" form))
-  (unless (eq (car (third form)) 'quote)
-    (return-from optimize-typep-call form))
-  (let ((typespec (cadr (third form)))
-        (object (second form)))
-    (or (cond
-         ((member typespec si::typespec-alist :key #'car)
-          `(,(cdr (assoc typespec si::typespec-alist)) ,object))
-         ((and (consp typespec)
-               (gethash (car typespec) *typespec-optimizer-table*))
-          (let (($obj (gensym)))
-            `(let ((,$obj ,object))
-               ,(apply (gethash (car typespec) *typespec-optimizer-table*)
-                       $obj (cdr typespec))))))
-        form)))
+  (let ((object (second form)))
+    (multiple-value-bind (typespec args success)
+        (parse-typespec-form (third form))
+      (or (when success
+            (cond
+             ((and (get typespec 'si::type-predicate)
+                   (null args))
+              `(,(get typespec 'si::type-predicate) ,object))
+             ((gethash typespec *typespec-optimizer-table*)
+              (apply (gethash typespec *typespec-optimizer-table*)
+                     object args))))
+          form))))
+
+
 
 (provide "typespec+")
 
