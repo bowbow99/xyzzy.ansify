@@ -174,4 +174,10 @@
   (%assert-optimized-form X '(satisfies oddp)
     `(oddp X)))
 
+(define-test optimize-typep-member
+  (%assert-optimized-form X '(member) nil)
+  (%assert-optimized-form X '(member foo bar baz) '(member X '(foo bar baz)))
+  (%assert-optimized-form X '(member 1 2) '(member X '(1 2)))
+  )
+
 ;;; tests/typespec+.lt ends here

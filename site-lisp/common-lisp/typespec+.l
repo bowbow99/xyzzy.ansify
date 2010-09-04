@@ -45,6 +45,12 @@
   ;; - http://www.lispworks.com/documentation/lw50/CLHS/Body/t_satisf.htm
   `(,pred ,object))
 
+(define-typespec-optimizer member (object &rest items)
+  (if (null items)
+    nil
+    ;; NOTE: Assuming whole typespec was quoted like: '(member foo bar baz)
+    `(member ,object '(,@items))))
+
 (define-typespec-optimizer and (object &rest specs)
   (case (list-length specs)
     (0 t)
@@ -80,8 +86,9 @@
                    (null args))
               `(,(get typespec 'si::type-predicate) ,object))
              ((gethash typespec *typespec-optimizer-table*)
-              (apply (gethash typespec *typespec-optimizer-table*)
-                     object args))))
+              (return-from optimize-typep-call
+                (apply (gethash typespec *typespec-optimizer-table*)
+                       object args)))))
           form))))
 
 
