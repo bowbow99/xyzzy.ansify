@@ -39,6 +39,9 @@
   `(setf (gethash ',spec *typespec-optimizer-table*)
          (lambda ,args ,@body)))
 
+(define-typespec-optimizer t (object) t)
+(define-typespec-optimizer nil (object) nil)
+
 (define-typespec-optimizer satisfies (object pred)
   ;; TODO: reject lambda-expression
   ;; CLHS saying that PRED must be a symbol, and lambda expression is not allowed.
@@ -51,6 +54,16 @@
     ;; NOTE: Assuming whole typespec was quoted like: '(member foo bar baz)
     `(member ,object '(,@items))))
 
+(define-typespec-optimizer eql (object item)
+  `(eql ,object ,(if (constantp item) item `(quote ,item))))
+
+(define-typespec-optimizer not (object type)
+  (let ((form-1 (optimize-typep-call `(typep ,object ',type))))
+    (case form-1
+      ((t) nil)
+      ((nil) t)
+      (t `(not ,form-1)))))
+
 (define-typespec-optimizer and (object &rest specs)
   (case (list-length specs)
     (0 t)
@@ -61,6 +74,14 @@
                              (optimize-typep-call `(typep ,$obj ',spec)))
                      specs)))))))
 
+(define-typespec-optimizer or (object &rest types)
+  (if (null types)
+    nil
+    (let (($obj (gensym)))
+      `(let ((,$obj ,object))
+         (or ,@(mapcar (lambda (type)
+                         (optimize-typep-call `(typep ,$obj ',type)))
+                 types))))))
 
 (defun parse-typespec-form (form)
   (case (car form)

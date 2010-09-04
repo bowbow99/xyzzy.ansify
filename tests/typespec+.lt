@@ -156,6 +156,29 @@
 #+xyzzy
 (setf (get '%assert-optimized-form 'ed:lisp-indent-hook) 2)
 
+(define-test optimize-typep-satisfies
+  (%assert-optimized-form X '(satisfies (lambda (x) (= x 33)))
+    `((lambda (x) (= x 33)) X))
+  (%assert-optimized-form X '(satisfies oddp)
+    `(oddp X)))
+
+(define-test optimize-typep-member
+  (%assert-optimized-form X '(member) nil)
+  (%assert-optimized-form X '(member foo bar baz) '(member X '(foo bar baz)))
+  (%assert-optimized-form X '(member 1 2) '(member X '(1 2)))
+  )
+
+(define-test optimize-typep-eql
+  (%assert-optimized-form X '(eql 3) '(eql X 3))
+  (%assert-optimized-form X '(eql foo) '(eql X 'foo))
+  )
+
+(define-test optimize-typep-not
+  (%assert-optimized-form X '(not number) '(not (numberp X)))
+  (%assert-optimized-form X '(not t) nil)
+  (%assert-optimized-form X '(not nil) t)
+  (%assert-optimized-form X '(not atom) '(not (atom X))))
+
 (define-test optimize-typep-and
   (%assert-optimized-form X '(and) t)
   (%assert-optimized-form X 'and t)
@@ -168,16 +191,14 @@
        (and (numberp #:G01) (symbolp #:G01))))
   )
 
-(define-test optimize-typep-satisfies
-  (%assert-optimized-form X '(satisfies (lambda (x) (= x 33)))
-    `((lambda (x) (= x 33)) X))
-  (%assert-optimized-form X '(satisfies oddp)
-    `(oddp X)))
-
-(define-test optimize-typep-member
-  (%assert-optimized-form X '(member) nil)
-  (%assert-optimized-form X '(member foo bar baz) '(member X '(foo bar baz)))
-  (%assert-optimized-form X '(member 1 2) '(member X '(1 2)))
+(define-test optimize-typep-or
+  (%assert-optimized-form X '(or fixnum character)
+    `(let ((#:G00 X))
+       (or (si:*fixnump #:G00) (characterp #:G00))))
+  (%assert-optimized-form X '(or symbol null)
+    `(let ((#:G00 X))
+       (or (symbolp #:G00) (null #:G00))))
+  (%assert-optimized-form X '(or) nil)
   )
 
 ;;; tests/typespec+.lt ends here
