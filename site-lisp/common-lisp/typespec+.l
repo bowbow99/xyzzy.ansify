@@ -40,9 +40,14 @@
          (lambda ,args ,@body)))
 
 (define-typespec-optimizer and (object &rest specs)
-  `(and ,@(mapcar (lambda (spec)
-                    (optimize-typep-call `(typep ,object ',spec)))
-            specs)))
+  (case (list-length specs)
+    (0 t)
+    (1 (optimize-typep-call `(typep ,object ',(car specs))))
+    (t (let (($obj (gensym)))
+         `(let ((,$obj ,object))
+            (and ,@(mapcar (lambda (spec)
+                             (optimize-typep-call `(typep ,$obj ',spec)))
+                     specs)))))))
 
 (defun parse-typespec-form (form)
   (case (car form)
