@@ -33,7 +33,7 @@
 ;;;;
 ;;;; * Typespec Optimizer
 
-(defvar *typespec-optimizer-table* (make-hash-table))
+(defparameter *typespec-optimizer-table* (make-hash-table))
 
 (defmacro define-typespec-optimizer (spec (&rest args) &body body)
   `(setf (gethash ',spec *typespec-optimizer-table*)

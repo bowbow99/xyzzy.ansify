@@ -115,6 +115,8 @@
 ;;;;
 ;;;; * Tests for optimize-typep-call
 
+;;; optimized form should produce same result as original form
+
 (defmacro %assert-typespec-optimize (datum typespec &rest more)
   (let (($x (gensym)))
     `(assert-equality #'logically-equal
@@ -144,5 +146,26 @@
 (define-test optimize-compound-typespecs
   (do-datum/typespec (datum typespec found) *standard-compound-typespecs/data*
     (%assert-typespec-optimize datum typespec)))
+
+
+(defmacro %assert-optimized-form (object typespec expected)
+  `(assert-equality #'form-equal
+       ,expected
+       (cl::optimize-typep-call '(typep ,object ,typespec))))
+
+#+xyzzy
+(setf (get '%assert-optimized-form 'ed:lisp-indent-hook) 2)
+
+(define-test optimize-typep-and
+  (%assert-optimized-form X '(and) t)
+  (%assert-optimized-form X 'and t)
+  (%assert-optimized-form X '(and number) '(numberp X))
+  (%assert-optimized-form X '(and atom number)
+    `(let ((#:G01 X))
+       (and (atom #:G01) (numberp #:G01))))
+  (%assert-optimized-form X '(and number symbol)
+    `(let ((#:G01 X))
+       (and (numberp #:G01) (symbolp #:G01))))
+  )
 
 ;;; tests/typespec+.lt ends here
