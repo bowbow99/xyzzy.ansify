@@ -39,6 +39,12 @@
   `(setf (gethash ',spec *typespec-optimizer-table*)
          (lambda ,args ,@body)))
 
+(define-typespec-optimizer satisfies (object pred)
+  ;; TODO: reject lambda-expression
+  ;; CLHS saying that PRED must be a symbol, and lambda expression is not allowed.
+  ;; - http://www.lispworks.com/documentation/lw50/CLHS/Body/t_satisf.htm
+  `(,pred ,object))
+
 (define-typespec-optimizer and (object &rest specs)
   (case (list-length specs)
     (0 t)
@@ -48,6 +54,7 @@
             (and ,@(mapcar (lambda (spec)
                              (optimize-typep-call `(typep ,$obj ',spec)))
                      specs)))))))
+
 
 (defun parse-typespec-form (form)
   (case (car form)

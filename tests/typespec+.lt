@@ -168,4 +168,10 @@
        (and (numberp #:G01) (symbolp #:G01))))
   )
 
+(define-test optimize-typep-satisfies
+  (%assert-optimized-form X '(satisfies (lambda (x) (= x 33)))
+    `((lambda (x) (= x 33)) X))
+  (%assert-optimized-form X '(satisfies oddp)
+    `(oddp X)))
+
 ;;; tests/typespec+.lt ends here
