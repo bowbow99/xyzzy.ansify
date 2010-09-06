@@ -83,6 +83,13 @@
                          (optimize-typep-call `(typep ,$obj ',type)))
                  types))))))
 
+(define-typespec-optimizer string (object &optional (length '*))
+  (if (eq length '*)
+    `(stringp ,object)
+    (let (($obj (gensym)))
+      `(let (,$obj ,object)
+         (and (stringp ,$obj) (= (length ,$obj) ,length))))))
+
 (defun parse-typespec-form (form)
   (case (car form)
     (quote
