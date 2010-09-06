@@ -32,7 +32,7 @@
                    ,$new)
              (mapc (lambda (actual expected)
                      (assert-equal expected actual))
-                   ,place
+                   (multiple-value-list ,place)
                    ,$new))
          (if (eql ,$old +unbound-value+)
            (makunbound ',place)
