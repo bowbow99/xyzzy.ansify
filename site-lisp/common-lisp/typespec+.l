@@ -29,7 +29,6 @@
         (return-from typep (typep object typespec~))))
     nil))
 
-
 ;;;;
 ;;;; * Typespec Optimizer
 

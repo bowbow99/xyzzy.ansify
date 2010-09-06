@@ -180,9 +180,9 @@
    (WRAP
     (dolist (binding bindings)
       (if (symbolp binding)
-          (princ binding)
+        (prin1 binding)
         (WRAP
-         (princ (car binding))
+         (prin1 (car binding))
          (SPC)
          (when (cdr binding)
            (pprint-sexp (cadr binding)))))))
