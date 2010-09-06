@@ -1,0 +1,37 @@
+;;; -*- mode: lisp; package: cl.test.new-setf -*-
+;;;
+;;; tests/new-setf.lt
+;;;
+
+(defpackage :cl.test.new-setf)
+(in-package :cl.test.new-setf)
+
+(require "cl")
+(cl::install)
+
+(require "lisp-unit")
+(use-package :lisp-unit)
+
+(remove-all-tests)
+
+(defmacro %assert-setf ((place new-value) &body body)
+  (let (($old (gensym))
+        ($new (gensym)))
+    `(let ((,$old (multiple-value-list ,place))
+           (,$new (multiple-value-list ,new-value)))
+       (unwind-protect
+           (progn
+             (mapc (lambda (actual expected)
+                     (assert-equal expected actual))
+                   (multiple-value-list (setf ,place ,new-value))
+                   ,$new)
+             (mapc (lambda (actual expected)
+                     (assert-equal expected actual))
+                   ,place
+                   ,$new))
+         (setf ,place (values-list ,$old))))))
+
+
+
+
+;;; tests/new-setf.lt ends here.
