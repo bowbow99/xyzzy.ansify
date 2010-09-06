@@ -8,6 +8,7 @@
 
 (require "common-lisp/package")
 (require "condition-restart")
+(require "common-lisp/typespec+")
 
 (in-package :common-lisp)
 
@@ -21,7 +22,8 @@
     `(let ((,$key ,key))
        (cond
         ,@(mapcar (lambda (clause)
-                    `((typep ,$key ',(car clause)) ,@(cdr clause)))
+                    `(,(optimize-typep-call `(typep ,$key ',(car clause)))
+                      ,@(cdr clause)))
             (butlast clauses))
         ,(let ((last (car (last clauses))))
            (if (member (car last) '(t otherwise))
@@ -33,7 +35,8 @@
     `(let ((,$key ,key))
        (cond
         ,@(mapcar (lambda (clause)
-                    `((typep ,$key ',(car clause)) ,@(cdr clause)))
+                    `(,(optimize-typep-call `(typep ,$key ',(car clause)))
+                      ,@(cdr clause)))
             clauses)
         (t (error 'type-error :datum ,$key
                   :expected-type '(or ,@(mapcar #'car clauses))))))))
@@ -46,7 +49,8 @@
            (return-from ctypecase
              (cond
               ,@(mapcar (lambda (clause)
-                          `((typep ,$key ',(car clause)) ,@(cdr clause)))
+                          `(,(optimize-typep-call `(typep ,$key ',(car clause)))
+                            ,@(cdr clause)))
                   clauses)
               (t (restart-case
                      (error 'type-error :datum ,$key
