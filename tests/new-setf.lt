@@ -39,5 +39,15 @@
            (setf ,place (values-list ,$old)))))))
 
 
+(define-test new-setf
+  (%assert-setf foo 33)
+  (let ((list '(foo bar baz)))
+    (%assert-setf (car list) :car)
+    (%assert-setf (cdr list) :cdr)
+    (%assert-setf (cdr list) '(2 3))
+    (%assert-setf (cadr list) 2)
+    (%assert-setf (second list) 2)
+    (%assert-setf (third list) 3)))
+
 
 ;;; tests/new-setf.lt ends here.
