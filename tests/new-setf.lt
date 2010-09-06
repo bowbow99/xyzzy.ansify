@@ -39,8 +39,10 @@
            (setf ,place (values-list ,$old)))))))
 
 
-(define-test new-setf
-  (%assert-setf foo 33)
+(define-test new-setf-symbol
+  (%assert-setf foo 33))
+
+(define-test new-setf-list
   (let ((list '(foo bar baz)))
     (%assert-setf (car list) :car)
     (%assert-setf (cdr list) :cdr)
