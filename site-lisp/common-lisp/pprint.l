@@ -234,7 +234,7 @@
 (define-pprint cond (operator &rest clauses)
   (WRAP
    (princ operator) (SPC)
-   (dolist (c clause)
+   (dolist (c clauses)
      (LFD) (%pprint-clause c))))
 
 ;; - handler-case
