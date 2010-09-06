@@ -14,10 +14,15 @@
 
 (remove-all-tests)
 
-(defmacro %assert-setf ((place new-value) &body body)
+(defconstant +unbound-value+ (gensym))
+
+(defmacro %assert-setf (place new-value)
   (let (($old (gensym))
         ($new (gensym)))
-    `(let ((,$old (multiple-value-list ,place))
+    `(let ((,$old (handler-case
+                      (multiple-value-list ,place)
+                    (unbound-variable (e)
+                      +unbound-value+)))
            (,$new (multiple-value-list ,new-value)))
        (unwind-protect
            (progn
@@ -29,8 +34,9 @@
                      (assert-equal expected actual))
                    ,place
                    ,$new))
-         (setf ,place (values-list ,$old))))))
-
+         (if (eql ,$old +unbound-value+)
+           (makunbound ',place)
+           (setf ,place (values-list ,$old)))))))
 
 
 
