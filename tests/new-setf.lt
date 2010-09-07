@@ -42,14 +42,64 @@
 (define-test new-setf-symbol
   (%assert-setf foo 33))
 
-(define-test new-setf-list
-  (let ((list '(foo bar baz)))
-    (%assert-setf (car list) :car)
-    (%assert-setf (cdr list) :cdr)
-    (%assert-setf (cdr list) '(2 3))
-    (%assert-setf (cadr list) 2)
-    (%assert-setf (second list) 2)
-    (%assert-setf (third list) 3)))
+(define-test new-setf-list-1
+  "car .. cddddr"
+  (let ((list '((((hoge fuga) piyo) (foo bar) baz)
+                ((a b) c)
+                (1 2)
+                3 4 5 6 7)))
+    (%assert-setf (car list) :value)
+    (%assert-setf (cdr list) :value)
+    (%assert-setf (caar list) :value)
+    (%assert-setf (cadr list) :value)
+    (%assert-setf (cdar list) :value)
+    (%assert-setf (cddr list) :value)
+    (%assert-setf (caaar list) :value)
+    (%assert-setf (caadr list) :value)
+    (%assert-setf (cadar list) :value)
+    (%assert-setf (caddr list) :value)
+    (%assert-setf (cdaar list) :value)
+    (%assert-setf (cdadr list) :value)
+    (%assert-setf (cddar list) :value)
+    (%assert-setf (cdddr list) :value)
+    (%assert-setf (caaaar list) :value)
+    (%assert-setf (caaadr list) :value)
+    (%assert-setf (caadar list) :value)
+    (%assert-setf (caaddr list) :value)
+    (%assert-setf (cadaar list) :value)
+    (%assert-setf (cadadr list) :value)
+    (%assert-setf (caddar list) :value)
+    (%assert-setf (cadddr list) :value)
+    (%assert-setf (cdaaar list) :value)
+    (%assert-setf (cdaadr list) :value)
+    (%assert-setf (cdadar list) :value)
+    (%assert-setf (cdaddr list) :value)
+    (%assert-setf (cddaar list) :value)
+    (%assert-setf (cddadr list) :value)
+    (%assert-setf (cdddar list) :value)
+    (%assert-setf (cddddr list) :value)
+    ))
+
+(define-test new-setf-list-2
+  "first .. tenth"
+  (let ((list '(0 1 2 3 4 5 6 7 8 9)))
+    (%assert-setf (first list) :value)
+    (%assert-setf (second list) :value)
+    (%assert-setf (third list) :value)
+    (%assert-setf (fourth list) :value)
+    (%assert-setf (fifth list) :value)
+    (%assert-setf (sixth list) :value)
+    (%assert-setf (seventh list) :value)
+    (%assert-setf (eighth list) :value)
+    (%assert-setf (ninth list) :value)
+    (%assert-setf (tenth list) :value)))
+
+(define-test new-setf-list-3
+  "other list accessors."
+  (let ((list '(0 1 2 3)))
+    (%assert-setf (rest list) :value)
+    (dotimes (i (length list))
+      (%assert-setf (nth i list) :value))))
 
 
 ;;; tests/new-setf.lt ends here.
