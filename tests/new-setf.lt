@@ -16,7 +16,7 @@
 
 (defconstant +unbound-value+ (gensym))
 
-(defmacro %assert-setf (place new-value)
+(defmacro %assert-setf (place new-value &rest more)
   (let (($old (gensym))
         ($new (gensym)))
     `(let ((,$old (handler-case
@@ -27,11 +27,11 @@
        (unwind-protect
            (progn
              (mapc (lambda (actual expected)
-                     (assert-equal expected actual))
+                     (assert-equal expected actual ,@more))
                    (multiple-value-list (setf ,place ,new-value))
                    ,$new)
              (mapc (lambda (actual expected)
-                     (assert-equal expected actual))
+                     (assert-equal expected actual ,@more))
                    (multiple-value-list ,place)
                    ,$new))
          (if (eql ,$old +unbound-value+)
