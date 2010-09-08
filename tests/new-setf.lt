@@ -138,5 +138,18 @@
       (%assert-setf (gethash (cdr pair) ht-equal) (car pair) pair)
       )))
 
+;;; NOTE: accessors defined in lisp/setf.l but not testef yet
+;;; - using setter function
+;;;   - row-major-aref
+;;;   - char
+;;;   - schar
+;;;   - default-value
+;;; - using setf expander:
+;;;   These accessors originally using old GET-SETF-METHOD, so you gonna redefine it
+;;;   to use GET-SETF-EXPANSION instead.
+;;;   - subseq
+;;;   - ldb
+;;;   - mask-field
+;;;   - apply
 
 ;;; tests/new-setf.lt ends here.
