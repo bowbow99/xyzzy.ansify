@@ -38,9 +38,14 @@
            (makunbound ',place)
            (setf ,place (values-list ,$old)))))))
 
-
+(setq foo :default)
+(defun foo () nil)
 (define-test new-setf-symbol
-  (%assert-setf foo 33))
+  (%assert-setf foo :value)
+  (%assert-setf (get 'foo 'example) :value)
+  (%assert-setf (symbol-value 'foo) :value)
+  (%assert-setf (symbol-function 'foo) #'car #'foo)
+  (%assert-setf (symbol-plist 'foo) '((key-0 . "value-0") (key-1 . :value-1))))
 
 (define-test new-setf-list-1
   "car .. cddddr"
@@ -99,7 +104,39 @@
   (let ((list '(0 1 2 3)))
     (%assert-setf (rest list) :value)
     (dotimes (i (length list))
-      (%assert-setf (nth i list) :value))))
+      (%assert-setf (nth i list) :value i))))
+
+(define-test new-setf-array
+  (let ((vector #(foo bar baz)))
+    (dotimes (i (length vector))
+      (%assert-setf (aref vector i) :value vector i)
+      (%assert-setf (svref vector i) :value vector i)))
+  (let ((avector (make-array 12 :fill-pointer 0 :adjustable t)))
+    (dotimes (i (length vector))
+      (%assert-setf (fill-pointer avector) i avector i)))
+  (let ((array #2A((foo bar) (hoge fuga) (spam egg))))
+    (multiple-value-bind (li lj)
+        (values-list (array-dimensions array))
+      (dotimes (i li)
+        (dotimes (j lj)
+          (%assert-setf (aref array i j) :value array i j))))))
+
+(define-test new-setf-sequence
+  (let ((list '(0 1 2 3 4))
+        (vector #(0 1 2 3 4)))
+    (dolist (seq (list list vector))
+      (dotimes (i (length seq))
+        (%assert-setf (elt seq i) :value seq i)))))
+
+(define-test new-setf-hash-table
+  (let ((ht-eql (make-hash-table))
+        (ht-equal (make-hash-table :test 'equal)))
+    (dolist (pair '((foo . "foo")
+                    (bar . "bar")
+                    (baz . "baz")))
+      (%assert-setf (gethash (car pair) ht-eql) (cdr pair) pair)
+      (%assert-setf (gethash (cdr pair) ht-equal) (car pair) pair)
+      )))
 
 
 ;;; tests/new-setf.lt ends here.
