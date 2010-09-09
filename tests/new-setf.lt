@@ -119,7 +119,16 @@
         (values-list (array-dimensions array))
       (dotimes (i li)
         (dotimes (j lj)
-          (%assert-setf (aref array i j) :value array i j))))))
+          (%assert-setf (aref array i j) :value array i j))))
+    (dotimes (i (array-total-size array))
+      (%assert-setf (row-major-aref array i) :value array i))
+    ))
+
+(define-test new-setf-string
+  (let ((string "example"))
+    (dotimes (i (length string))
+      (%assert-setf (char string i) #\! string i)
+      (%assert-setf (schar string i) #\! string i))))
 
 (define-test new-setf-sequence
   (let ((list '(0 1 2 3 4))
@@ -140,9 +149,6 @@
 
 ;;; NOTE: accessors defined in lisp/setf.l but not testef yet
 ;;; - using setter function
-;;;   - row-major-aref
-;;;   - char
-;;;   - schar
 ;;;   - default-value
 ;;; - using setf expander:
 ;;;   These accessors originally using old GET-SETF-METHOD, so you gonna redefine it
