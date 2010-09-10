@@ -88,13 +88,15 @@ to rely on old name.
         (t (error 'type-error :datum name
                   :expected-type '(or symbol cons)))))
 
-;;;
-;;; * Renaming
-;;;   - define-setf-method -> define-setf-expander
-;;;   - get-setf-method-multiple-value -> get-setf-expansion
+
+;; - Rename: define-setf-method -> define-setf-expander
 (defmacro define-setf-expander (access-fn lambda-list &body body)
   `(define-setf-method ,access-fn ,lambda-list ,@body))
 
+;;;;
+;;;; * Expanding setf form
+
+;; - Rename: get-setf-method-multiple-value -> get-setf-expansion
 ;; almost Copy'n'Pasted from lisp/setf.l
 (defun get-setf-expansion (form &optional env)
   (%acond ((symbolp form)
@@ -134,9 +136,6 @@ to rely on old name.
            (error "setf フォームを展開できません: ~S" form))
           ))
 
-
-;;;
-;;; * Expanding setf form
 
 (defun expand-setf-1 (place newvalue env)
   (if (atom place)
