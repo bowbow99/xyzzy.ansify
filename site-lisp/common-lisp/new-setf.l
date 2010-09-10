@@ -133,7 +133,17 @@ to rely on old name.
                (error "~S の setf expander はありません。" form))
              (get-setf-expansion expansion env)))
           (t
-           (error "setf フォームを展開できません: ~S" form))
+           (let ((vars (%n-gensyms (length (cdr form))))
+                 (store (gensym)))
+             ;; FIXME: New setf expands into a form which invokes so-called
+             ;; 'setf function', no matter it is exist or not.
+             ;; This result in a "undefined function" error when the setf
+             ;; function isn't defined, but it is better to be an error that
+             ;; tells something like "there's no way to setf to this place.".
+             (values vars (cdr form) (list store)
+                     `(funcall ',(%function-symbol `(setf ,(car form)))
+                               ,store ,@vars)
+                     `(,(car form) ,@vars))))
           ))
 
 

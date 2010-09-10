@@ -164,7 +164,25 @@
 ;;;   - mask-field
 ;;;   - apply
 
+
+;;; setf for values form
 (define-test new-setf-values
   (%assert-setf (values foo bar baz) (values 1 2 3)))
+
+;;; setf function
+
+(defparameter *example-table* (make-hash-table))
+
+(defun example (key)
+  (gethash key *example-table*))
+
+(defun (setf example) (value key)
+  (setf (gethash key *example-table*) value))
+
+(define-test new-setf-setf-function
+  (%assert-setf (example :foo) "This is FOO")
+  (%assert-setf (example :bar) "This is BAR"))
+
+
 
 ;;; tests/new-setf.lt ends here.
