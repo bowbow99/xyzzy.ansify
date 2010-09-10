@@ -167,7 +167,7 @@ to rely on old name.
                     ,store-form))
                 (t ;setf'ing multiple values
                  `(let* (,@(mapcar #'list vars vals))
-                    (multiple-value-setq (,@stores) ,(car newvalue))
+                    (multiple-value-setq (,@stores) ,newvalue)
                     ,store-form))))))))
 
 ;; just copied from lisp/setf.l
