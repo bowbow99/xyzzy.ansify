@@ -27,11 +27,11 @@
        (unwind-protect
            (progn
              (mapc (lambda (actual expected)
-                     (assert-equal expected actual ,@more))
+                     (assert-equal expected actual :return-values ,@more))
                    (multiple-value-list (setf ,place ,new-value))
                    ,$new)
              (mapc (lambda (actual expected)
-                     (assert-equal expected actual ,@more))
+                     (assert-equal expected actual :afterward ,@more))
                    (multiple-value-list ,place)
                    ,$new))
          (if (eql ,$old +unbound-value+)
