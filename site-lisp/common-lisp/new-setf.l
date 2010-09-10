@@ -186,7 +186,8 @@ to rely on old name.
          (error "不正な setf フォームです: (setf~{ ~S~})" args))
         ((endp (cddr args))
          (expand-setf-1 (car args) (cadr args) env))
-        (t (cons 'progn (setf-expand args env)))))
+        (t (cons 'progn (expand-setf args env)))))
+
 
 ;;;
 ;;; * fdefinition
