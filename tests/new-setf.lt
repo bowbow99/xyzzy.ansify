@@ -112,7 +112,7 @@
       (%assert-setf (aref vector i) :value vector i)
       (%assert-setf (svref vector i) :value vector i)))
   (let ((avector (make-array 12 :fill-pointer 0 :adjustable t)))
-    (dotimes (i (length vector))
+    (dotimes (i (length avector))
       (%assert-setf (fill-pointer avector) i avector i)))
   (let ((array #2A((foo bar) (hoge fuga) (spam egg))))
     (multiple-value-bind (li lj)
