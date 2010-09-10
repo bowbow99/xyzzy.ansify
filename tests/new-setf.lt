@@ -164,4 +164,7 @@
 ;;;   - mask-field
 ;;;   - apply
 
+(define-test new-setf-values
+  (%assert-setf (values foo bar baz) (values 1 2 3)))
+
 ;;; tests/new-setf.lt ends here.

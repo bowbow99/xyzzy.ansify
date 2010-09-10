@@ -190,6 +190,17 @@ to rely on old name.
 
 
 ;;;
+;;; * Setf Expander for VALUES
+(define-setf-expander values (&rest places)
+  (let ((stores (%n-gensyms (length places))))
+    (values nil nil stores
+            `(values ,@(mapcar (lambda (place store)
+                                 `(setf ,place ,store))
+                         places
+                         stores))
+            `(values ,@stores))))
+
+;;;
 ;;; * fdefinition
 ;;;
 ;;; http://www.lispworks.com/documentation/lw50/CLHS/Body/f_fdefin.htm
