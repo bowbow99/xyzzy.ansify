@@ -9,8 +9,8 @@ type: :task
 component: xyzzy.common-lisp
 release: "0.1"
 reporter: bowbow99 <bowbow99@gmail.com>
-status: :unstarted
-disposition: 
+status: :closed
+disposition: :fixed
 creation_time: 2010-09-12 01:47:51.345875 Z
 references: []
 
@@ -19,4 +19,8 @@ log_events:
 - - 2010-09-12 01:47:53.234875 Z
   - bowbow99 <bowbow99@gmail.com>
   - created
+  - ""
+- - 2010-09-12 07:43:50.079000 Z
+  - bowbow99 <bowbow99@gmail.com>
+  - closed with disposition fixed
   - ""

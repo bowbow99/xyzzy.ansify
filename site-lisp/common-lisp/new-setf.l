@@ -134,15 +134,14 @@ to rely on old name.
              (get-setf-expansion expansion env)))
           (t
            (let ((vars (%n-gensyms (length (cdr form))))
-                 (store (gensym)))
-             ;; FIXME: New setf expands into a form which invokes so-called
-             ;; 'setf function', no matter it is exist or not.
-             ;; This result in a "undefined function" error when the setf
-             ;; function isn't defined, but it is better to be an error that
-             ;; tells something like "there's no way to setf to this place.".
+                 (store (gensym))
+                 (setf-fn (%function-symbol `(setf ,(car form)))))
              (values vars (cdr form) (list store)
-                     `(funcall ',(%function-symbol `(setf ,(car form)))
-                               ,store ,@vars)
+                     `(if (fboundp ',setf-fn)
+                        (funcall ',setf-fn ,store ,@vars)
+                        (error 'simple-error
+                               :format-string "setf expander ‚à setf function ‚à–³‚¢‚Å‚·: ~S"
+                               :format-arguments '(,form)))
                      `(,(car form) ,@vars))))
           ))
 
@@ -197,7 +196,6 @@ to rely on old name.
         ((endp (cddr args))
          (expand-setf-1 (car args) (cadr args) env))
         (t (cons 'progn (expand-setf args env)))))
-
 
 ;;;
 ;;; * Setf Expander for VALUES
