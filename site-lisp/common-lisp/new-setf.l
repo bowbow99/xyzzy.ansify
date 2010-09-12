@@ -145,6 +145,33 @@ to rely on old name.
                      `(,(car form) ,@vars))))
           ))
 
+;; TODO: Take care of symbol-macro
+;; Current implementation of OPTIMIZE-SETF-EXPANSION does *NOT* care about
+;; symbol-macros establish by pseudo SYMBOL-MACROLET, so possibly implant
+;; those symbol-macros into store-form or access-form which could result in
+;; multiple evaluation and/or evaluation in wrong order.
+;; To fix this issue, I need to add a way to check a symbol is a symbol-macro
+;; or not, at macro expansion time.
+(defun optimize-setf-expansion (vars vals stores store-form access-form newvalues)
+  (let ((new-vars '())
+        (new-vals '()))
+    (do ((var vars (cdr var))
+         (val vals (cdr val)))
+        ((endp var))
+      (cond ((or (constantp (car val))
+                 (symbolp (car val)))
+             (setq store-form (nsubst (car val) (car var) store-form :test #'eq))
+             (setq access-form (nsubst (car val) (car var) access-form :test #'eq)))
+            (t
+             (push (car var) new-vars)
+             (push (car val) new-vals))))
+    (if (and (= (length stores) 1)
+             (or (symbolp newvalues)
+                 (constantp newvalues)))
+      (values new-vars new-vals nil
+              (nsubst newvalues (car stores) store-form)
+              access-form nil)
+      (values new-vars new-vals stores store-form access-form newvalues))))
 
 (defun expand-setf-1 (place newvalue env)
   (if (atom place)
@@ -161,11 +188,10 @@ to rely on old name.
           `(,f ,@(cdr place) ,newvalue)))
       (multiple-value-bind (vars vals stores store-form access-form)
           (get-setf-expansion place env)
-        ;(multiple-value-setq
-        ;    (vars vals stores store-form access-form newvalue)
-        ;    ;; should be named OPTIMIZE-SETF-EXPANSION
-        ;    (optimize-setf-method vars vals stores store-form
-        ;                          access-form (list newvalue)))
+        (multiple-value-setq
+            (vars vals stores store-form access-form newvalue)
+            (optimize-setf-expansion vars vals stores store-form
+                                     access-form newvalue))
         (let ((vars (append vars stores))
               (vals (append vals (if (= (length stores) 1)
                                    (list newvalue)
