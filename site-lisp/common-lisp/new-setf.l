@@ -274,7 +274,34 @@ to rely on old name.
 ;;;
 ;;; * Macros using setf expansion
 
-(defmacro cl::psetf (&rest args) `(lisp:psetf ,@args))
+(defmacro cl::psetf (&rest args &environment env)
+  (cond ((endp args)
+         'nil)
+        ((endp (cdr args))
+         (error "不正な psetf フォームです: (psetf~{ ~S~})" args))
+        ((endp (cddr args))
+         `(progn
+            ,(expand-setf-1 (car args) (cadr args) env)
+            nil))
+        (t
+         (do ((x args (cddr x))
+              (bindings nil)
+              (store-forms nil))
+             ((endp x)
+              `(let* ,bindings
+                 ,@(nreverse store-forms)
+                 nil))
+           (when (endp (cdr x))
+             (error "不正な psetf フォームです: (psetf ~{ ~S~})" args))
+           (multiple-value-bind (vars vals stores store-form access-form)
+               (get-setf-expansion (car x) env)
+             (lisp:push store-form store-forms)
+             (setq bindings
+                   (nconc bindings
+                          (mapcar #'list
+                            (append vars stores)
+                            (append vals (list (cadr x)))))))))))
+
 (defmacro cl::shiftf (&rest args) `(lisp:shiftf ,@args))
 (defmacro cl::rotatef (&rest args) `(lisp:rotatef ,@args))
 (defmacro cl::push (&rest args) `(lisp:push ,@args))
