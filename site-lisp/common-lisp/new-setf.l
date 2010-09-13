@@ -50,7 +50,13 @@ to rely on old name.
 
 (shadowing-export '(setf
                     fboundp
-                    fmakunbound))
+                    fmakunbound
+                    psetf
+                    shiftf
+                    rotatef
+                    push
+                    pushnew
+                    pop))
 
 ;;;;
 ;;;; * Utilities
@@ -68,7 +74,7 @@ to rely on old name.
 (defun %n-gensyms (n)
   "Return list of gensym."
   (let ((ret nil))
-    (dotimes (i n ret) (push (gensym) ret))))
+    (dotimes (i n ret) (lisp:push (gensym) ret))))
 
 
 (defun %setf-function-name-p (name)
@@ -163,8 +169,8 @@ to rely on old name.
              (setq store-form (nsubst (car val) (car var) store-form :test #'eq))
              (setq access-form (nsubst (car val) (car var) access-form :test #'eq)))
             (t
-             (push (car var) new-vars)
-             (push (car val) new-vals))))
+             (lisp:push (car var) new-vars)
+             (lisp:push (car val) new-vals))))
     (if (and (= (length stores) 1)
              (or (symbolp newvalues)
                  (constantp newvalues)))
