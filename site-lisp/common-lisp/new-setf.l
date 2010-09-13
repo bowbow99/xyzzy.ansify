@@ -271,6 +271,15 @@ to rely on old name.
   name)
 
 
+;;;
+;;; * Macros using setf expansion
+
+(defmacro cl::psetf (&rest args) `(lisp:psetf ,@args))
+(defmacro cl::shiftf (&rest args) `(lisp:shiftf ,@args))
+(defmacro cl::rotatef (&rest args) `(lisp:rotatef ,@args))
+(defmacro cl::push (&rest args) `(lisp:push ,@args))
+(defmacro cl::pushnew (&rest args) `(lisp:pushnew ,@args))
+(defmacro cl::pop (&rest args) `(lisp:pop ,@args))
 
 (provide "common-lisp/new-setf")
 
