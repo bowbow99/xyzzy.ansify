@@ -39,7 +39,7 @@
                   ((and (consp place)
                         (eq (car place) 'values))
                    `(progn ,@(mapcar (lambda (var)
-                                       `(makunbound ,var))
+                                       `(makunbound ',var))
                                (cdr place))))
                   )
            (setf ,place (values-list ,$old)))))))
