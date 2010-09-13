@@ -214,7 +214,7 @@
     (assert-eql 2 a)
     (assert-eql 3 b)
     (assert-eql 3 c))
-  (let ((list '(1 2 3)))
+  (let ((list (list 1 2 3)))
     (assert-eql 1 (shiftf (first list) (second list) (third list)))
     (assert-equal '(2 3 3) list))
   (reset-example '((:foo . 1) (:bar . 2) (:baz . 3)))
@@ -238,7 +238,7 @@
 
 
 (define-test new-setf-push
-  (let ((list '(1 2 3)))
+  (let ((list (list 1 2 3)))
     (assert-equal '(foo 1 2 3) (push 'foo list))
     (assert-equal '(foo 1 2 3) list))
   (reset-example '((:list . (foo bar baz))))
@@ -246,7 +246,7 @@
   (assert-equal '(hoge foo bar baz) (example :list)))
 
 (define-test new-setf-pushnew
-  (let ((list '(1 2 3)))
+  (let ((list (list 1 2 3)))
     (assert-equal '(0 1 2 3) (pushnew 0 list))
     (assert-equal '(0 1 2 3) list)
     (assert-equal '(0 1 2 3) (pushnew 2 list))
@@ -259,7 +259,7 @@
   )
 
 (define-test new-setf-pop
-  (let ((list '(0 1 2 3)))
+  (let ((list (list 0 1 2 3)))
     (assert-eql 0 (pop list))
     (assert-equal '(1 2 3) list)
     (assert-eql 1 (pop list))
