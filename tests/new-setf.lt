@@ -183,6 +183,50 @@
   (%assert-setf (example :foo) "This is FOO")
   (%assert-setf (example :bar) "This is BAR"))
 
+;;;
+;;; * Macros using SETF
 
+(define-test new-setf-psetf
+  (let ((a 1) (b 2) (c 3))
+    (assert-eql nil (psetf a (1+ c)  b (1+ a)  c (1+ b)))
+    (assert-eql 4 a)
+    (assert-eql 2 b)
+    (assert-eql 3 c)))
+
+(define-test new-setf-shiftf
+  (let ((a 1) (b 2) (c 3))
+    (assert-eql 1 (shiftf a b c))
+    (assert-eql 2 a)
+    (assert-eql 3 b)
+    (assert-eql 3 c))
+  (let ((list '(1 2 3)))
+    (assert-eql 1 (shiftf (first list) (second list) (third list)))
+    (assert-equal '(2 3 3) list)))
+
+(define-test new-setf-rotatef
+  (let ((a 1) (b 2) (c 3))
+    (assert-eql 1 (rotatef a b c))
+    (assert-eql 2 a)
+    (assert-eql 3 b)
+    (assert-eql 1 c)))
+
+(define-test new-setf-push
+  (let ((list '(1 2 3)))
+    (assert-equal '(foo 1 2 3) (push 'foo list))
+    (assert-equal '(foo 1 2 3) list)))
+
+(define-test new-setf-pushnew
+  (let ((list '(1 2 3)))
+    (assert-equal '(0 1 2 3) (pushnew 0 list))
+    (assert-equal '(0 1 2 3) list)
+    (assert-equal '(0 1 2 3) (pushnew 2 list))
+    (assert-equal '(0 1 2 3) list)))
+
+(define-test new-setf-pop
+  (let ((list '(0 1 2 3)))
+    (assert-eql 0 (pop list))
+    (assert-equal '(1 2 3) list)
+    (assert-eql 1 (pop list))
+    (assert-equal '(2 3) list)))
 
 ;;; tests/new-setf.lt ends here.
