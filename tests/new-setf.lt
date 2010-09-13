@@ -179,6 +179,13 @@
 (defun (setf example) (value key)
   (setf (gethash key *example-table*) value))
 
+(defun reset-example (&optional alist)
+  (clrhash *example-table*)
+  (when alist
+    (dolist (x alist)
+      (setf (gethash (car x) *example-table*) (cdr x))))
+  t)
+
 (define-test new-setf-setf-function
   (%assert-setf (example :foo) "This is FOO")
   (%assert-setf (example :bar) "This is BAR"))
@@ -191,7 +198,15 @@
     (assert-eql nil (psetf a (1+ c)  b (1+ a)  c (1+ b)))
     (assert-eql 4 a)
     (assert-eql 2 b)
-    (assert-eql 3 c)))
+    (assert-eql 3 c))
+  (reset-example '((:foo . 1) (:bar . 2) (:baz . 3)))
+  (assert-eql nil (psetf (example :foo) (example :bar)
+                         (example :bar) (example :baz)
+                         (example :baz) (example :foo)))
+  (assert-eql 2 (example :foo))
+  (assert-eql 3 (example :bar))
+  (assert-eql 1 (example :baz))
+  )
 
 (define-test new-setf-shiftf
   (let ((a 1) (b 2) (c 3))
@@ -201,32 +216,59 @@
     (assert-eql 3 c))
   (let ((list '(1 2 3)))
     (assert-eql 1 (shiftf (first list) (second list) (third list)))
-    (assert-equal '(2 3 3) list)))
+    (assert-equal '(2 3 3) list))
+  (reset-example '((:foo . 1) (:bar . 2) (:baz . 3)))
+  (assert-eql 1 (shiftf (example :foo) (example :bar) (example :baz)))
+  (assert-eql 2 (example :foo))
+  (assert-eql 3 (example :bar))
+  (assert-eql 3 (example :baz))
+  )
 
 (define-test new-setf-rotatef
   (let ((a 1) (b 2) (c 3))
     (assert-eql 1 (rotatef a b c))
     (assert-eql 2 a)
     (assert-eql 3 b)
-    (assert-eql 1 c)))
+    (assert-eql 1 c))
+  (reset-example '((:foo . 1) (:bar . 2) (:baz . 3)))
+  (assert-eql 1 (rotatef (example :foo) (example :bar) (example :baz)))
+  (assert-eql 2 (example :foo))
+  (assert-eql 3 (example :bar))
+  (assert-eql 1 (example :baz)))
+
 
 (define-test new-setf-push
   (let ((list '(1 2 3)))
     (assert-equal '(foo 1 2 3) (push 'foo list))
-    (assert-equal '(foo 1 2 3) list)))
+    (assert-equal '(foo 1 2 3) list))
+  (reset-example '((:list . (foo bar baz))))
+  (assert-equal '(hoge foo bar baz) (push 'hoge (example :list)))
+  (assert-equal '(hoge foo bar baz) (example :list)))
 
 (define-test new-setf-pushnew
   (let ((list '(1 2 3)))
     (assert-equal '(0 1 2 3) (pushnew 0 list))
     (assert-equal '(0 1 2 3) list)
     (assert-equal '(0 1 2 3) (pushnew 2 list))
-    (assert-equal '(0 1 2 3) list)))
+    (assert-equal '(0 1 2 3) list))
+  (reset-example '((:list . (foo bar baz))))
+  (assert-equal '(hoge foo bar baz) (pushnew 'hoge (example :list)))
+  (assert-equal '(hoge foo bar baz) (example :list))
+  (assert-equal '(hoge foo bar baz) (pushnew 'foo (example :list)))
+  (assert-equal '(hoge foo bar baz) (example :list))
+  )
 
 (define-test new-setf-pop
   (let ((list '(0 1 2 3)))
     (assert-eql 0 (pop list))
     (assert-equal '(1 2 3) list)
     (assert-eql 1 (pop list))
-    (assert-equal '(2 3) list)))
+    (assert-equal '(2 3) list))
+  (reset-example '((:list '(foo bar baz))))
+  (assert-eql   'foo       (pop (example :list)))
+  (assert-equal '(bar baz) (example :list))
+  (assert-eql   'bar       (pop (example :list)))
+  (assert-equal '(baz)     (example :list))
+  )
 
 ;;; tests/new-setf.lt ends here.
