@@ -7,8 +7,8 @@ type: :task
 component: xyzzy.common-lisp
 release: "0.1"
 reporter: bowbow99 <bowbow99@gmail.com>
-status: :unstarted
-disposition: 
+status: :closed
+disposition: :fixed
 creation_time: 2010-09-12 01:42:10.137125 Z
 references: []
 
@@ -18,3 +18,7 @@ log_events:
   - bowbow99 <bowbow99@gmail.com>
   - created
   - see lisp/setf.l for which macro need to be.
+- - 2010-09-15 05:24:44.780500 Z
+  - bowbow99 <bowbow99@gmail.com>
+  - closed with disposition fixed
+  - ""
