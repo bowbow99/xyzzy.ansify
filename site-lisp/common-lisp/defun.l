@@ -6,7 +6,7 @@
 ;;;
 
 (require "common-lisp/package")
-(require "common-lisp/setf-function-name")
+(require "common-lisp/new-setf")
 
 (in-package :common-lisp)
 
