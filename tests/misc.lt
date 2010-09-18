@@ -1,0 +1,26 @@
+;;; -*- mode: lisp; package: cl.test.misc -*-
+;;;
+;;; tests/misc.lt
+;;;
+
+(defpackage :cl.test.misc)
+(in-package :cl.test.misc)
+
+(require "cl")
+(cl::install)
+
+(require "lisp-unit")
+(use-package :lisp-unit)
+
+(remove-all-tests)
+
+;;;
+;;; * Function constantly
+(define-test constantly
+  (dolist (x '(1 2 3))
+    (let ((fn (constantly x)))
+      (assert-type function fn)
+      (assert-eql x (funcall fn) x)
+      (assert-eql x (funcall fn 1 2 3)))))
+
+;;; tests/misc.lt ends here.

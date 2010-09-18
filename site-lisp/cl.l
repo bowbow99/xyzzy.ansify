@@ -15,6 +15,7 @@
 (require "common-lisp/new-setf")
 
 (require "common-lisp/pprint")
+(require "common-lisp/misc")
 (provide "cl")
 
 ;;; cl.l ends here.
