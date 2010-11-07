@@ -179,6 +179,8 @@
    (princ operator) (SPC)
    (WRAP
     (dolist (binding bindings)
+      (unless (eql binding (car bindings))
+        (LFD))
       (if (symbolp binding)
         (prin1 binding)
         (WRAP
