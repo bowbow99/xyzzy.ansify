@@ -1,2 +1,11 @@
+20xx-xx-xx  TODO
+	* setf-values
+	* symbol-macrolet
+	* condition-restart
+	* typespec+
+	* typecase
+	* destructuring-bind
+
+
 2011-08-20  bowbow99  <bowbow99@gmail.com>
 	* やり直し開始
