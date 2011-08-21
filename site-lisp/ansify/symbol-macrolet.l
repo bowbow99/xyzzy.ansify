@@ -104,6 +104,8 @@
          ,@(sm.expand-body (cddr form) sym/expansions env)))))
 
 (defun sm.expand-mv-setq (form sym/expansions &optional env)
+  (unless (= (length form) 3)
+    (error "不正な multiple-value-setq フォームです: ~S" form))
   (let ((places (mapcar (lambda (x)
                           (sm.expand-atom x sym/expansions env))
                   (second form)))
