@@ -2,27 +2,12 @@
 ;;;
 ;;; ansify/symbol-macrolet.l --- pseudo `symbol-macrolet` implemented as macro
 ;;;
-;;; Author: bowbow99 <bowbow99@gmail.com>
-;;; License: MIT (see COPYING)
+;;; Author:    bowbow99  <bowbow99@gmail.com>
+;;; License:   MIT (see COPYING)
 ;;;
+;;; This file is part of xyzzy extension "ansify".
 
 ;;; Code:
-
-#|
-(require "setf-values")
-
-(defpackage :symbol-macrolet
-  (:use :lisp))
-
-(in-package :symbol-macrolet)
-
-(defconstant *version* "0.01.06")
-
-(eval-when (:load-toplevel :compile-toplevel :execute)
-  (export (mapcar (lambda (name) (intern (string name) :lisp))
-            '(#:symbol-macrolet))
-          :lisp))
-|#
 
 (eval-when (:execute :compile-toplevel :load-toplevel)
   (require "ansify/base")
@@ -35,7 +20,6 @@
 
 ;;;;
 ;;;; * utilities
-;;;;
 
 (defun sm.merge-env (env type local-defs)
   "Return an environment object which contains everything in ENV plus
