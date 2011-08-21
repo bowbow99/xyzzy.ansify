@@ -110,7 +110,11 @@
                           (sm.expand-atom x sym/expansions env))
                   (second form)))
         (new-values-form (third form))
-        (expansions (list nil nil nil nil nil)))
+        (expansions
+          ;; NOTE: In short, holds (temp-vars val-forms store-vars store-forms access-forms).
+          ;; See [CLHS: Section 5.1.1.2 Setf Expansions] for more details.
+          ;; - http://www.lispworks.com/documentation/HyperSpec/Body/05_aab.htm
+          (list nil nil nil nil nil)))
     (dolist (place places)
       (setf expansions
             (mapcar #'cons
