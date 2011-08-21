@@ -120,10 +120,24 @@
          ,@(sm.expand-body (cddr form) sym/expansions env)))))
 
 (defun sm.expand-mv-setq (form sym/expansions &optional env)
-  `(setf (values ,@(mapcar (lambda (sym)
-                             (sm.expand-atom sym sym/expansions env))
-                     (cadr form)))
-         ,(sm.expand-form (caddr form) sym/expansions env)))
+  (let ((places (mapcar (lambda (x)
+                          (sm.expand-atom x sym/expansions env))
+                  (second form)))
+        (new-values-form (third form))
+        (expansions (list nil nil nil nil nil)))
+    (dolist (place places)
+      (setf expansions
+            (mapcar #'cons
+              (multiple-value-list (get-setf-expansion place env))
+              expansions)))
+    (setf expansions (mapcar #'nreverse expansions))
+    (let ((temp-vars (apply #'append (first expansions)))
+          (val-forms (apply #'append (second expansions))))
+      `(multiple-value-bind (,@(mapcar #'car (third expansions)))
+           ,new-values-form
+         (let* (,@(mapcar #'list temp-vars val-forms))
+           ,@(fourth expansions)
+           ,(caar (third expansions)))))))
 
 (defun sm.expand-mv-bind (form sym/expansions &optional env)
   (let ((syms (cadr form))
