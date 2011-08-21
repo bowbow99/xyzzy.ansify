@@ -71,7 +71,7 @@
 (setf (get 'aif 'ed:lisp-indent-hook) 1
       (get 'awhen 'ed:lisp-indent-hook) 1
       (get 'awhile 'ed:lisp-indent-hook) 1
-      (get 'acond 'ed:lisp-indent-hook) 0)
+      )
 
 (provide "ansify/base/anaph")
 ;;; ansify/base/anaph.l ends here.
