@@ -1,6 +1,11 @@
 20xx-xx-xx  TODO
 	* setf-values
-	* destructuring-bind
+	* autoload 化
+	  - destructuring-bind
+	    - %assert-keyword-list を何とかする必要あり
+	  - symbol-macrolet
+	  - typecase family?
+
 
 2011-08-22  bowbow99  <bowbow99@gmail.com>
 	* typespec+ を取り込み
@@ -12,6 +17,8 @@
 	- condition-restart-support.l は（今のところ）取り込んでない
 
 	* typecase を取り込み
+
+	* destructuring-bind を取り込み
 
 
 2011-08-21  bowbow99  <bowbow99@gmail.com>
