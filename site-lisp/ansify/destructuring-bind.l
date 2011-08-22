@@ -14,10 +14,6 @@
 
 (in-package :ansify)
 
-(shadowing-export '(#:destructuring-bind
-                    #:&allow-other-keys
-                    ))
-
 ;;;;
 ;;;; * Utilities
 

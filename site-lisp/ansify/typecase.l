@@ -15,12 +15,6 @@
 
 (in-package :ansify)
 
-(shadowing-export '(#:typecase
-                    #:etypecase
-                    #:ctypecase
-                    #:otherwise
-                    ))
-
 ;;; Indentation settings
 #+xyzzy
 (mapc (lambda (name)
