@@ -25,6 +25,7 @@
 (require-when "typespec+")
 (require-when "restart")
 (require-when "assertion")
+(require-when "typecase")
 
 (provide "ansify")
 ;;; ansify.l ends here.

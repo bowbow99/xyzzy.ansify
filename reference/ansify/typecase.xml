@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE book [
+<!ELEMENT book (chapter*)>
+<!ELEMENT chapter (title,type,arguments?,package?,description,seealso*,link*,section,file?)>
+<!ELEMENT title (#PCDATA)>
+<!ELEMENT type (#PCDATA)>
+<!ELEMENT arguments (#PCDATA)>
+<!ELEMENT package (#PCDATA)>
+<!ELEMENT description (#PCDATA)>
+<!ELEMENT seealso (#PCDATA)>
+<!ELEMENT link (#PCDATA)>
+<!ELEMENT section (#PCDATA)>
+<!ELEMENT file (#PCDATA)>
+]>
+<!-- License: MIT (see COPYING.mit) -->
+<book>
+
+<chapter>
+<title>typecase</title>
+<type>Macro</type>
+<arguments>typecase KEY-FORM NORMAL-CLAUSE* {OTHERWISE-CLAUSE}</arguments>
+<package>ansify</package>
+<description>
+KEY-FORM の値の型に応じて処理を振り分けます。
+
+  (typecase KEY-FORM
+    (TYPESPEC-1 処理..)
+    (TYPESPEC-2 処理..)
+      ...
+    (otherwise 処理..))
+
+引数:
+  KEY-FORM         : 任意の式
+  NORMAL-CLAUSE    : (TYPESPEC FORM*)
+                     ※TYPESPEC は typep で使用できるアレ
+  OTHERWISE-CLAUSE : (t FORM*) もしくは (otherwise FORM*)
+
+まず KEY-FORM を評価し、その値をキーとします。
+先頭から順に NORMAL-CLAUSE を見ていって、キーが TYPESPEC の型である NORMAL-
+CLAUSE が見つかれば、その FORM* を実行した結果を戻り値として返します。
+もし、いずれの NORMAL-CLAUSE にも該当しない場合には、OTHERWINE-CLAUSE があ
+ればその FORM* を評価してその戻り値を、無ければ nil を返します。
+
+使用例:
+  (typecase 33
+    (string "文字列です")
+    (symbol "シンボルです")
+    (integer "整数です")
+    (otherwise "よくわかりません。。。"))
+  =&gt; "整数です"
+  
+  (typecase 'foo
+    (string "文字列です")
+    (symbol "シンボルです")
+    (integer "整数です")
+    (otherwise "よくわかりません。。。"))
+  =&gt; "シンボルです"
+  
+  (typecase #\c
+    (string "文字列です")
+    (symbol "シンボルです")
+    (integer "整数です")
+    (otherwise "よくわかりません。。。"))
+  =&gt; "よくわかりません。。。"
+
+</description>
+<seealso>typep</seealso>
+<seealso>etypecase</seealso>
+<seealso>ctypecase</seealso>
+<link>[CLHS: Macro TYPECASE, CTYPECASE, ETYPECASE] http://www.lispworks.com/documentation/HyperSpec/Body/m_tpcase.htm</link>
+<section>制御構造</section>
+<file>ansify/typecase.l</file>
+</chapter>
+
+
+<chapter>
+<title>etypecase</title>
+<type>Macro</type>
+<arguments>etypecase KEY-FORM NORMAL-CLAUSE*</arguments>
+<package>ansify</package>
+<description>
+typecase とほぼ同じですが、どの NORMAL-CLAUSE にも該当しない場合には
+type-error を投げます。
+
+  (etypecase KEY-FORM
+    (TYPESPEC-1 処理..)
+    (TYPESPEC-2 処理..)
+    ...)
+
+引数:
+  KEY-FORM      : 任意の式
+  NORMAL-CLAUSE : (TYPESPEC FORM*)
+                  ※TYPESPEC は typep で使用できるアレ
+
+使用例:
+  (etypecase 3
+    (string "文字列です")
+    (symbol "シンボルです"))
+  ; 不正なデータ型です: 3: (or string symbol)
+
+</description>
+<seealso>typep</seealso>
+<seealso>typecase</seealso>
+<seealso>ctypecase</seealso>
+<link>[CLHS: Macro TYPECASE, CTYPECASE, ETYPECASE] http://www.lispworks.com/documentation/HyperSpec/Body/m_tpcase.htm</link>
+<section>制御構造</section>
+<file>ansify/typecase.l</file>
+</chapter>
+
+
+<chapter>
+<title>ctypecase</title>
+<type>Macro</type>
+<arguments>ctypecase KEY-PLACE NORMAL-CLAUSE*</arguments>
+<package>ansify</package>
+<description>
+etypecase とほぼ同じです。どの NORMAL-CLAUSE にも該当しない場合には type-
+error を投げますが、store-value 再起動から KEY-PLACE の値を修正して処理を
+続行させることができます。
+※このため KEY-PLACE は setf 可能な汎変数でなければなりません。
+
+  (ctypecase KEY-PLACE
+    (TYPESPEC-1 処理..)
+    (TYPESPEC-2 処理..)
+    ...)
+
+引数:
+  KEY-FORM      : 任意の汎変数（setf 可能な式）
+  NORMAL-CLAUSE : (TYPESPEC FORM*)
+                  ※TYPESPEC は typep で使用できるアレ
+
+使用例:
+  ;; 1. x を 4 にしておいて
+  (setq x 4)
+  =&gt; 4
+  
+  ;; 2. ctypecase のエラーから store-value すると
+  (ctypecase x
+    (string "文字列です")
+    (symbol "シンボルです"))
+  ; 不正なデータ型です: 4: (or string symbol)
+  ;
+  ; 再起動を選んでください:
+  ;   0 [abort   ] 処理を中止する
+  ;   1 [store-value] `x' の値を修正する
+  ; 再起動> 1
+  ; `x' の値> 'foo
+  =&gt; "シンボルです"
+  
+  ;; 3. x の値が変わってます。
+  x
+  =&gt; foo
+
+</description>
+<seealso>typep</seealso>
+<seealso>typecase</seealso>
+<seealso>etypecase</seealso>
+<seealso>restart-case</seealso>
+<link>[CLHS: Macro TYPECASE, CTYPECASE, ETYPECASE] http://www.lispworks.com/documentation/HyperSpec/Body/m_tpcase.htm</link>
+<section>制御構造</section>
+<file>ansify/typecase.l</file>
+</chapter>
+
+</book>

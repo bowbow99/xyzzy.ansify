@@ -1,6 +1,5 @@
 20xx-xx-xx  TODO
 	* setf-values
-	* typecase
 	* destructuring-bind
 
 2011-08-22  bowbow99  <bowbow99@gmail.com>
@@ -11,6 +10,8 @@
 	  - condition-restart.l -> ansify/restart.l
 	  - assertions.l -> ansify/assertion.l
 	- condition-restart-support.l は（今のところ）取り込んでない
+
+	* typecase を取り込み
 
 
 2011-08-21  bowbow99  <bowbow99@gmail.com>
