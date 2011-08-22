@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE book [
+<!ELEMENT book (chapter*)>
+<!ELEMENT chapter (title,type,arguments?,package?,description,seealso*,link*,section,file?)>
+<!ELEMENT title (#PCDATA)>
+<!ELEMENT type (#PCDATA)>
+<!ELEMENT arguments (#PCDATA)>
+<!ELEMENT package (#PCDATA)>
+<!ELEMENT description (#PCDATA)>
+<!ELEMENT seealso (#PCDATA)>
+<!ELEMENT link (#PCDATA)>
+<!ELEMENT section (#PCDATA)>
+<!ELEMENT file (#PCDATA)>
+]>
+<!-- License: MIT/X (see COPYING) -->
+<!--
+  へなちょこリファレンスと合わせて、info-modoki-mode とかで使えるリファレンス
+  を作る方法:
+  
+  必要なもの
+  - xy-reference
+  - reference.xml
+  
+  ;;; *scratch* とかで
+  (require :xy-reference)
+  (xy-refernec:2txt)
+  
+  すると ${XYZZY}/etc/reference.txt が生成されるので、info-modoki-mode の
+  imm-refer で "symbol-macrolet" が見れるようになるはず。
+  -->
+<book>
+
+<chapter>
+<title>symbol-macrolet</title>
+<type>Macro</type>
+<arguments>symbol-macrolet ((SYMBOL EXPANTION)*) FORM*</arguments>
+<package>ansify</package>
+<description>
+FORM* 内に現れる変数として参照される SYMBOL を EXPANTION に展開して FORM*
+を評価します。
+
+引数:
+  SYMBOL    展開されるシンボル
+  EXPANTION 展開後の式
+
+使用例:
+  (setq list '(1 2 3))
+  =&gt; (1 2 3)
+  
+  (symbol-macrolet ((1st (first list))
+                    (2nd (second list))
+                    (3rd (third list)))
+    (+ 1st 2nd 3rd))
+  ;; (+ (first list) (second list) (third list))
+  =&gt; 6
+
+シンボルマクロが let などによって別の束縛を持つと、そのシンボルは展開され
+なくなります。
+
+  (symbol-macrolet ((x 'foo))
+    (list x (let ((x 'bar)) x)))
+  ;; (list 'foo (let ((x 'bar)) x))
+  =&gt; (foo bar)
+
+シンボルマクロに対して setq などのシンボルを値に束縛する（シンボルに値を
+代入する）式は、同等の setf に置き換えられます。
+
+  (setq list '(1 2 3))
+  =&gt; (1 2 3)
+
+  (symbol-macrolet ((1st (first list))
+                    (2nd (second list))
+                    (3rd (third list)))
+    (setq 1st "foo"
+          2nd "bar"
+          3rd "baz"))
+  ;; (setf (first list) "foo" ...)
+  =&gt; "baz"
+
+  list
+  =&gt; ("foo" "bar" "baz")
+</description>
+<seealso></seealso>
+<link>[CLHS symbol-macrolet] http://www.lispworks.com/documentation/lw51/CLHS/Body/s_symbol.htm</link>
+<section>マクロ</section>
+<file>ansify/symbol-macrolet.l</file>
+</chapter>
+
+</book>

@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE book [
+<!ELEMENT book (chapter*)>
+<!ELEMENT chapter (title,type,arguments?,package?,description,seealso*,link*,section,file?)>
+<!ELEMENT title (#PCDATA)>
+<!ELEMENT type (#PCDATA)>
+<!ELEMENT arguments (#PCDATA)>
+<!ELEMENT package (#PCDATA)>
+<!ELEMENT description (#PCDATA)>
+<!ELEMENT seealso (#PCDATA)>
+<!ELEMENT link (#PCDATA)>
+<!ELEMENT section (#PCDATA)>
+<!ELEMENT file (#PCDATA)>
+]>
+<!--  License: MIT (see COPYING.mit)  -->
+<!--
+  へなちょこリファレンスと合わせて、info-modoki-mode とかで使えるリファ
+  レンスを作る方法:
+  
+  必要なもの
+  - xy-reference
+  - reference.xml
+  
+  ;;; *scratch* とかで
+  (require :xy-reference)
+  (xy-refernec:2txt)
+  
+  すると ${XYZZY}/etc/reference.txt が生成されるので、info-modoki-mode
+  から見れるようになるはず。
+  -->
+<book>
+
+
+<chapter>
+<title>ansify::*warn-on-undefined-typespec*</title>
+<type>Variable</type>
+<package>ansify</package>
+<description>
+`ansify::typep` や `ansify::optimize-type-check` で未定義の型指定子が与えられた
+場合に警告するかを設定します。
+</description>
+<seealso>typep</seealso>
+<link></link>
+<section>データ型</section>
+<file>ansify/typespec+.l</file>
+</chapter>
+
+<chapter>
+<title>ansify::typepred</title>
+<type>Macro</type>
+<arguments>typepred  TYPESPEC</arguments>
+<package>ansify+</package>
+<description>
+受け取ったオブジェクトが TYPESPEC を満たすか判別する関数を返します。
+
+引数:
+  TYPESPEC : 型指定子
+
+使用例:
+  (ansify::typepred string)
+  =&gt; #&lt;function: stringp&gt;
+  
+  (ansify::typepred (or string symbol))
+  ;; == (lambda (#1=#:object) (or (stringp #1#) (symbolp #1#)))
+  =&gt; #&lt;lexical-closure: (anonymous)&gt;
+  
+  (remove-if-not (ansify::typepred (or function
+                                       (and symbol (satisfies fboundp))))
+    (list 'list 'symbol (lambda (x) x) (typepred fixnum)))
+  =&gt; (list #&lt;lexical-closure: (anonymous)&gt; #&lt;function: *fixnump&gt;)
+
+</description>
+<seealso>typep</seealso>
+<section>関数</section>
+<file>ansify/typespec+.l</file>
+</chapter>
+
+<chapter>
+<title>ansify::optimize-type-check</title>
+<type>Function</type>
+<arguments>optimize-type-check OBJECT-FORM TYPESPEC</arguments>
+<package>ansify</package>
+<description>
+OBJECT-FORM の値が TYPESPEC の型かどうか判断する式を作って返します。
+
+引数:
+  OBJECT-FORM : 型チェックの対象となる値に評価される式
+  TYPESPEC    : 型指定子
+
+check-type のような任意の型指定子を利用するマクロを定義する場合、typep
+を呼び出す式に展開することで型チェックをできまが、typep は比較的遅いので
+パフォーマンス的にちょっと・・・という場合に使います。
+
+TYPESPEC には deftype で定義した型も使えます。
+
+
+使用例:
+  (ansify::optimize-type-check 'X '(string 3))
+  =&gt; (and (stringp X)
+          (= (array-dimension X 0) 3))
+  
+  (ansify::optimize-type-check '(hoge-foo x y) '(or string symbol))
+  =&gt; (let ((#1=#:object (hoge-foo x y)))
+       (or (stringp #1#)
+           (symbolp #1#)))
+  
+  (ansify::optimize-type-check '(foo x y z) 'unknown-type)
+  ; Warning: type specifier じゃないみたい: unknown-type
+  =&gt; (typep (foo x y z) 'unknown-type)
+
+
+  ;;; マクロで使う例
+  (defmacro my-check-type (place typespec)
+    `(let ((#1=#:object ,place))
+       (unless ,(ansify::optimize-type-check '#1# typespec)
+         (error si::check-type-error
+                :datum #1#
+                :expected-type ',typespec
+                :place ',place))))
+  =&gt; my-check-type
+  
+  (macroexpand-1 `(my-check-type foo (or string symbol)))
+  =&gt; (let ((#1=#:object foo))
+       (unless (or (stringp #1#)
+                   (symbolp #1#))
+         (error system::check-type-error
+                :datum #1#
+                :expected-type '(or string symbol)
+                :place 'foo)))
+  =&gt; t
+
+</description>
+<seealso>typep</seealso>
+<link></link>
+<section>データ型</section>
+<file>ansify/typespec+.l</file>
+</chapter>
+
+</book>
