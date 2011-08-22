@@ -1,0 +1,703 @@
+;;; -*- mode: lisp; package: test.ansify.restart -*-
+;;;
+;;; tests/restart.lt
+;;;
+
+(require "ansify/restart")
+(require "ansify/typespec+")
+(require "lisp-unit")
+
+(defpackage :test.ansify.restart
+  (:use :lisp :lisp-unit))
+
+(in-package :test.ansify.restart)
+
+(ansify::install)
+
+(remove-all-tests :test.ansify.restart)
+
+;;; NOTE: Replace function definition of `lisp:typep` with ansify's one
+;;; to make it accept typespec defined via `deftype`.
+;;; In lisp-unit, `assert-type` using `lisp:typep` but it isn't capable
+;;; of such typespec (unless old "typespec+" is installed).
+(unless (or (eql #'lisp:typep #'ansify::typep)
+            (modulep "typespec+"))
+  (warn "Replacing function definition of `lisp:typep`. See ~S for more details."
+        *load-pathname*)
+  (setf (symbol-function 'lisp:typep) #'ansify::typep))
+
+
+;;;;
+;;;; * Utilities
+
+(deftype list-of (element-type)
+  `(and list
+        (satisfies (lambda (x)
+                     (every (ansify::typepred ,element-type) x)))))
+
+(define-condition example-error (error)
+  (foo bar baz)
+  (:report (lambda (c s)
+             (format s "#<example: ~S ~S ~S>"
+               (example-error-foo c)
+               (example-error-bar c)
+               (example-error-baz c)))))
+
+;;;;
+;;;; * restart-case
+
+(define-test restart-case-establish-findable-restarts
+  "Macro restart-case establish restarts, and those can be found via
+find-restart and compute-restarts."
+  (let ((restart (restart-case
+                     (find-restart 'foo)
+                   (foo ())
+                   (bar ())
+                   (baz ()))))
+    (assert-true restart)
+    (assert-eql 'foo (restart-name restart)))
+  (let ((restarts (restart-case
+                      (compute-restarts)
+                    (foo ())
+                    (bar ())
+                    (baz ()))))
+    (assert-type (list-of restart) restarts)
+    (assert-true (>= (length restarts) 3))
+    (assert-true (find 'foo restarts :key 'restart-name))
+    (assert-true (find 'bar restarts :key 'restart-name))
+    (assert-true (find 'baz restarts :key 'restart-name))))
+
+
+(define-test restart-is-visible-in-upper-handlers
+  "Restarts are visible from error handlers established in somewhere in
+`upper'."
+  (assert-type restart
+      (block test
+        (handler-bind ((simple-error (lambda (e)
+                                       (return-from test
+                                         (find-restart 'foo)))))
+          (restart-case
+              (error "error")
+            (foo ())))))
+  (assert-type (list-of restart)
+      (block test
+        (handler-bind ((simple-error (lambda (e)
+                                       (return-from test
+                                         (compute-restarts)))))
+          (restart-case
+              (error "error")
+            (foo ())
+            (bar ())
+            (baz ()))))))
+
+
+(define-test restart-case-returns-value-from-form
+  "when FORM returned normally, restart-case returns the value returned
+from FORM."
+  (assert-eql 'foo (restart-case 'foo))
+  (assert-eql 'normal-foo
+      (restart-case 'normal-foo
+        (foo () 'restart-foo)))
+  (assert-eql 'normal-foo
+      (restart-case
+          (progn
+            (find-restart 'foo)
+            'normal-foo)
+        (foo () 'restart-foo))))
+
+(define-test restart-case-propagate-signalled-condition
+  (assert-error 'simple-error
+      (restart-case
+          (error "Hey")
+        (dummy ())))
+  (assert-error 'simple-warning
+      (restart-case
+          (warn "Hey")
+        (dummy ())))
+  (assert-error 'simple-condition
+      (restart-case
+          (signal "Hey")
+        (dummy ())))
+  (assert-error 'simple-error
+      (restart-case
+          (cerror "Just continue" "Hey")
+        (dummy ()))))
+
+(define-test restart-case-returns-value-from-restart-body
+  "when restart established by restart-case invoked, restart-case returns
+the values that body of restart returned."
+  (assert-eql 'foo
+      (restart-case
+          (invoke-restart (find-restart 'foo))
+        (foo () 'foo)))
+  (assert-eql 'foo
+      (restart-case
+          (invoke-restart (find-restart 'foo) 'foo)
+        (foo (x) x)))
+  (assert-eql :restarted
+      (restart-case
+          (progn
+            (invoke-restart (find-restart 'foo))
+            :normal-return)
+        (foo () :restarted))))
+
+
+;;;;
+;;;; * Restart-bind:
+
+(define-test restart-bind-return-what-forms-returned
+  (assert-eql 3 (restart-bind () (+ 1 2)))
+  (assert-eql :foo (restart-bind () :foo))
+  (assert-eql nil (restart-bind ()))
+  (assert-eql nil (restart-bind () nil)))
+
+(define-test restart-bind-doesnt-stop-error
+  (assert-error 'type-error (restart-bind () (error 'type-error :datum 3 :expected-type 'string)))
+  (assert-error 'division-by-zero (restart-bind () (/ 1 0))))
+
+(define-test restart-bind-establish-findable-restarts
+  (let ((restart (restart-bind ((foo (lambda () :foo)))
+                   (find-restart 'foo))))
+    (assert-type restart restart)
+    (assert-eql 'foo (restart-name restart)))
+  (let ((restarts (restart-bind ((foo (lambda () :foo))
+                                 (bar (lambda () :bar))
+                                 (baz (lambda () :baz)))
+                    (compute-restarts))))
+    (assert-type (list-of restart) restarts)
+    (assert-true (find 'foo restarts :key 'restart-name))
+    (assert-true (find 'bar restarts :key 'restart-name))
+    (assert-true (find 'baz restarts :key 'restart-name))))
+
+(define-test restart-via-restart-bind-does-not-transfer-control
+  (assert-eql :normal-return
+      (restart-bind ((foo (lambda () :restart-return)))
+        (invoke-restart (find-restart 'foo))
+        :normal-return))
+  (let ((executed-p nil))
+    (assert-eql :normal-return
+        (restart-bind ((foo (lambda ()
+                              (setf executed-p t)
+                              :restart-return)))
+          (invoke-restart (find-restart 'foo))
+          :normal-return))
+    (assert-true executed-p)))
+
+
+;;;;
+;;;; * Restart visibility (TEST-FUNCTION)
+
+(define-test restart-visibility-by-test-function
+  "If TEST-FUNCTION returns nil, the restart can not be found."
+  (assert-type restart
+      (restart-case
+          (find-restart 'foo)
+        (foo ()
+          :test (lambda (condition) t))))
+  (assert-type null
+      (restart-case
+          (find-restart 'foo)
+        (foo ()
+          :test (lambda (condition) nil))))
+  (assert-type restart
+      (let ((w (make-condition 'simple-warning)))
+        (restart-case
+            (find-restart 'foo w)
+          (foo ()
+            :test (lambda (condition) (eql condition w))))))
+  (assert-type null
+      (let ((w (make-condition 'simple-warning)))
+        (restart-case
+            (find-restart 'foo)
+          (foo ()
+            :test (lambda (condition) (eql condition w)))))))
+
+;;;;
+;;;; * Restart visibility (Active or not)
+
+(define-test restart-visibility-by-active-or-not
+  "If restart is not active, it can not be found.
+In other words, restart can be found only in the form that estalbish the restart."
+  (assert-eql nil
+      (progn
+        (restart-case t
+          (foo ()))
+        (find-restart 'foo)))
+  (assert-eql nil
+      (prog1
+          (find-restart 'foo)
+        (restart-case t
+          (foo ()))))
+  (assert-eql nil
+      (let ((restart (restart-case
+                         (find-restart 'foo)
+                       (foo ()))))
+        (find-restart restart))))
+
+;;;;
+;;;; * Restart visibility (Association)
+
+(define-test restart-visibility-by-association
+  "If restart is associated with one or more conditions, they can not be found
+for conditions those aren't associated with the restart."
+  (let ((c1 (make-condition 'simple-error))
+        (c2 (make-condition 'simple-error)))
+    (restart-case
+        (with-condition-restarts c1 (list (find-restart 'foo))
+          (with-condition-restarts c2 (list (find-restart 'bar))
+            ;; for no condition
+            (assert-type restart (find-restart 'foo))
+            (assert-type restart (find-restart 'bar))
+            (assert-type restart (find-restart 'baz))
+            ;; for c1
+            (assert-type restart (find-restart 'foo c1))
+            (assert-eql  nil (find-restart 'bar c1))
+            (assert-type restart (find-restart 'baz))
+            ;; for c2
+            (assert-eql nil (find-restart 'foo c2))
+            (assert-type restart (find-restart 'bar c2))
+            (assert-type restart (find-restart 'baz))))
+      (foo ())
+      (bar ())
+      (baz ()))))
+
+(define-test restart-case-associates-restart-if-error
+  "If FORM is to signal a condition, restart-case associates its own restarts
+to the condition to be signalled."
+  (let ((c1 (make-condition 'simple-error))
+        (c2 (make-condition 'simple-error)))
+    (macrolet ((find-restart-foo (error &optional condition)
+                 "Find restart `foo` for given CONDITION from handler."
+                 `(block test
+                    (handler-bind
+                        ((simple-error (lambda (e)
+                                         (return-from test
+                                           (find-restart 'foo ,condition)))))
+                      (restart-case
+                          (error ,error)
+                        (foo ()))))))
+      ;; signal `c1` == not visible for `c2`
+      (assert-type restart (find-restart-foo c1))
+      (assert-type restart (find-restart-foo c1 c1))
+      (assert-eql  nil     (find-restart-foo c1 c2))
+      ;; signal `c2` == not visible for `c1`
+      (assert-type restart (find-restart-foo c2))
+      (assert-eql  nil     (find-restart-foo c2 c1))
+      (assert-type restart (find-restart-foo c2 c2))
+      )))
+
+(define-test restart-case-associates-restart-if-cerror
+  (let ((c1 (make-condition 'simple-error))
+        (c2 (make-condition 'simple-error)))
+    (macrolet ((find-restart-foo (error &optional condition)
+                 "Find restart `foo` for given CONDITION from handler."
+                 `(block test
+                    (handler-bind
+                        ((simple-error (lambda (e)
+                                         (return-from test
+                                           (find-restart 'foo ,condition)))))
+                      (restart-case
+                          (cerror "Just continue" ,error)
+                        (foo ()))))))
+      ;; signals `c1` == not visible for `c2`
+      (assert-type restart (find-restart-foo c1))
+      (assert-type restart (find-restart-foo c1 c1))
+      (assert-eql  nil     (find-restart-foo c1 c2))
+      ;; signals `c2` == not visible for `c1`
+      (assert-type restart (find-restart-foo c2))
+      (assert-eql  nil     (find-restart-foo c2 c1))
+      (assert-type restart (find-restart-foo c2 c2))
+      )))
+
+(define-test restart-case-associates-restart-if-warn
+  (let ((w1 (make-condition 'simple-warning))
+        (w2 (make-condition 'simple-warning)))
+    (macrolet ((find-restart-foo (warning &optional condition)
+                 "Find restart `foo` for given CONDITION from handler."
+                 `(block test
+                    (handler-bind
+                        ((simple-warning (lambda (w)
+                                           (return-from test
+                                             (find-restart 'foo ,condition)))))
+                      (restart-case
+                          (warn ,warning)
+                        (foo ()))))))
+      ;; warn `w1` == not visible for `w2`
+      (assert-type restart (find-restart-foo w1))
+      (assert-type restart (find-restart-foo w1 w1))
+      (assert-eql  nil     (find-restart-foo w1 w2))
+      ;; warn `w2` == not visible for `w1`
+      (assert-type restart (find-restart-foo w2))
+      (assert-eql  nil     (find-restart-foo w2 w1))
+      (assert-type restart (find-restart-foo w2 w2))
+      )))
+
+(define-test restart-case-associates-restart-if-signal
+  (let ((c1 (make-condition 'simple-condition))
+        (c2 (make-condition 'simple-condition)))
+    (macrolet ((find-restart-foo (to-signal &optional to-look-for)
+                 "Find restart `foo` for given condition TO-LOOK-FOR from handler."
+                 `(block test
+                    (handler-bind
+                        ((simple-condition (lambda (c)
+                                             (return-from test
+                                               (find-restart 'foo ,to-look-for)))))
+                      (restart-case
+                          (signal ,to-signal)
+                        (foo ()))))))
+      ;; signal `c1` == not visible for `c2`
+      (assert-type restart (find-restart-foo c1))
+      (assert-type restart (find-restart-foo c1 c1))
+      (assert-eql  nil     (find-restart-foo c1 c2))
+      ;; signal `c2` == not visible for `c1`
+      (assert-type restart (find-restart-foo c2))
+      (assert-eql  nil     (find-restart-foo c2 c1))
+      (assert-type restart (find-restart-foo c2 c2))
+      )))
+
+;;;;
+;;;; * Function warn
+
+(define-test warn-establish-muffle-warning-restart
+  (assert-type restart
+      (block test
+        (handler-bind
+            ((warning (lambda (w)
+                        (return-from test
+                          (find-restart 'muffle-warning w)))))
+          (warn "Hey")))))
+
+(define-test warn-accept-only-warning-condition
+  "Otherwise, it signals `type-error`."
+  ;; condition-object
+  (assert-error 'type-error
+      (warn (make-condition 'simple-error :format-string "Hey")))
+  (assert-error 'type-error
+      (warn (make-condition 'simple-condition :format-string "Hey")))
+  (assert-error 'simple-warning
+      (warn (make-condition 'simple-warning :format-string "Hey")))
+  ;; condition type and arguments
+  (assert-error 'type-error
+      (warn 'simple-error :format-string "Hey"))
+  (assert-error 'simple-warning
+      (warn 'simple-warning :format-string "Hey"))
+  (assert-error 'type-error
+      (warn 'simple-condition :format-string "Hey"))
+  ;; string == simple-warning
+  (assert-error 'simple-warning
+      (warn "Hey")))
+
+;;;;
+;;;; * Function cerror
+
+(define-test cerror-with-type-signals-error-with-continue-restart
+  "when condition-type specified"
+  ;; signal a condition which is specified type
+  (assert-error 'example-error
+      (cerror "Continue" 'example-error :foo 1 :bar 2))
+  ;; there's a restart `continue`
+  (assert-type restart
+      (block test
+        (handler-bind ((example-error
+                        (lambda (e)
+                          (return-from test
+                            (find-restart 'continue e)))))
+          (cerror "Continue" 'example-error :foo 1 :bar 2))))
+  ;; uses first argument to produce report
+  (assert-equal "Continue"
+      (block test
+        (handler-bind ((example-error
+                        (lambda (e)
+                          (return-from test
+                            (let ((r (find-restart 'continue e)))
+                              (with-output-to-string (s)
+                                (funcall (restart::restart-report-function r) s)))))))
+          (cerror "Continue" 'example-error :foo 1 :bar 2))))
+  ;; uses args as arguments for report string
+  (assert-equal "Continue: 1 2"
+      (block test
+        (handler-bind ((example-error
+                        (lambda (e)
+                          (return-from test
+                            (let ((r (find-restart 'continue e)))
+                              (with-output-to-string (s)
+                                (funcall (restart::restart-report-function r) s)))))))
+          (cerror "Continue: ~*~S ~*~S" 'example-error :foo 1 :bar 2)))))
+
+
+(define-test cerror-with-string-signals-simple-error-with-continue-restart
+  "When string specified"
+  ;; signalls a `simple-error`
+  (assert-error 'simple-error
+      (cerror "Continue" "Hey"))
+  ;; uses args for error message
+  (assert-equal "Hey: 3"
+      (handler-case
+          (cerror "Continue" "Hey: ~S" 3)
+        (simple-error (e)
+          (princ-to-string e))))
+  ;; there's a restart `continue`
+  (assert-type restart
+      (block test
+        (handler-bind ((simple-error
+                        (lambda (e)
+                          (return-from test
+                            (find-restart 'continue e)))))
+          (cerror "Continue" "Hey"))))
+  ;; uses first argument to produce report
+  (assert-equal "Continue"
+      (block test
+        (handler-bind ((simple-error
+                        (lambda (e)
+                          (return-from test
+                            (let ((r (find-restart 'continue e)))
+                              (with-output-to-string (s)
+                                (funcall (restart::restart-report-function r) s)))))))
+          (cerror "Continue" "Hey"))))
+  ;; uses args as argument for report string
+  (assert-equal "Continue: 3"
+      (block test
+        (handler-bind ((simple-error
+                        (lambda (e)
+                          (return-from test
+                            (let ((r (find-restart 'continue e)))
+                              (with-output-to-string (s)
+                                (funcall (restart::restart-report-function r) s)))))))
+          (cerror "Continue: ~S" "Hey: ~S" 3)))))
+
+(define-test cerror-with-condition-signals-it-with-continue-restart
+  "When condition object specified"
+  (let ((err (make-condition 'example-error :foo 1 :bar 2)))
+    ;; signals given condition
+    (assert-error err
+        (cerror "Continue" err))
+    ;; there's a restart `continue`
+    (assert-type restart
+        (block test
+          (handler-bind ((example-error
+                          (lambda (e)
+                            (return-from test
+                              (find-restart 'continue e)))))
+            (cerror "Continue" err))))
+    ;; uses first argument to produce report
+    (assert-equal "Continue"
+        (block test
+          (handler-bind ((example-error
+                          (lambda (e)
+                            (return-from test
+                              (let ((r (find-restart 'continue e)))
+                                (with-output-to-string (s)
+                                  (funcall (restart::restart-report-function r) s)))))))
+            (cerror "Continue" err))))
+    ;; uses args as arguments for report string
+    (assert-equal "Continue: 1 2"
+        (block test
+          (handler-bind ((example-error
+                          (lambda (e)
+                            (return-from test
+                              (let ((r (find-restart 'continue e)))
+                                (with-output-to-string (s)
+                                  (funcall (restart::restart-report-function r) s)))))))
+            (cerror "Continue: ~S ~S" err 1 2))))))
+
+
+;;;;
+;;;; * Restart Invoking Function: abort
+
+(define-test abort-invokes-restart
+  (assert-eql :aborted
+      (restart-case
+          (abort)
+        (abort () :aborted)))
+  (assert-eql :inner-abort
+      (restart-case
+          (restart-case
+              (abort)
+            (abort () :inner-abort))
+        (abort () :outer-abort))))
+
+;; FIXME: this test finds and invokes restart `abort` that established outside
+;; of the test itself (typically, the one established by read-eval-print-loop).
+;; As a result, entire execution of test(s) will be aborted.
+;(define-test abort-signals-quit-if-no-restart-abort
+;  (assert-error 'quit (abort)))
+
+(define-test abort-uses-condition-to-find-restart
+  (with-condition-restarts
+      ;; NOTE: To prevent restart `abort` that established outside of this test
+      ;; be found and invoked, associate them with one-time condition so they
+      ;; never be visible for other conditions.
+      (make-condition 'simple-error)
+      (remove 'abort (compute-restarts nil) :test-not 'eql :key 'restart-name)
+    (let ((c1 (make-condition 'simple-error))
+          (c2 (make-condition 'simple-error)))
+      (macrolet ((with-abort (condition &body body)
+                   `(restart-case
+                        (with-condition-restarts ,condition (list (find-restart 'abort))
+                          ,@body)
+                      (abort () :aborted))))
+        ;; Restart `abort` is associated with `c1`
+        (assert-eql :aborted (with-abort c1 (abort c1)))
+        (assert-error 'quit  (with-abort c1 (abort c2)))
+        ;; Restart `abort` is associated with `c2`
+        (assert-error 'quit  (with-abort c2 (abort c1)))
+        (assert-eql :aborted (with-abort c2 (abort c2)))
+        ))))
+
+;;;;
+;;;; * Restart Invoking Function: continue
+
+(define-test continue-invokes-restart
+  (assert-eql :continued
+      (restart-case
+          (continue)
+        (continue () :continued)))
+  (assert-eql :continued-inner
+      (restart-case
+          (restart-case
+            (continue)
+            (continue () :continued-inner))
+        (continue () :continued-outer))))
+
+(define-test continue-returns-nil-if-restart-not-found
+  (assert-eql nil (restart-case (continue)
+                    (not-a-continue () :not-continued))))
+
+(define-test continue-uses-condition-to-find-restart
+  (let ((c1 (make-condition 'simple-error))
+        (c2 (make-condition 'simple-error)))
+    (macrolet ((with-continue (condition &body body)
+                 `(restart-case
+                      (with-condition-restarts ,condition (list (find-restart 'continue))
+                        ,@body)
+                    (continue () :cont))))
+      ;; Restart `continue` is associated with `c1`
+      (assert-eql :cont (with-continue c1 (continue c1)))
+      (assert-eql nil   (with-continue c1 (continue c2)))
+      ;; Restart `continue` is associated with `c2`
+      (assert-eql nil   (with-continue c2 (continue c1)))
+      (assert-eql :cont (with-continue c2 (continue c2)))
+      )))
+
+;;;;
+;;;; * Restart Invoking Function: muffle-warning
+
+(define-test muffle-warning-invoke-restart
+  (assert-eql :muffled
+      (restart-case
+          (muffle-warning)
+        (muffle-warning () :muffled)))
+  (assert-eql :muffled-by-inner
+      (restart-case
+          (restart-case
+            (muffle-warning)
+            (muffle-warning () :muffled-by-inner))
+        (muffle-warning () :muffled-by-outer))))
+
+(define-test muffle-warning-signal-program-error-if-restart-not-found
+  (assert-error 'control-error
+      (muffle-warning))
+  (assert-error 'control-error
+      (restart-case
+          (muffle-warning)
+        (not-a-muffle-warning () :should-not-see-me))))
+
+(define-test muffle-warning-uses-condition-to-find-restart
+  (let ((w1 (make-condition 'simple-warning))
+        (w2 (make-condition 'simple-warning)))
+    (macrolet ((with-muffle-warning (associate &body body)
+                 `(restart-case
+                      (with-condition-restarts ,associate (list (find-restart 'muffle-warning))
+                        ,@body)
+                    (muffle-warning () :muffled))))
+      ;; Restart muffle-warning is associated with w1, and not with w2
+      (assert-eql :muffled
+          (with-muffle-warning w1 (muffle-warning w1)))
+      (assert-error 'control-error
+          (with-muffle-warning w1 (muffle-warning w2)))
+      ;; Restart muffle-warning is associated with w2, and not with w1
+      (assert-error 'control-error
+          (with-muffle-warning w2 (muffle-warning w1)))
+      (assert-eql :muffled
+          (with-muffle-warning w2 (muffle-warning w2))))))
+
+;;;;
+;;;; * Restart Invoking Function: use-value
+
+(define-test use-value-invokes-restart
+  (assert-eql :using-value
+      (restart-case
+          (use-value 3)
+        (use-value (x) :using-value)))
+  (assert-eql 3
+      (restart-case
+          (use-value 3)
+        (use-value (x) x)))
+  (assert-equal :inner-restart
+      (restart-case
+          (restart-case
+            (use-value 3)
+            (use-value (x) :inner-restart))
+        (use-value (x) :outer-restart))))
+
+(define-test use-value-returns-nil-if-restart-not-found
+  (assert-eql nil (use-value 3))
+  (assert-eql nil (restart-case (use-value 3) (not-a-use-value (x) x))))
+
+(define-test use-value-uses-condition-to-find-restart
+  (let ((c1 (make-condition 'simple-error))
+        (c2 (make-condition 'simple-error)))
+    (macrolet ((with-use-value (condition &body body)
+                 `(restart-case
+                      (with-condition-restarts ,condition (list (find-restart 'use-value))
+                        ,@body)
+                    (use-value (x) x))))
+      ;; Restart use-value is associated with c1
+      (assert-eql 3   (with-use-value c1 (use-value 3 c1)))
+      (assert-eql nil (with-use-value c1 (use-value 3 c2)))
+      ;; Restart use-value is associated with c2
+      (assert-eql nil (with-use-value c2 (use-value 3 c1)))
+      (assert-eql 3   (with-use-value c2 (use-value 3 c2)))
+      )))
+
+;;;;
+;;;; * Restart Invoking Function: store-value
+
+(define-test store-value-invokes-restart
+  (assert-eql :invoked
+      (restart-case
+          (store-value 3)
+        (store-value (x) :invoked)))
+  (assert-eql 3
+      (restart-case
+          (store-value 3)
+        (store-value (x) x)))
+  (assert-eql :inner
+      (restart-case
+          (restart-case
+            (store-value 3)
+            (store-value (x) :inner))
+        (store-value (x) :outer))))
+
+(define-test store-value-returns-nil-if-restart-not-found
+  (assert-eql nil (store-value 3))
+  (assert-eql nil (restart-case (store-value 3) (not-a-store-value (x) x))))
+
+(define-test store-value-uses-condition-to-find-restart
+  (let ((c1 (make-condition 'simple-error))
+        (c2 (make-condition 'simple-error)))
+    (macrolet ((with-store-value (condition &body body)
+                 `(restart-case
+                      (with-condition-restarts ,condition (list (find-restart 'store-value))
+                        ,@body)
+                    (store-value (x) x))))
+      ;; Restart store-value is associated with c1
+      (assert-eql 3   (with-store-value c1 (store-value 3 c1)))
+      (assert-eql nil (with-store-value c1 (store-value 3 c2)))
+      ;; Restart store-value is associated with c2
+      (assert-eql nil (with-store-value c2 (store-value 3 c1)))
+      (assert-eql 3   (with-store-value c2 (store-value 3 c2)))
+      )))
+
+
+;;; tests/condition-restart.lt ends here.

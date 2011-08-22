@@ -23,6 +23,8 @@
 (require-when "symbol-macrolet" :execute :compile-toplevel)
 (require-when "setf")
 (require-when "typespec+")
+(require-when "restart")
+(require-when "assertion")
 
 (provide "ansify")
 ;;; ansify.l ends here.
