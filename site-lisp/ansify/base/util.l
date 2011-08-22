@@ -20,6 +20,19 @@
   "Return true if OBJECT is a list with one element."
   (and (consp object) (null (cdr object))))
 
+;; modified version of http://paste.lisp.org/display/24480
+(defun proper-list-p (object)
+  (if (null object) t
+    (and (listp object)
+         (do ((fast (cdr object) (cddr fast))
+              (slow object (cdr slow)))
+             ()
+           (cond ((null fast) (return t))
+                 ((atom fast) (return nil))
+                 ((null (cdr fast)) (return t))
+                 ((atom (cdr fast)) (return nil))
+                 ((eql fast slow) (return nil)))))))
+
 ;;;;
 ;;;; * Binding Macros
 
