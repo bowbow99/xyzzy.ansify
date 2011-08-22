@@ -15,11 +15,10 @@
 
 2011-08-21  bowbow99  <bowbow99@gmail.com>
 	* symbol-macrolet を取り込み
-
-	* symbol-macrolet 内の multiple-value-setq 式を展開する際に、各
-	  place を自力で展開するようにした。
-	  これで setf-values に依存しなくなった。
-	  # setf-value の機能を取り込むかどうかは今のところ未定
+	- symbol-macrolet 内の multiple-value-setq 式を展開する際に、各
+	place を自力で展開するようにした。
+	これで setf-values に依存しなくなった。
+	# setf-value の機能を取り込むかどうかは今のところ未定
 
 
 2011-08-20  bowbow99  <bowbow99@gmail.com>
