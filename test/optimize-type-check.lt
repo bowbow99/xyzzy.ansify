@@ -13,6 +13,8 @@
 
 (in-package :test.ansify.optimize-type-check)
 
+(ansify::install)
+
 (remove-all-tests :test.ansify.optimize-type-check)
 
 (defparameter *example-objects*
