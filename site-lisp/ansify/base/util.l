@@ -13,6 +13,12 @@
 
 (in-package :ansify)
 
+;;;;
+;;;; * List Utilities
+
+(defun single? (object)
+  "Return true if OBJECT is a list with one element."
+  (and (consp object) (null (cdr object))))
 
 
 (provide "ansify/base/util")
