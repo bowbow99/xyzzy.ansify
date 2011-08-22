@@ -1,5 +1,7 @@
 これは何
 ========
+ANSI Common Lisp にあって xyzzy にないもの詰め合わせ予定地。
+
 
 インストール
 ============
@@ -12,9 +14,24 @@ NetInstaller から
 
 設定
 ====
+今のところなし。
 
 使い方
 ======
+読み込んでおいて
+
+    (eval-when (:execute :compile-toplevel :load-toplevel)
+      (require "ansify"))
+
+任意のパッケージにインストールします。
+
+    (in-package :your-package)
+    (eval-when (:execute :compile-toplevel :load-toplevel)
+      (ansify::install))
+
+インストールするとそのパッケージ内で ansify で定義してある関数やマクロが見える
+ようになります。
+
 
 注意点、既知の問題など
 ======================
