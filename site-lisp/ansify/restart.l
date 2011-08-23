@@ -411,5 +411,5 @@
         (error (e)
           (again "ƒGƒ‰[: ~A" e))))))
 
-(provide "ansify/condition-restart")
+(provide "ansify/restart")
 ;;;; ansify/restart.l ends here.
