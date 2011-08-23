@@ -21,13 +21,31 @@
                ,(format nil "ansify/~A" module)
                ,command-p ,macro-p)))
 
-;; symbol-macrolet
+;; symbol-macrolet.l
 (%autoload symbol-macrolet "symbol-macrolet" nil t)
 (setf (get 'symbol-macrolet 'ed:lisp-indent-hook) 1)
 
-;; destructuring-bind
+;; destructuring-bind.l
 (%autoload destructuring-bind "destructuring-bind" nil t)
 (setf (get 'destructuring-bind 'ed:lisp-indent-hook) 2)
+
+(shadowing-export '(&allow-other-keys))
+(defconstant &allow-other-keys '&allow-other-keys)
+
+;; assertion.l
+(%autoload assert "assertion" nil t)
+(%autoload check-type "assertion" nil t)
+
+;; typecase.l
+(%autoload typecase  "typecase" nil t)
+(%autoload etypecase "typecase" nil t)
+(%autoload ctypecase "typecase" nil t)
+
+(dolist (sym '(typecase etypecase ctypecase))
+  (setf (get sym 'ed:lisp-indent-hook) 1))
+
+(shadowing-export '(otherwise))
+
 
 (provide "ansify/autoload-defs")
 ;;; ansify/autoload-defs.l ends here.
