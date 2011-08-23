@@ -14,9 +14,10 @@
 
 (in-package :ansify)
 
-(shadowing-export '(#:destructuring-bind
-                    #:&allow-other-keys
-                    ))
+(eval-when (:execute :compile-toplevel :load-toplevel)
+  (shadowing-export '(#:destructuring-bind
+                      #:&allow-other-keys
+                      )))
 
 ;;;;
 ;;;; * Utilities

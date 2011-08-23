@@ -14,10 +14,11 @@
 
 (in-package :ansify.anaph)
 
-(export '(aif
-          awhen
-          awhile
-          acond))
+(eval-when (:execute :compile-toplevel :load-toplevel)
+  (export '(aif
+            awhen
+            awhile
+            acond)))
 
 (defun flatten (tree)
   (labels ((rec (x acc)
