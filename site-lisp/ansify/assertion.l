@@ -16,6 +16,11 @@
 
 (in-package :ansify)
 
+(shadowing-export '(#:assert
+                    #:check-type
+                    ))
+
+
 ;;;;
 ;;;; * Assertions
 

@@ -19,6 +19,10 @@
 
 ;(defconstant +original-typep-function+ #'typep)
 
+(shadowing-export '(#:typep
+                    ))
+
+
 ;;;;
 ;;;; * User Configuration
 

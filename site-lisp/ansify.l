@@ -26,7 +26,6 @@
 (require-when "restart")
 (require-when "assertion")
 (require-when "typecase")
-(require-when "destructuring-bind")
 
 (provide "ansify")
 ;;; ansify.l ends here.

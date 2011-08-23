@@ -15,6 +15,9 @@
 
 (in-package :ansify)
 
+(shadowing-export '(#:symbol-macrolet
+                    ))
+
 ;;;;
 ;;;; * utilities
 

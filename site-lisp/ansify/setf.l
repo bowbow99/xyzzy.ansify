@@ -13,6 +13,10 @@
 
 (in-package :ansify)
 
+(export '(get-setf-expansion
+          define-setf-expander
+          ))
+
 (setf (symbol-function 'get-setf-expansion) #'get-setf-method-multiple-value
       (symbol-function 'define-setf-expander) #'define-setf-method)
 

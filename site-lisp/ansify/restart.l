@@ -17,6 +17,43 @@
 
 (in-package :ansify)
 
+(eval-when (:load-toplevel :compile-toplevel :execute)
+  ;; CL standard symbols
+  ;; NOTE: SHADOWING-EXPORT'ing them because they conflict with symbols from
+  ;; old "condition-restart".
+  (shadowing-export '(;; Restart establishing macros
+                      #:restart-case
+                      #:restart-bind
+                      #:with-simple-restart
+                      #:with-condition-restarts
+                      ;; Restart manipulating functions
+                      #:restart-name
+                      #:compute-restarts
+                      #:find-restart
+                      #:invoke-restart
+                      #:invoke-restart-interactively
+                      ;; Condition Signaller
+                      #:cerror
+                      #:warn
+                      ;; Standard restart names
+                      #:abort
+                      #:continue
+                      #:muffle-warning
+                      #:use-value
+                      #:store-value
+                      ;; as a typespec
+                      #:restart
+                      ))
+
+  ;; NOTE: Export `read-value` from editor package to be visible from
+  ;; most of user code.
+  (export (mapcar (lambda (name) (intern (string name) :editor))
+            '(#:read-value
+              ))
+          :editor)
+
+  ) ; end of `eval-when`
+
 ;;;;
 ;;;; * Restart Object
 
