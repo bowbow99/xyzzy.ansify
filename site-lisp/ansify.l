@@ -25,6 +25,7 @@
 (require-when "setf")
 (require-when "typespec+")
 (require-when "restart")
+(require-when "misc")
 
 (provide "ansify")
 ;;; ansify.l ends here.

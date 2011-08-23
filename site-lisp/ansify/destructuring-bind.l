@@ -47,21 +47,6 @@
        (error 'too-many-arguments :datum #1#))
      #1#))
 
-(defun %assert-keyword-list (keyword-list allowed-keywords allow-other-keys)
-  "Check whether KEYWORD-LIST is proper or not, and return it as-is."
-  ;; NOTE: `&allow-othe-keys X` is always permitted
-  (setq allowed-keywords (cons '&allow-other-keys allowed-keywords))
-  (unless (and (proper-list-p keyword-list)
-               (evenp (length keyword-list))
-               (or allow-other-keys
-                   (getf keyword-list :allow-other-keys)
-                   (do ((list keyword-list (cddr list)))
-                       ((null list) t)
-                     (unless (member (car list) allowed-keywords)
-                       (return nil)))))
-    (error 'invalid-keyword-list :datum keyword-list))
-  keyword-list)
-
 (defparameter *state/parser-alist*
   '((&required . gen-&required-binding)
     (&optional . gen-&optional-binding)
