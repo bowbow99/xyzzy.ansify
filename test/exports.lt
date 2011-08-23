@@ -1,0 +1,140 @@
+;;; -*- mode: lisp; package: test.ansify.exports -*-
+;;;
+;;; test/exports.lt
+;;;
+
+(require "lisp-unit")
+(load-library "ansify")
+
+(defpackage :test.ansify.exports
+  (:use :lisp :lisp-unit))
+
+(in-package :test.ansify.exports)
+
+(ansify::install)
+(remove-all-tests :test.ansify.exports)
+
+;;;;
+;;;; * Utilities
+
+(defun autoload-symbol-p (symbol)
+  (and (symbolp symbol)
+       (fboundp symbol)
+       (autoload-function-p symbol)))
+
+(defun autoload-module (symbol)
+  (unless (autoload-symbol-p symbol)
+    (error "autoload Žw’è‚³‚ê‚½ƒVƒ“ƒ{ƒ‹‚¶‚á‚È‚¢‚Å‚·: ~S" symbol))
+  (let* ((def (or (macro-function symbol)
+                  (si:closure-body (symbol-function symbol))))
+         (hint (if (eql (car (third def)) 'ed:interactive)
+                 (fourth def)
+                 (third def))))
+    (third (third hint))))
+
+(defun autoload-macro-p (symbol)
+  (and (autoload-symbol-p symbol)
+       (macro-function symbol)))
+
+(defun autoload-command-p (symbol)
+  (and (autoload-symbol-p symbol)
+       (commandp symbol)))
+
+(defun function-symbol-p (x)
+  "A symbol naming a function, not macro."
+  (and (symbolp x)
+       (fboundp x)
+       (not (macro-function x))))
+
+;;;;
+;;;; * Local Assertion Macros
+
+(defmacro %assert-symbol (name &rest options)
+  `(let* ((#1=#:name   (string ,name))
+          (#2=#:symbol (find-symbol #1#)))
+     (assert-true (not (null #2#)) . #3=(#1# #2#))
+     (assert-eql (find-package :ansify) (symbol-package #2#) . #3#)
+     ;; :autoload
+     ,(when (member :autoload options)
+        `(progn
+           (assert-true (autoload-symbol-p #2#) . #3#)
+           ;; :autoload "module-name"
+           ,(let ((module (second (member :autoload options))))
+              (when (stringp module)
+                `(assert-equal ,module
+                     (and (autoload-symbol-p #2#)
+                          (autoload-module #2#))
+                   . #3#)))))
+     ;; function
+     ,(when (member :function options)
+        `(assert-true (function-symbol-p #2#) . #3#))
+     ;; macro
+     ,(when (member :macro options)
+        `(assert-true (macro-function #2#) . #3#))
+     ;; variable
+     ,(when (member :variable options)
+        `(assert-true (boundp #2#) . #3#))
+     ;; constant
+     ,(when (member :constant options)
+        `(assert-true (constantp #2#) . #3#))
+     ))
+
+;;;;
+;;;; * Normal files
+
+;; setf.l
+(define-test ansify/setf.l
+  (%assert-symbol "get-setf-expansion" :function)
+  (%assert-symbol "define-setf-expander" :macro))
+
+;; restart.l
+(define-test ansify/restart.l
+  ;; Restart establishing macros
+  (%assert-symbol "restart-case" :macro)
+  (%assert-symbol "restart-bind" :macro)
+  (%assert-symbol "with-simple-restart" :macro)
+  (%assert-symbol "with-condition-restarts" :macro)
+  ;; Restart manipulating functions
+  (%assert-symbol "restart-name" :function)
+  (%assert-symbol "compute-restarts" :function)
+  (%assert-symbol "find-restart" :function)
+  (%assert-symbol "invoke-restart" :function)
+  (%assert-symbol "invoke-restart-interactively" :function)
+  ;; Condition Signaller
+  (%assert-symbol "cerror" :function)
+  (%assert-symbol "warn" :function)
+  ;; Standard restart names
+  (%assert-symbol "abort" :function)
+  (%assert-symbol "continue" :function)
+  (%assert-symbol "muffle-warning" :function)
+  (%assert-symbol "use-value" :function)
+  (%assert-symbol "store-value" :function)
+  ;; as a typespec
+  (%assert-symbol "restart")
+  )
+
+;; assertion.l
+(define-test ansify/assertion.l
+  (%assert-symbol "assert" :macro :autoload "ansify/assertion")
+  (%assert-symbol "check-type" :macro :autoload "ansify/assertion"))
+
+
+;;;;
+;;;; * Autoloaded files
+
+;; symbol-macrolet.l
+(define-test ansify/symbol-macrolet.l
+  (%assert-symbol "symbol-macrolet" :macro :autoload "ansify/symbol-macrolet"))
+
+;; destructuring-bind.l
+(define-test ansify/destructuring-bind
+  (%assert-symbol "destructuring-bind" :macro :autoload "ansify/destructuring-bind"))
+
+;; typecase.l
+(define-test ansify/typecase.l
+  (%assert-symbol "typecase"  :macro :autoload "ansify/typecase")
+  (%assert-symbol "etypecase" :macro :autoload "ansify/typecase")
+  (%assert-symbol "ctypecase" :macro :autoload "ansify/typecase"))
+
+
+;;; test/exports.lt ends here.

@@ -16,10 +16,10 @@
 
 (in-package :ansify)
 
-(shadowing-export '(#:assert
-                    #:check-type
-                    ))
-
+(eval-when (:execute :compile-toplevel :load-toplevel)
+  (shadowing-export '(#:assert
+                      #:check-type
+                      )))
 
 ;;;;
 ;;;; * Assertions

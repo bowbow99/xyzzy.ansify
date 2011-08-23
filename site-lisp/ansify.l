@@ -20,12 +20,12 @@
   `(eval-when ,(or situations '(:execute :compile-toplevel :load-toplevel))
      (require ,(format nil "ansify/~A" module))))
 
-(require-when "symbol-macrolet" :execute :compile-toplevel)
+(require "ansify/autoload-defs")
+
 (require-when "setf")
 (require-when "typespec+")
 (require-when "restart")
-(require-when "assertion")
-(require-when "typecase")
+(require-when "misc")
 
 (provide "ansify")
 ;;; ansify.l ends here.

@@ -15,8 +15,9 @@
 
 (in-package :ansify)
 
-(shadowing-export '(#:symbol-macrolet
-                    ))
+(eval-when (:execute :compile-toplevel :load-toplevel)
+  (shadowing-export '(#:symbol-macrolet
+                      )))
 
 ;;;;
 ;;;; * utilities

@@ -1,13 +1,13 @@
 20xx-xx-xx  TODO
 	* setf-values
-	* autoload 化
-	  - destructuring-bind
-	    - %assert-keyword-list を何とかする必要あり
-	  - symbol-macrolet
-	  - typecase family?
+
+2011-08-24  bowbow99  <bowbow99@gmail.com>
+
+	* マクロをいくつか autoload するようにした
 
 
 2011-08-22  bowbow99  <bowbow99@gmail.com>
+
 	* typespec+ を取り込み
 
 	* condition-restart を取り込み
@@ -22,10 +22,11 @@
 
 
 2011-08-21  bowbow99  <bowbow99@gmail.com>
+
 	* symbol-macrolet を取り込み
 	- symbol-macrolet 内の multiple-value-setq 式を展開する際に、各
-	place を自力で展開するようにした。
-	これで setf-values に依存しなくなった。
+	  place を自力で展開するようにした。
+	  これで setf-values に依存しなくなった。
 	# setf-value の機能を取り込むかどうかは今のところ未定
 
 

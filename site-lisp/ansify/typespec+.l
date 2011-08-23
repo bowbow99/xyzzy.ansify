@@ -19,8 +19,9 @@
 
 ;(defconstant +original-typep-function+ #'typep)
 
-(shadowing-export '(#:typep
-                    ))
+(eval-when (:execute :compile-toplevel :load-toplevel)
+  (shadowing-export '(#:typep
+                      )))
 
 
 ;;;;

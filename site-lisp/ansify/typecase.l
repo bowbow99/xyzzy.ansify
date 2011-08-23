@@ -15,11 +15,12 @@
 
 (in-package :ansify)
 
-(shadowing-export '(#:typecase
-                    #:etypecase
-                    #:ctypecase
-                    #:otherwise
-                    ))
+(eval-when (:execute :compile-toplevel :load-toplevel)
+  (shadowing-export '(#:typecase
+                      #:etypecase
+                      #:ctypecase
+                      #:otherwise
+                      )))
 
 ;;; Indentation settings
 #+xyzzy
