@@ -10,7 +10,8 @@
 ;;; Code:
 
 (eval-when (:execute :compile-toplevel :load-toplevel)
-  (require "ansify/base"))
+  (require "ansify/base")
+  (require "ansify/misc"))
 
 (in-package :ansify)
 
