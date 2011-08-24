@@ -16,16 +16,11 @@
 
 (in-package :ansify)
 
-(defmacro require-when (module &rest situations)
-  `(eval-when ,(or situations '(:execute :compile-toplevel :load-toplevel))
-     (require ,(format nil "ansify/~A" module))))
-
 (require "ansify/autoload-defs")
-
-(require-when "setf")
-(require-when "typespec+")
-(require-when "restart")
-(require-when "misc")
+(require "ansify/setf")
+(require "ansify/typespec+")
+(require "ansify/restart")
+(require "ansify/misc")
 
 (provide "ansify")
 ;;; ansify.l ends here.
