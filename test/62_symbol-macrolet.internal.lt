@@ -1,6 +1,6 @@
 ;;; -*- mode: lisp; package: test.ansify.symbol-macrolet.internal -*-
 ;;;
-;;; tests/symbol-macrolet.internal.lt
+;;; test/62_symbol-macrolet.internal.lt
 ;;;
 
 
@@ -86,4 +86,4 @@
   (assert-lambda-list (&aux (a b) (c d)) (&aux (a "b") (c "d")))
   (assert-lambda-list (&aux a (b c)) (&aux a (b "c"))))
 
-;;; tests/symbol-macrolet.internal.lt ends here
+;;; test/62_symbol-macrolet.internal.lt ends here

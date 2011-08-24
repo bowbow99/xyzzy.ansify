@@ -1,6 +1,6 @@
 ;;; -*- mode: lisp; package: test.ansify.typecase -*-
 ;;;
-;;; tests/typecase.lt
+;;; test/63_typecase.lt
 ;;;
 
 ;;; Code:
@@ -103,4 +103,4 @@
     (assert-eql nil (ctypecase 33 (fixnum)))))
 
 
-;;; tests/typecase.lt ends here.
+;;; test/63_typecase.lt ends here.

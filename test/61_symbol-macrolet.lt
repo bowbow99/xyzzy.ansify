@@ -1,6 +1,6 @@
 ;;; -*- mode: lisp; package: test.ansify.symbol-macrolet -*-
 ;;;
-;;; tests/symbol-macrolet.lt
+;;; test/61_symbol-macrolet.lt
 ;;;
 
 (require "lisp-unit")
@@ -270,4 +270,4 @@
       (symbol-macrolet ((test (+ x y)))
         (multiple-value-bind (x y) (values 1 2) test test))))
 
-;;; tests/symbol-macrolet.lt ends here.
+;;; test/61_symbol-macrolet.lt ends here.

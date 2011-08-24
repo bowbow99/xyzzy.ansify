@@ -1,6 +1,6 @@
 ;;; -*- mode: lisp; package: test.ansify.destructuring-bind -*-
 ;;;
-;;; tests/destructuring-bind.lt
+;;; test/60_destructuring-bind.lt
 ;;;
 
 ;;; Code:

@@ -1,6 +1,6 @@
 ;;; -*- mode: lisp; package: test.ansify.typep -*-
 ;;;
-;;; tests/typep.lt
+;;; test/21_typep.lt
 ;;;
 
 ;;; Code:
@@ -591,4 +591,4 @@
 ;; standard-method
 ;; standard-object
 
-;;; tests/typep.lt ends here.
+;;; test/21_typep.lt ends here.

@@ -13,7 +13,10 @@
 (when (buffer-stream-p *standard-output*)
   (dolist (filename (directory (directory-namestring *load-pathname*)
                                :wild "*.lt" :recursive t :absolute t))
-    (let* ((module-name  (pathname-name filename))
+    (let* ((module-name  (let ((name (pathname-name filename)))
+                           (if (string-match "^[0-9]+_" name)
+                             (subseq name (match-end 0))
+                             name)))
            (package-name (format nil "test.ansify.~A" module-name)))
       (format t "~&~%* Running tests for ~A~%" module-name)
       (message "loading test file: ~A..." filename)
@@ -28,3 +31,4 @@
           (lisp-unit:run-tests-from package-name))
         (message "running tests for ~A...done." module-name)))))
 
+;;; test/run-all.l ends here.

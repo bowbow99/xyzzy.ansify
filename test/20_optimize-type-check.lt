@@ -1,6 +1,6 @@
 ;;; -*- mode: lisp; package: test.ansify.optimize-type-check -*-
 ;;;
-;;; tests/optimize-type-check.lt
+;;; test/20_optimize-type-check.lt
 ;;;
 
 ;;; Code:
@@ -1047,4 +1047,4 @@
 ;; method
 
 
-;;; tests/optimize-type-check.lt ends here.
+;;; test/20_optimize-type-check.lt ends here.

@@ -1,6 +1,6 @@
 ;;; -*- mode: lisp; package: test.ansify.exports -*-
 ;;;
-;;; test/exports.lt
+;;; test/00_exports.lt
 ;;;
 
 (require "lisp-unit")
@@ -137,4 +137,4 @@
   (%assert-symbol "ctypecase" :macro :autoload "ansify/typecase"))
 
 
-;;; test/exports.lt ends here.
+;;; test/00_exports.lt ends here.

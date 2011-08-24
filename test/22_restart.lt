@@ -1,6 +1,6 @@
 ;;; -*- mode: lisp; package: test.ansify.restart -*-
 ;;;
-;;; tests/restart.lt
+;;; test/22_restart.lt
 ;;;
 
 (require "ansify/restart")
@@ -700,4 +700,4 @@ to the condition to be signalled."
       )))
 
 
-;;; tests/condition-restart.lt ends here.
+;;; test/22_restart.lt ends here.
