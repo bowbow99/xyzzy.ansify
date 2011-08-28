@@ -331,7 +331,8 @@ object".
       ((get type 'si:structure-definition)
        `(let ((#1=#:object ,object-form))
           (and (si:*structurep #1#)
-               (si:*structure-subtypep (si:*structure-definition #1#) ,it))))
+               (si:*structure-subtypep (si:*structure-definition #1#)
+                                       (get ',type 'si:structure-definition)))))
       ((get type 'si::deftype-definition)
        (optimize-type-check object-form (si:canonicalize-type typespec)))
       (t
