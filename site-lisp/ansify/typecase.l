@@ -47,7 +47,7 @@
   `(store-value (#1=#:new-value)
      :report ,(format nil "`~S` の値を変更する" key-place)
      :interactive (lambda ()
-                    (message "元の値 => ~S" ,key-var)
+                    (message "元の値は ~S でした" ,key-var)
                     (list (ed:read-value
                            (format nil "`~S` の値: " ',key-place))))
      (setf ,key-place #1#)
@@ -93,41 +93,39 @@
                          (return (progn ,@(cdr clause)))))
                clauses)
            (t (restart-case
-                  (error 'type-error :datum #1#
-                         :expected-type '(or ,@(mapcar #'car clauses)))
-                (store-value (new)
-                  :report ,(format nil "`~S' の値を変更する" place)
-                  :interactive
-                  (lambda ()
-                    (list (ed:read-value (format nil "`~S' の値: " ',place))))
-                  (setf ,place new)
-                  (go #2#)))))))
+                  ,(make-type-error-form '#1# `(or ,@(mapcar #'car clauses)))
+                ,(make-store-value-form '#1# place '#2#))))))
 
 ;;; Macro `case`
 ;;
 ;; - otherwise is supported
 
+(defvar *case-warn-on-t/otherwise-in-middle* nil
+  "*If non-nil, macro `case` signal a waring when `t` or `otherwise`
+found at middle of clauses.
+They should be `(t)` and `(otherwise)` respectively.")
+
+(defun expand-case-clauses (var clauses)
+  (labels ((otherwise-key-p (x)
+             (member x '(otherwise t))))
+    (with-ca/dr (keys body) (car clauses)
+      (cond
+       ;; last clauses (might be otherwise-clause)
+       ((null (cdr clauses))
+        (cond ((otherwise-key-p keys) `(progn ,@body))
+              (t `(if ,(make-case-test-form keys var)
+                    (progn ,@body)))))
+       ;; non-last clause (cannot be a otherwise-clause)
+       (t (when (and (otherwise-key-p keys)
+                     *case-warn-on-t/otherwise-in-middle*)
+            (warn "case - 最後じゃない clause が ~S になっとるよ" keys))
+          `(if ,(make-case-test-form keys var)
+             (progn ,@body)
+             ,(expand-case-clauses var (cdr clauses))))))))
+
 (defmacro case (key-form &rest clauses)
   `(let ((#1=#:key ,key-form))
-     ,(labels ((expand-clauses (clauses)
-                 (let ((keys (car (car clauses)))
-                       (body (cdr (car clauses))))
-                   (if (null (cdr clauses))
-                     ;; last clause
-                     (if (member keys '(otherwise t) :test #'eq)
-                       `(progn ,@body)
-                       `(if (,(if (consp keys) 'member 'eql) #1# ',keys)
-                          (progn ,@body)))
-                     ;; non-last clauses
-                     (progn
-                       (when (member keys '(otherwise t) :test #'eq)
-                         (warn "case - 最後じゃない clause が ~S になってるよ" keys))
-                       `(if (,(if (consp keys) 'member 'eql) #1# ',keys)
-                          (progn ,@body)
-                          ,(expand-clauses (cdr clauses))))))))
-        (expand-clauses clauses))))
-
-
+     ,(expand-case-clauses '#1# clauses)))
 
 ;;; Macro `ecase`
 
