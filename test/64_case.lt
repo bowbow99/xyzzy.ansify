@@ -1,0 +1,172 @@
+;;; -*- mode: lisp; package: test.ansify.case -*-
+;;;
+;;; test/64_case.lt
+;;;
+;;;
+
+(require "lisp-unit")
+
+(load-library "ansify/typecase")
+
+(defpackage :test.ansify.case
+  (:use :lisp :lisp-unit))
+
+(in-package :test.ansify.case)
+
+(ansify::install)
+(remove-all-tests :test.ansify.case)
+
+;;;; case
+
+(defun case-abcnil (x)
+  (case x
+    (1 'a)
+    (2 'b)
+    (3 'c)
+    (t nil)))
+
+(define-test case
+  ;; no otherwise clause
+  (labels ((case-abc (x)
+             (case x (a 1) (b 2) (c 3))))
+    (assert-eql 1 (case-abc 'a))
+    (assert-eql 2 (case-abc 'b))
+    (assert-eql 3 (case-abc 'c))
+    (assert-eql nil (case-abc 'd)))
+  ;; with otherwise clause (t)
+  (labels ((case-abc (x)
+             (case x (a 1) (b 2) (c 3) (t 0))))
+    (assert-eql 1 (case-abc 'a))
+    (assert-eql 2 (case-abc 'b))
+    (assert-eql 3 (case-abc 'c))
+    (assert-eql 0 (case-abc 'd)))
+  (labels ((case-abc (x)
+             (case x (a 1) (b 2) (c 3) (otherwise 0))))
+    (assert-eql 1 (case-abc 'a))
+    (assert-eql 2 (case-abc 'b))
+    (assert-eql 3 (case-abc 'c))
+    (assert-eql 0 (case-abc 'd)))
+  ;; with quasi-otherwise clause in middle
+  (labels ((case-abc (x)
+             (case x (a 1) (b 2) (c 3) (t 0) (d 4))))
+    (assert-eql 1 (case-abc 'a))
+    (assert-eql 2 (case-abc 'b))
+    (assert-eql 3 (case-abc 'c))
+    (assert-eql 4 (case-abc 'd))
+    (assert-eql nil (case-abc 'e)))
+  ;; properly designato t and otherwise
+  (labels ((case-abc (x)
+             (case x (a 1) (b 2) ((t) 'true) ((otherwise) 'other) (c 3))))
+    (assert-eql 1 (case-abc 'a))
+    (assert-eql 2 (case-abc 'b))
+    (assert-eql 3 (case-abc 'c))
+    (assert-eql nil (case-abc 'd))
+    (assert-eql 'true (case-abc 't))
+    (assert-eql 'other (case-abc 'otherwise)))
+  ;; grouping keys
+  (labels ((case-abc (x)
+             (case x
+               ((a b c) 'alpha)
+               ((1 2 3) 'numeric)
+               ((t otherwise) 'otherwise))))
+    (assert-eql 'alpha (case-abc 'a))
+    (assert-eql 'alpha (case-abc 'b))
+    (assert-eql 'alpha (case-abc 'c))
+    (assert-eql nil    (case-abc 'd))
+    (assert-eql 'numeric (case-abc 1))
+    (assert-eql 'numeric (case-abc 2))
+    (assert-eql 'numeric (case-abc 3))
+    (assert-eql nil      (case-abc 4))
+    (assert-eql 'otherwise (case-abc t))
+    (assert-eql 'otherwise (case-abc 'otherwise))
+    (assert-eql nil    (case-abc nil))))
+
+(define-test ecase
+  ;; plain
+  (labels ((ecase-abc (x)
+             (ecase x (a 1) (b 2) (c 3))))
+    (assert-eql 1 (ecase-abc 'a))
+    (assert-eql 2 (ecase-abc 'b))
+    (assert-eql 3 (ecase-abc 'c))
+    (assert-error 'type-error (ecase-abc 'd))
+    (assert-error 'type-error (ecase-abc 1)))
+  ;; quasi-otherwise - t
+  (labels ((ecase-abc (x)
+             (ecase x (a 1) (b 2) (c 3) (t 0))))
+    (assert-eql 1 (ecase-abc 'a))
+    (assert-eql 2 (ecase-abc 'b))
+    (assert-eql 3 (ecase-abc 'c))
+    (assert-eql 0 (ecase-abc 't))
+    (assert-error 'type-error (ecase-abc 'd))
+    (assert-error 'type-error (ecase-abc 1)))
+  ;; quasi-otherwise - otherwise
+  (labels ((ecase-abc (x)
+             (ecase x (a 1) (b 2) (c 3) (otherwise 0))))
+    (assert-eql 1 (ecase-abc 'a))
+    (assert-eql 2 (ecase-abc 'b))
+    (assert-eql 3 (ecase-abc 'c))
+    (assert-error 'type-error (ecase-abc 'd))
+    (assert-error 'type-error (ecase-abc 1))
+    (assert-eql 0 (ecase-abc 'otherwise)))
+  ;; quasi-otherwise in middle
+  (labels ((ecase-abc (x)
+             (ecase x (a 1) (b 2) (otherwise 0) (c 3))))
+    (assert-eql 1 (ecase-abc 'a))
+    (assert-eql 2 (ecase-abc 'b))
+    (assert-eql 3 (ecase-abc 'c))
+    (assert-error 'type-error (ecase-abc 'd))
+    (assert-error 'type-error (ecase-abc 1))
+    (assert-eql 0 (ecase-abc 'otherwise)))
+  )
+
+
+(define-test ccase
+  (macrolet ((with-store-value ((value) &body body)
+               `(handler-bind ((type-error
+                                (lambda (e)
+                                  (let ((r (find-restart 'store-value e)))
+                                    (when r (invoke-restart r ,value))))))
+                  ,@body)))
+    ;; plain
+    (labels ((ccase-abc (x)
+               (ccase x (a 1) (b 2) (c 3))))
+      (assert-eql 1 (ccase-abc 'a))
+      (assert-eql 2 (ccase-abc 'b))
+      (assert-eql 3 (ccase-abc 'c))
+      (assert-error 'type-error (ccase-abc 'd))
+      (assert-error 'type-error (ccase-abc 1)))
+    ;; quasi-otherwise - t
+    (labels ((ccase-abc (x)
+               (ccase x (a 1) (b 2) (c 3) (t 0))))
+      (assert-eql 1 (ccase-abc 'a))
+      (assert-eql 2 (ccase-abc 'b))
+      (assert-eql 3 (ccase-abc 'c))
+      (assert-eql 0 (ccase-abc 't))
+      (assert-error 'type-error (ccase-abc 'd))
+      (assert-error 'type-error (ccase-abc 1)))
+    ;; quasi-otherwise - otherwise
+    (labels ((ccase-abc (x)
+               (ccase x (a 1) (b 2) (c 3) (otherwise 0))))
+      (assert-eql 1 (ccase-abc 'a))
+      (assert-eql 2 (ccase-abc 'b))
+      (assert-eql 3 (ccase-abc 'c))
+      (assert-error 'type-error (ccase-abc 'd))
+      (assert-error 'type-error (ccase-abc 1))
+      (assert-eql 0 (ccase-abc 'otherwise)))
+    ;; quasi-otherwise in middle
+    (labels ((ccase-abc (x)
+               (ccase x (a 1) (b 2) (otherwise 0) (c 3))))
+      (assert-eql 1 (ccase-abc 'a))
+      (assert-eql 2 (ccase-abc 'b))
+      (assert-eql 3 (ccase-abc 'c))
+      (assert-error 'type-error (ccase-abc 'd))
+      (assert-eql 1 (with-store-value ('a) (ccase-abc 'd)))
+      (assert-error 'type-error (ccase-abc 1))
+      (assert-eql 1 (with-store-value ('a) (ccase-abc 1)))
+      (assert-eql 0 (ccase-abc 'otherwise))))
+  )
+
+
+
+
+;;; test/64_case.lt ends here.
