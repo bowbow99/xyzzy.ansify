@@ -36,6 +36,30 @@
         ecase
         ccase))
 
+;;;; helper functions
+
+
+(defun make-type-error-form (datum expected)
+  `(error 'type-error :datum ,datum
+          :expected-type ',expected))
+
+(defun make-store-value-form (key-var key-place tag)
+  `(store-value (#1=#:new-value)
+     :report ,(format nil "`~S` の値を変更する" key-place)
+     :interactive (lambda ()
+                    (message "元の値 => ~S" ,key-var)
+                    (list (ed:read-value
+                           (format nil "`~S` の値: " ',key-place))))
+     (setf ,key-place #1#)
+     (go ,tag)))
+
+(defun make-case-test-form (keys var)
+  (let ((op (if (consp keys) 'member 'eql)))
+    `(,op ,var ',keys)))
+
+(defun merge-keys (all-keys keys)
+  (append all-keys (if (consp keys) keys (list keys))))
+
 ;;; Macro `typecase`
 (defmacro typecase (keyform &rest clauses)
   `(let ((#1=#:key-object ,keyform))
@@ -57,8 +81,7 @@
                        `(,(optimize-type-check '#1# (car clause))
                          (progn ,@(cdr clause))))
                clauses)
-           (t (error 'type-error :datum #1#
-                     :expected-type '(or ,@(mapcar #'car clauses)))))))
+           (t ,(make-type-error-form '#1# `(or (mapcar #'car clausese)))))))
 
 ;;; Macro `ctypecase`
 (defmacro ctypecase (place &rest clauses)
@@ -104,11 +127,9 @@
                           ,(expand-clauses (cdr clauses))))))))
         (expand-clauses clauses))))
 
-;;; Macro `ecase`
 
-(defun make-type-error-form (datum expected)
-  `(error 'type-error :datum ,datum
-          :expected-type ',expected))
+
+;;; Macro `ecase`
 
 (defun expand-ecase-clauses (var clauses &optional all-keys)
   (cond ((null clauses)
@@ -116,28 +137,16 @@
         (t
          (let ((keys (car (car clauses)))
                (body (cdr (car clauses))))
-           `(if (,(if (consp keys) 'member 'eql) ,var ',keys)
+           `(if ,(make-case-test-form keys var)
               (progn ,@body)
-              ,(let ((nkeys (cond ((consp keys) keys)
-                                  (t (list keys)))))
-                 (expand-ecase-clauses var (cdr clauses)
-                                       (append all-keys nkeys))))))))
+              ,(expand-ecase-clauses var (cdr clauses)
+                                     (merge-keys all-keys keys)))))))
 
 (defmacro ecase (key-form &rest clauses)
   `(let ((#1=#:key ,key-form))
      ,(expand-ecase-clauses '#1# clauses)))
 
 ;;; Macro `ccase`
-
-(defun make-store-value-form (key-var key-place tag)
-  `(store-value (#1=#:new-value)
-     :report ,(format nil "`~S` の値を変更する" key-place)
-     :interactive (lambda ()
-                    (message "元の値 => ~S" ,key-var)
-                    (list (ed:read-value
-                           (format nil "`~S` の値: " ',key-place))))
-     (setf ,key-place #1#)
-     (go ,tag)))
 
 (defun expand-ccase (key-place clauses)
   `(prog (#1=#:key-value)
@@ -150,12 +159,10 @@
                       ,(make-store-value-form '#1# key-place '#2#))
                    (let ((keys (car (car clauses)))
                          (body (cdr (car clauses))))
-                     `(if (,(if (consp keys) 'member 'eql) #1# ',keys)
+                     `(if ,(make-case-test-form keys '#1#)
                         (return (progn ,@body))
-                        ,(let ((nkeys (cond ((consp keys) keys)
-                                            (t (list keys)))))
-                           (expand-clauses (cdr clauses)
-                                           (append all-keys nkeys))))))))
+                        ,(expand-clauses (cdr clauses)
+                                         (merge-keys all-keys keys)))))))
         (expand-clauses clauses))))
 
 (defmacro ccase (key-place &rest clauses)
