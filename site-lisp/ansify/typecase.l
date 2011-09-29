@@ -38,7 +38,6 @@
 
 ;;;; helper functions
 
-
 (defun make-type-error-form (datum expected)
   `(error 'type-error :datum ,datum
           :expected-type ',expected))
@@ -60,44 +59,65 @@
 (defun merge-keys (all-keys keys)
   (append all-keys (if (consp keys) keys (list keys))))
 
+(defun expand-typecase-clause-1 (var clause)
+  (with-ca/dr (type body) clause
+    `(,(optimize-type-check var type)
+      (progn ,@(cdr clause)))))
+
+;;;; typecase family
+
 ;;; Macro `typecase`
+
+(defun expand-typecase-clause (var clauses)
+  (if (null clauses) nil
+    (with-ca/dr (type body) (car clauses)
+      (cond ((and (null (cdr clauses))
+                  (member type '(t otherwise)))
+             `((t ,@body)))
+            (t
+             `(,(expand-typecase-clause-1 var (car clauses))
+               ,@(expand-typecase-clause var (cdr clauses))))))))
+
 (defmacro typecase (keyform &rest clauses)
   `(let ((#1=#:key-object ,keyform))
-     (cond ,@(labels ((expand (clauses)
-                        (cond ((null clauses) nil)
-                              ((and (null (cdr clauses))
-                                    (member (caar clauses) '(t otherwise)))
-                               `((t ,@(cdar clauses))))
-                              (t
-                               `((,(optimize-type-check '#1# (caar clauses))
-                                  (progn,@(cdar clauses)))
-                                 ,@(expand (cdr clauses)))))))
-               (expand clauses)))))
+     (cond ,@(expand-typecase-clause '#1# clauses))))
 
 ;;; Macro `etypecase`
-(defmacro etypecase (keyform &rest clauses)
+
+(defun expand-etypecase (keyform clauses)
+  (let ((types nil))
   `(let ((#1=#:key-object ,keyform))
      (cond ,@(mapcar (lambda (clause)
-                       `(,(optimize-type-check '#1# (car clause))
-                         (progn ,@(cdr clause))))
-               clauses)
-           (t ,(make-type-error-form '#1# `(or (mapcar #'car clausese)))))))
+                       (push (car clause) types)
+                       (expand-typecase-clause-1 '#1# clause))
+                   clauses)
+           (t ,(make-type-error-form '#1# `(or ,@(nreverse types))))))))
+
+(defmacro etypecase (keyform &rest clauses)
+  (expand-etypecase keyform clauses))
 
 ;;; Macro `ctypecase`
-(defmacro ctypecase (place &rest clauses)
-  `(prog (#1=#:key-object)
-     #2=#:ctypecase-root
-     (setf #1# ,place)
-     (cond ,@(mapcar (lambda (clause)
-                       `(,(optimize-type-check '#1# (car clause))
-                         (return (progn ,@(cdr clause)))))
-               clauses)
-           (t (restart-case
-                  ,(make-type-error-form '#1# `(or ,@(mapcar #'car clauses)))
-                ,(make-store-value-form '#1# place '#2#))))))
 
-;;; Macro `case`
-;;
+(defun expand-ctypecase (place clauses)
+  (let ((types nil))
+    `(prog (#1=#:key-object)
+       #2=#:ctypecase-root
+       (setf #1# ,place)
+       (cond ,@(mapcar (lambda (clause)
+                         (push (car clause) types)
+                         (let ((x (expand-typecase-clause-1 '#1# clause)))
+                           `(,(first x) (return ,(second x)))))
+                     clauses)
+             (t (restart-case
+                    ,(make-type-error-form '#1# `(or ,@(nreverse types)))
+                  ,(make-store-value-form '#1# place '#2#)))))))
+
+(defmacro ctypecase (place &rest clauses)
+  (expand-ctypecase place clauses))
+
+
+;;;; case family
+
 ;; - otherwise is supported
 
 (defvar *case-warn-on-t/otherwise-in-middle* nil
