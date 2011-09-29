@@ -26,8 +26,7 @@
         (unless pkg
           (error "Test package not found for ~S" module-name))
         (message "running tests for ~A..." module-name)
-        (let ((*trace-output* *standard-output*)
-              (debuggable-eval::*bypass-stacking-apply-hook* t))
+        (let ((*trace-output* *standard-output*))
           (lisp-unit:run-tests-from package-name))
         (message "running tests for ~A...done." module-name)))))
 
