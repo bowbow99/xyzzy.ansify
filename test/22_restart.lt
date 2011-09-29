@@ -419,7 +419,7 @@ to the condition to be signalled."
                           (return-from test
                             (let ((r (find-restart 'continue e)))
                               (with-output-to-string (s)
-                                (funcall (restart::restart-report-function r) s)))))))
+                                (funcall (ansify::restart-report-function r) s)))))))
           (cerror "Continue" 'example-error :foo 1 :bar 2))))
   ;; uses args as arguments for report string
   (assert-equal "Continue: 1 2"
@@ -429,7 +429,7 @@ to the condition to be signalled."
                           (return-from test
                             (let ((r (find-restart 'continue e)))
                               (with-output-to-string (s)
-                                (funcall (restart::restart-report-function r) s)))))))
+                                (funcall (ansify::restart-report-function r) s)))))))
           (cerror "Continue: ~*~S ~*~S" 'example-error :foo 1 :bar 2)))))
 
 
@@ -460,7 +460,7 @@ to the condition to be signalled."
                           (return-from test
                             (let ((r (find-restart 'continue e)))
                               (with-output-to-string (s)
-                                (funcall (restart::restart-report-function r) s)))))))
+                                (funcall (ansify::restart-report-function r) s)))))))
           (cerror "Continue" "Hey"))))
   ;; uses args as argument for report string
   (assert-equal "Continue: 3"
@@ -470,7 +470,7 @@ to the condition to be signalled."
                           (return-from test
                             (let ((r (find-restart 'continue e)))
                               (with-output-to-string (s)
-                                (funcall (restart::restart-report-function r) s)))))))
+                                (funcall (ansify::restart-report-function r) s)))))))
           (cerror "Continue: ~S" "Hey: ~S" 3)))))
 
 (define-test cerror-with-condition-signals-it-with-continue-restart
@@ -495,7 +495,7 @@ to the condition to be signalled."
                             (return-from test
                               (let ((r (find-restart 'continue e)))
                                 (with-output-to-string (s)
-                                  (funcall (restart::restart-report-function r) s)))))))
+                                  (funcall (ansify::restart-report-function r) s)))))))
             (cerror "Continue" err))))
     ;; uses args as arguments for report string
     (assert-equal "Continue: 1 2"
@@ -505,7 +505,7 @@ to the condition to be signalled."
                             (return-from test
                               (let ((r (find-restart 'continue e)))
                                 (with-output-to-string (s)
-                                  (funcall (restart::restart-report-function r) s)))))))
+                                  (funcall (ansify::restart-report-function r) s)))))))
             (cerror "Continue: ~S ~S" err 1 2))))))
 
 
