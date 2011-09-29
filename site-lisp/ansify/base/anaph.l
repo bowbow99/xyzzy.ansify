@@ -18,7 +18,9 @@
   (export '(aif
             awhen
             awhile
-            acond)))
+            acond
+            aand
+            )))
 
 (defun flatten (tree)
   (labels ((rec (x acc)
@@ -67,6 +69,13 @@
                          ,(expand-clauses (cdr clauses)))))))
       `(let ((,it nil))
          ,(expand-clauses clauses)))))
+
+(defmacro aand (&rest tests)
+  (let ((it (find-it-symbol tests)))
+    `(let (,it)
+       (and ,@(mapcar (lambda (test)
+                        `(setf ,it ,test))
+                    tests)))))
 
 #+xyzzy
 (setf (get 'aif 'ed:lisp-indent-hook) 1
