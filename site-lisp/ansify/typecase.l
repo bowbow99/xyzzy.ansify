@@ -20,6 +20,9 @@
                       #:etypecase
                       #:ctypecase
                       #:otherwise
+                      #:case
+                      #:ecase
+                      #:ccase
                       )))
 
 ;;; Indentation settings
@@ -28,7 +31,10 @@
         (setf (get name 'ed:lisp-indent-hook) 1))
       '(typecase
         etypecase
-        ctypecase))
+        ctypecase
+        case
+        ecase
+        ccase))
 
 ;;; Macro `typecase`
 (defmacro typecase (keyform &rest clauses)
