@@ -14,6 +14,11 @@
 
 (in-package :ansify)
 
+(eval-when (:execute :compile-toplevel :load-toplevel)
+  (shadowing-export '(#:print-unreadable-object
+                      )))
+
+
 ;; NOTE: Used in expansion of `destructuring-bind`
 (defun %assert-keyword-list (keyword-list allowed-keywords allow-other-keys)
   "Check whether KEYWORD-LIST is proper or not, and return it as-is."
@@ -29,6 +34,29 @@
                        (return nil)))))
     (error 'invalid-keyword-list :datum keyword-list))
   keyword-list)
+
+(defmacro print-unreadable-object ((object stream &key type identity)
+                                   &body body)
+  (let (($object (gensym "$object-"))
+        ($stream (gensym "$stream-"))
+        ($type   (gensym "$type-"))
+        ($identity (gensym "identity-")))
+    `(let ((,$object ,object)
+           (,$stream ,stream)
+           (,$type   ,type)
+           (,$identity ,identity))
+       (princ "#<" ,$stream)
+       (when ,$type
+         (prin1 (type-of ,$object) ,$stream)
+         ,(when (or body identity) `(princ #\SPC ,$stream)))
+       ,@body
+       (when ,$identity
+         ,(when body `(princ #\SPC ,$stream))
+         (prin1 (si:address-of ,$object)))
+       (princ ">" ,$stream)
+       nil)))
+
+(setf (get 'print-unreadable-object 'ed:lisp-indent-hook) 1)
 
 (provide "ansify/misc")
 ;;; ansify/misc.l ends here.
