@@ -5,6 +5,8 @@
 
 	* print-unreadable-object を追加
 
+	* case, ecase, ccase を追加
+
 
 2011-08-24  bowbow99  <bowbow99@gmail.com>
 
