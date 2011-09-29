@@ -40,8 +40,11 @@
 (%autoload typecase  "typecase" nil t)
 (%autoload etypecase "typecase" nil t)
 (%autoload ctypecase "typecase" nil t)
+(%autoload case  "typecase" nil t)
+(%autoload ecase "typecase" nil t)
+(%autoload ccase "typecase" nil t)
 
-(dolist (sym '(typecase etypecase ctypecase))
+(dolist (sym '(typecase etypecase ctypecase case ecase ccase))
   (setf (get sym 'ed:lisp-indent-hook) 1))
 
 (shadowing-export '(otherwise))
