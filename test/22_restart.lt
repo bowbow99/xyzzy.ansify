@@ -20,8 +20,16 @@
 ;;; to make it accept typespec defined via `deftype`.
 ;;; In lisp-unit, `assert-type` using `lisp:typep` but it isn't capable
 ;;; of such typespec (unless old "typespec+" is installed).
+;;;
+;;; You can restore original definition by evaluate following (`C-x C-e`
+;;; in lisp-mode should work):
+#|
+       (setf (symbol-function 'lisp:typep)
+             test.ansify.restart::+original-typep-function+)
+|#
 (unless (or (eql #'lisp:typep #'ansify::typep)
             (modulep "typespec+"))
+  (defconstant +original-typep-function+ #'lisp:typep)
   (warn "Replacing function definition of `lisp:typep`. See ~S for more details."
         *load-pathname*)
   (setf (symbol-function 'lisp:typep) #'ansify::typep))
