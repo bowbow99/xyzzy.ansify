@@ -40,7 +40,7 @@
   (let (($object (gensym "$object-"))
         ($stream (gensym "$stream-"))
         ($type   (gensym "$type-"))
-        ($identity (gensym "identity-")))
+        ($identity (gensym "$identity-")))
     `(let ((,$object ,object)
            (,$stream ,stream)
            (,$type   ,type)
