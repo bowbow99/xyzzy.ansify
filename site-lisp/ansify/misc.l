@@ -47,7 +47,12 @@
            (,$identity ,identity))
        (princ "#<" ,$stream)
        (when ,$type
-         (prin1 (type-of ,$object) ,$stream)
+         (let ((,$type (type-of ,$object)))
+           (prin1 (cond ((eql ,$type 'lisp:structure)
+                         (si:*structure-definition-name
+                          (si:*structure-definition ,$object)))
+                        (t ,$type))
+                  ,$stream))
          ,(when (or body identity) `(princ #\SPC ,$stream)))
        ,@body
        (when ,$identity
