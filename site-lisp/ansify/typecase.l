@@ -80,5 +80,86 @@
                   (setf ,place new)
                   (go #2#)))))))
 
+;;; Macro `case`
+;;
+;; - otherwise is supported
+
+(defmacro case (key-form &rest clauses)
+  `(let ((#1=#:key ,key-form))
+     ,(labels ((expand-clauses (clauses)
+                 (let ((keys (car (car clauses)))
+                       (body (cdr (car clauses))))
+                   (if (null (cdr clauses))
+                     ;; last clause
+                     (if (member keys '(otherwise t) :test #'eq)
+                       `(progn ,@body)
+                       `(if (,(if (consp keys) 'member 'eql) #1# ',keys)
+                          (progn ,@body)))
+                     ;; non-last clauses
+                     (progn
+                       (when (member keys '(otherwise t) :test #'eq)
+                         (warn "case - 最後じゃない clause が ~S になってるよ" keys))
+                       `(if (,(if (consp keys) 'member 'eql) #1# ',keys)
+                          (progn ,@body)
+                          ,(expand-clauses (cdr clauses))))))))
+        (expand-clauses clauses))))
+
+;;; Macro `ecase`
+
+(defun make-type-error-form (datum expected)
+  `(error 'type-error :datum ,datum
+          :expected-type ',expected))
+
+(defun expand-ecase-clauses (var clauses &optional all-keys)
+  (cond ((null clauses)
+         (make-type-error-form var `(member ,@all-keys)))
+        (t
+         (let ((keys (car (car clauses)))
+               (body (cdr (car clauses))))
+           `(if (,(if (consp keys) 'member 'eql) ,var ',keys)
+              (progn ,@body)
+              ,(let ((nkeys (cond ((consp keys) keys)
+                                  (t (list keys)))))
+                 (expand-ecase-clauses var (cdr clauses)
+                                       (append all-keys nkeys))))))))
+
+(defmacro ecase (key-form &rest clauses)
+  `(let ((#1=#:key ,key-form))
+     ,(expand-ecase-clauses '#1# clauses)))
+
+;;; Macro `ccase`
+
+(defun make-store-value-form (key-var key-place tag)
+  `(store-value (#1=#:new-value)
+     :report ,(format nil "`~S` の値を変更する" key-place)
+     :interactive (lambda ()
+                    (message "元の値 => ~S" ,key-var)
+                    (list (ed:read-value
+                           (format nil "`~S` の値: " ',key-place))))
+     (setf ,key-place #1#)
+     (go ,tag)))
+
+(defun expand-ccase (key-place clauses)
+  `(prog (#1=#:key-value)
+     #2=#:ccase-root
+     (setf #1# ,key-place)
+     ,(labels ((expand-clauses (clauses &optional all-keys)
+                 (if (null clauses)
+                   `(restart-case
+                        ,(make-type-error-form '#1# `(member ,@all-keys))
+                      ,(make-store-value-form '#1# key-place '#2#))
+                   (let ((keys (car (car clauses)))
+                         (body (cdr (car clauses))))
+                     `(if (,(if (consp keys) 'member 'eql) #1# ',keys)
+                        (return (progn ,@body))
+                        ,(let ((nkeys (cond ((consp keys) keys)
+                                            (t (list keys)))))
+                           (expand-clauses (cdr clauses)
+                                           (append all-keys nkeys))))))))
+        (expand-clauses clauses))))
+
+(defmacro ccase (key-place &rest clauses)
+  (expand-ccase key-place clauses))
+
 (provide "ansify/typecase")
 ;;; ansify/typecase.l ends here.
