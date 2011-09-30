@@ -1,0 +1,106 @@
+;;; -*- mode: lisp; package: test.ansify.typecase -*-
+;;;
+;;; test/63_typecase.lt
+;;;
+
+;;; Code:
+
+(require "ansify/typecase")
+(require "lisp-unit")
+
+(defpackage :test.ansify.typecase
+  (:use :lisp :lisp-unit))
+
+(in-package :test.ansify.typecase)
+
+(ansify::install)
+
+(remove-all-tests :test.ansify.typecase)
+
+(deftype callable ()
+  `(or function
+       (and symbol (satisfies fboundp))))
+
+
+(define-test typecase
+  (dolist (x '(("foo" . :string)
+               (foo   . :symbol)
+               (:foo  . :symbol)
+               (123   . :fixnum)
+               (#\c   . :other)
+               ((t nil) . :other)))
+    (assert-eql (cdr x)
+        (typecase (car x)
+          (string :string)
+          (fixnum :fixnum)
+          (symbol :symbol)
+          (t      :other))
+      (car x) (cdr x))
+    (assert-eql (cdr x)
+        (typecase (car x)
+          (string :string)
+          (fixnum :fixnum)
+          (symbol :symbol)
+          (otherwise :other))
+      (car x) (cdr x)))
+  ;; Use typespec defined via `deftype`
+  (dolist (x `((car   . :callable)
+               (,#'car . :callable)
+               ("foo" . :other)
+               (x     . :other)))
+    (assert-eql (cdr x)
+        (typecase (car x)
+          (callable  :callable)
+          (otherwise :other))
+      (car x)
+      (cdr x)))
+  ;; If there's no matching clause
+  (assert-eql nil (typecase 33))
+  (assert-eql nil (typecase 33 (string :string) (symbol :symbol)))
+  ;; If there's no forms in matching clause
+  (assert-eql nil (typecase 33 (fixnum))))
+
+(define-test etypecase
+  (macrolet ((do-etypecase (x)
+               `(etypecase ,x
+                  (callable :callable)
+                  (symbol :symbol)
+                  (string :string)
+                  (fixnum :fixnum))))
+    (dolist (x (list #'car 'car 'foo "foo" 33))
+      (assert-true (do-etypecase x)))
+    (dolist (x (list '(t . nil) #(a b c) (make-hash-table)))
+      (assert-error 'type-error
+          (do-etypecase x)))
+    ;; If there's no forms in matching clause
+    (assert-eql nil (etypecase 33 (fixnum)))))
+
+(define-test ctypecase
+  (macrolet ((do-ctypecase (x)
+               `(ctypecase ,x
+                  (callable :callable)
+                  (symbol :symbol)
+                  (string :string)
+                  (fixnum :fixnum))))
+    (dolist (x (list #'car 'car 'foo "foo" 33))
+      (assert-true (do-ctypecase x)))
+    ;; signal `type-error` as `etypecase`
+    (dolist (x (list '(t . nil) #(a b c) (make-hash-table)))
+      (assert-error 'type-error
+          (do-ctypecase x)))
+    ;; Able to correct error by `store-value` restart
+    (dolist (x (list '(t . nil) #(a b c) (make-hash-table)))
+      (assert-eql :string
+          (handler-bind
+              ((type-error
+                (lambda (e)
+                  (assert-true (find-restart 'store-value e))
+                  (invoke-restart 'store-value "foo"))))
+            (do-ctypecase x)))
+      ;; value of `x` must be replaced by `store-value` restart
+      (assert-equal "foo" x))
+    ;; If there's no forms in matching clause
+    (assert-eql nil (ctypecase 33 (fixnum)))))
+
+
+;;; test/63_typecase.lt ends here.

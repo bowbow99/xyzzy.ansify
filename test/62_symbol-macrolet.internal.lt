@@ -1,0 +1,89 @@
+;;; -*- mode: lisp; package: test.ansify.symbol-macrolet.internal -*-
+;;;
+;;; test/62_symbol-macrolet.internal.lt
+;;;
+
+
+(require "lisp-unit")
+(require "ansify/symbol-macrolet")
+
+(defpackage :test.ansify.symbol-macrolet.internal
+  (:use :lisp :lisp-unit))
+
+(in-package :test.ansify.symbol-macrolet.internal)
+
+(ansify::install)
+
+(remove-all-tests :test.symbol-macrolet.internal)
+
+(require "cmu_loop")
+
+(defparameter *example-sym/expn-list*
+  (loop for i from 97 to 122
+    for c = (code-char i)
+    collect (list (intern (string c)) (string c))))
+
+(defmacro assert-lambda-list (lambda-list expected)
+  `(assert-equal ',expected
+       (ansify::sm.expand-lambda-list ',lambda-list *example-sym/expn-list*)))
+
+(define-test expand-lambda-list-&whole
+  (assert-lambda-list (&whole a) (&whole a))
+  (assert-lambda-list (&whole a &optional (b c)) (&whole a &optional (b "c")))
+  (assert-lambda-list (&whole a &optional (b a)) (&whole a &optional (b a))))
+
+(define-test expand-lambda-list-&environment
+  (assert-lambda-list (&environment a) (&environment a))
+  (assert-lambda-list (&environment a &optional (b c)) (&environment a &optional (b "c")))
+  (assert-lambda-list (&environment a &optional (b a)) (&environment a &optional (b a))))
+
+(define-test expand-lambda-list-&required
+  (assert-lambda-list (a) (a))
+  (assert-lambda-list (a b) (a b))
+  (assert-lambda-list (a &optional (b c)) (a &optional (b "c")))
+  (assert-lambda-list (a &optional (b a)) (a &optional (b a)))
+  (assert-lambda-list ((a b) &optional (c a) (d b) (e f))
+                      ((a b) &optional (c a) (d b) (e "f"))))
+
+(define-test expand-lambda-list-&optional
+  (assert-lambda-list (&optional a) (&optional a))
+  (assert-lambda-list (&optional (a b)) (&optional (a "b")))
+  (assert-lambda-list (&optional (a b c)) (&optional (a "b" c)))
+  (assert-lambda-list (&optional a (b c)) (&optional a (b "c")))
+  (assert-lambda-list (&optional a (b a)) (&optional a (b a)))
+  (assert-lambda-list (&optional ((a b)) ((c d) (a e)))
+                      (&optional ((a b)) ((c d) (a "e")))))
+
+(define-test expand-lambda-list-&rest
+  (assert-lambda-list (&rest a) (&rest a))
+  (assert-lambda-list (&rest a &key (b c)) (&rest a &key (b "c")))
+  (assert-lambda-list (&rest a &key (b a)) (&rest a &key (b a)))
+  (assert-lambda-list (&rest (a b) &key (c d) (e f))
+                      (&rest (a b) &key (c "d") (e "f")))
+  (assert-lambda-list (&rest (a b) &key (c a) (e b))
+                      (&rest (a b) &key (c a) (e b))))
+
+(define-test expand-lambda-list-&key
+  (assert-lambda-list (&key a) (&key a))
+  (assert-lambda-list (&key (a b)) (&key (a "b")))
+  (assert-lambda-list (&key (a b c)) (&key (a "b" c)))
+  (assert-lambda-list (&key ((a b) c d)) (&key ((a b) "c" d)))
+  (assert-lambda-list (&key (a b) (c d)) (&key (a "b") (c "d")))
+  (assert-lambda-list (&key (a) (b c) (d e f)) (&key (a) (b "c") (d "e" f)))
+  (assert-lambda-list (&key (a b) &aux (c d)) (&key (a "b") &aux (c "d")))
+  (assert-lambda-list (&key (a b) &aux (c a)) (&key (a "b") &aux (c a)))
+  (assert-lambda-list (&key ((a b) c d) &aux (c a)) (&key ((a b) "c" d) &aux (c "a")))
+  (assert-lambda-list (&key ((a b) c d) &aux (c b)) (&key ((a b) "c" d) &aux (c b)))
+  (assert-lambda-list (&key ((a b) c d) &aux (c c)) (&key ((a b) "c" d) &aux (c "c")))
+  (assert-lambda-list (&key ((a b) c d) &aux (c d)) (&key ((a b) "c" d) &aux (c d)))
+  (assert-lambda-list (&key ((a b) c d) &aux (c e)) (&key ((a b) "c" d) &aux (c "e")))
+  )
+
+(define-test expand-lambda-list-&aux
+  (assert-lambda-list (&aux a) (&aux a))
+  (assert-lambda-list (&aux (a b)) (&aux (a "b")))
+  (assert-lambda-list (&aux (a b) c) (&aux (a "b") c))
+  (assert-lambda-list (&aux (a b) (c d)) (&aux (a "b") (c "d")))
+  (assert-lambda-list (&aux a (b c)) (&aux a (b "c"))))
+
+;;; test/62_symbol-macrolet.internal.lt ends here

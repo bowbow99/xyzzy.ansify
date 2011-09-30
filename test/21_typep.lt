@@ -1,0 +1,594 @@
+;;; -*- mode: lisp; package: test.ansify.typep -*-
+;;;
+;;; test/21_typep.lt
+;;;
+
+;;; Code:
+
+(require "lisp-unit")
+(require "ansify/typespec+")
+
+(defpackage :test.ansify.typep
+  (:use :lisp :lisp-unit))
+
+(in-package :test.ansify.typep)
+
+(ansify::install)
+
+(remove-all-tests :test.ansify.typep)
+
+
+(defstruct example foo bar)
+
+(defparameter *example-objects*
+  `(nil
+    t
+    1/10
+    1
+    10
+    100
+    1000
+    ;(integer . 10)
+    (most-positive-fixnum . ,most-positive-fixnum)
+    (most-negative-fixnum . ,most-negative-fixnum)
+    (most-positive-fixnum+1 . ,(1+ most-positive-fixnum))
+    (most-negative-fixnum-1 . ,(1- most-negative-fixnum))
+    (single-float . 12.3)
+    (double-float . 123.456d7)
+    (complex . #C(123 456))
+    (function . ,#'(lambda (x) (1+ x)))
+    (array . ,(make-array '(2 3)))
+    (string . "string")
+    symbol
+    :keyword
+    (list-integer . (1 2 3))
+    (list-symbol . (foo bar baz))
+    (list-string . ("a" "b" "c"))
+    (vector . ,(make-vector 3))
+    (vector-symbol . #(foo bar baz))
+    (char-alpha . #\c)
+    (char-num . #\0)
+    (char-space . #\SPC)
+    (char-lfd . #\LFD)
+    (char-hiragana . #\あ)
+    (char-kanji . #\寝)
+    (compiled-function . ,(compile nil (lambda (x) (1+ x))))
+    (package . ,(find-package :user))
+    (random-state . ,*random-state*)
+    (readtable . ,*readtable*)
+    (structure . ,(make-example))
+    (hashtable . ,(make-hash-table))
+    ))
+
+(defmacro assert-typep (typespec &rest names)
+  `(progn
+     ,@(mapcar (lambda (x)
+                 (multiple-value-bind (name object)
+                     (if (consp x)
+                       (values (car x) (cdr x))
+                       (values x x))
+                   `(let ((object ',object))
+                      (,(if (member name names) 'assert-true 'assert-false)
+                       (typep object ',typespec)
+                       object))))
+         *example-objects*)))
+#+xyzzy
+(setf (get 'assert-typep 'ed:lisp-indent-hook) 1)
+
+
+;;;;
+;;;; * Ordinary Types
+
+;; atom
+(define-test atom
+  (assert-typep atom
+    nil t 1/10 1 10 100 1000 most-positive-fixnum most-negative-fixnum
+    most-positive-fixnum+1 most-negative-fixnum-1 single-float double-float complex
+    function array string symbol :keyword
+    vector vector-symbol
+    char-alpha char-num char-space char-lfd char-hiragana char-kanji
+    compiled-function package random-state readtable structure hashtable
+    ))
+
+;; function
+(define-test function
+  (assert-typep function function compiled-function))
+
+;; hash-table
+(define-test hash-table
+  (assert-typep hash-table hashtable))
+
+;; keyword
+(define-test keyword
+  (assert-typep keyword :keyword))
+
+;; readtable
+(define-test readtable
+  (assert-typep readtable readtable))
+
+;; list
+(define-test list
+  (assert-typep list nil list-integer list-symbol list-string))
+
+;; nil
+(define-test nil
+  (assert-typep nil))
+
+;; compiled-function
+(define-test compiled-function
+  (assert-typep compiled-function compiled-function))
+
+;; null
+(define-test null
+  (assert-typep null nil))
+
+;; package
+(define-test package
+  (assert-typep package package))
+
+;; cons
+(define-test cons
+  (assert-typep cons list-integer list-symbol list-string))
+
+;; random-state
+(define-test random-state
+  (assert-typep random-state random-state))
+
+;; symbol
+(define-test symbol
+  (assert-typep symbol t nil symbol :keyword))
+
+;; t
+(define-test t
+  (dolist (x *example-objects*)
+    (assert-true (typep (if (consp x) (cdr x) x) 't))))
+
+;; sequence
+(define-test sequence
+  (assert-typep sequence nil list-integer list-symbol list-string vector vector-symbol string))
+
+;; NOTE: Not supported as type specifier in xyzzy
+;;   `si:*structure-definition-p` and `si:*structurep` can do the job.
+;; structure-class
+;; structure-object
+
+;; NOTE: Not supported in xyzzy
+;; restart
+;; pathname
+;; logical-pathname
+
+;; NOTE: Not supported in xyzzy
+;; unsigned-byte
+;; signed-byte
+;; bit
+
+
+;;;;
+;;;; * Character
+
+;; character
+(define-test character
+  (assert-typep character char-alpha char-num char-space char-lfd char-hiragana char-kanji))
+
+;; base-char
+;; NOTE: xyzzy uses non-standard name `base-character' for this type
+(define-test base-character
+  (assert-typep base-character char-alpha char-num char-space char-lfd char-hiragana char-kanji))
+
+;; standard-char
+(define-test standard-char
+  (assert-typep standard-char char-alpha char-num char-space char-lfd))
+
+;; extended-char
+;; NOTE: xyzzy uses non-standard name `extended-character' for this type
+(define-test extended-character
+  (assert-typep extended-character ))
+
+;;;;
+;;;; * Array/Vector/String
+
+;;; TODO: No complicated arrays are tested.
+;;; - displaced
+;;; - has fill-pointer
+;;; - adjustable
+
+;; array {{element-type | *} {dimension-spec}}
+(define-test array
+  (assert-typep array array string vector vector-symbol)
+  ;; element-type
+  (assert-typep (array *) array string vector vector-symbol)
+  (assert-typep (array character) string)
+  (assert-typep (array (or character symbol)) array vector vector-symbol)
+  ;; ranks
+  (assert-typep (array character 3))
+  (assert-typep (array character 1) string)
+  (assert-typep (array t 3))
+  (assert-typep (array t 2) array)
+  (assert-typep (array t 1) vector vector-symbol)
+  (assert-typep (array * 3))
+  (assert-typep (array * 2) array)
+  (assert-typep (array * 1) vector vector-symbol string)
+  ;; dimensions
+  (assert-typep (array character (3)))
+  (assert-typep (array character (6)) string)
+  (assert-typep (array t (3)) vector vector-symbol)
+  (assert-typep (array t (2 3)) array)
+  )
+
+;; simple-array {{element-type | *} {dimentsion-spec}}
+(define-test simple-array
+  (assert-typep simple-array array string vector vector-symbol)
+  ;; element-type
+  (assert-typep (simple-array *) array string vector vector-symbol)
+  (assert-typep (simple-array character) string)
+  (assert-typep (simple-array (or character symbol)) array vector vector-symbol)
+  ;; ranks
+  (assert-typep (simple-array character 3))
+  (assert-typep (simple-array character 1) string)
+  (assert-typep (simple-array t 3))
+  (assert-typep (simple-array t 2) array)
+  (assert-typep (simple-array t 1) vector vector-symbol)
+  (assert-typep (simple-array * 3))
+  (assert-typep (simple-array * 2) array)
+  (assert-typep (simple-array * 1) vector vector-symbol string)
+  ;; dimensions
+  (assert-typep (simple-array character (3)))
+  (assert-typep (simple-array character (6)) string)
+  (assert-typep (simple-array t (3)) vector vector-symbol)
+  (assert-typep (simple-array t (2 3)) array)
+  )
+
+;; vector
+(define-test vector
+  (assert-typep vector string vector vector-symbol)
+  ;; element-type
+  (assert-typep (vector *) string vector vector-symbol)
+  (assert-typep (vector t) vector vector-symbol)
+  (assert-typep (vector character) string)
+  ;; length
+  (assert-typep (vector * 2) )
+  (assert-typep (vector * 3) vector vector-symbol)
+  (assert-typep (vector * 6) string)
+  ;; combination
+  (assert-typep (vector t 6))
+  (assert-typep (vector t 3) vector vector-symbol)
+  (assert-typep (vector character 3) )
+  (assert-typep (vector character 6) string))
+
+;; simple-vector
+(define-test simple-vector
+  (assert-typep simple-vector vector vector-symbol)
+  (assert-typep (simple-vector *) vector vector-symbol)
+  (assert-typep (simple-vector 2) )
+  (assert-typep (simple-vector 3) vector vector-symbol)
+  )
+
+;; NOTE: Not supported in xyzzy
+;; bit-vector
+;; simple-bit-vector
+
+;; string
+(define-test string
+  (assert-typep string string)
+  (assert-typep (string *) string)
+  (assert-typep (string 3) )
+  (assert-typep (string 6) string))
+
+;; NOTE: Not supported in xyzzy
+;; base-string
+;; simple-base-string
+
+;; simple-string
+(define-test simple-string
+  (assert-typep simple-string string)
+  (assert-typep (simple-string *) string)
+  (assert-typep (simple-string 3) )
+  (assert-typep (simple-string 6) string))
+
+;;;;
+;;;; * Number
+#|
+  ├number                              数値
+  │├real                              実数
+  ││├rational                        有理数
+  │││├ratio                         分数
+  │││└integer                       整数
+  │││  └bignum                      －
+  ││└float                           浮動小数点数
+  ││  ├short-float                   小精度浮動小数点数
+  ││  ├single-float                  単精度浮動小数点数
+  ││  ├double-float                  倍精度浮動小数点数
+  ││  └long-float                    長精度浮動小数点数
+  │└complex                           複素数
+|#
+;;; Note: about LOWER/UPPER-LIMIT
+;;; xyzzy doesn't support LOWER/UPPER-LIMIT for some numerical typespecs.
+;;; In fact, this is not problem about these type specifiers, but how `typep'
+;;; handle compound typespecs. `typep' treat a compound typespec as atomic
+;;; typespec when it can be atomic (ie. has `si::type-perdicate` property)
+;;; and just ignore arguments (cdr of compound typespec).
+;;; This can be fixed by changing `typep` to check `si::type-specifier-list`
+;;; first, but it introduces incompatibility and can break existing programs.
+
+;; number
+(define-test number
+  (assert-typep number 1/10 1 10 100 1000 single-float most-positive-fixnum most-negative-fixnum
+    most-positive-fixnum+1 most-negative-fixnum-1 double-float complex))
+
+;; real [lower-limit [upper-limit]]
+(define-test real
+  (assert-typep real 1/10 1 10 100 1000 single-float most-positive-fixnum most-negative-fixnum
+    most-positive-fixnum+1 most-negative-fixnum-1 double-float)
+  ;; lower-limit
+  ;(assert-typep (real 3) 10 100 1000 float)
+  ;; upper-limit
+  ;(assert-typep (real * 20) 1 10 float)
+  )
+
+;; rational [lower-limit [upper-limit]]
+(define-test rational
+  (assert-typep rational 1/10 1 10 100 1000 most-positive-fixnum most-negative-fixnum
+    most-positive-fixnum+1 most-negative-fixnum-1))
+
+;; ratio
+(define-test ratio
+  (assert-typep ratio 1/10))
+
+;; integer [lower-limit [upper-limit]]
+(define-test integer
+  (assert-typep integer 1 10 100 1000 most-positive-fixnum most-negative-fixnum
+    most-positive-fixnum+1 most-negative-fixnum-1)
+  ;; lower-limit
+  (assert-typep (integer 7) 10 100 1000 most-positive-fixnum most-positive-fixnum+1)
+  (assert-typep (integer 10) 10 100 1000 most-positive-fixnum most-positive-fixnum+1)
+  (assert-typep (integer (10)) 100 1000 most-positive-fixnum most-positive-fixnum+1)
+  (assert-typep (integer 20) 100 1000 most-positive-fixnum most-positive-fixnum+1)
+  (assert-typep (integer 20 *) 100 1000 most-positive-fixnum most-positive-fixnum+1)
+  ;; upper-limit
+  (assert-typep (integer * 20) 1 10 most-negative-fixnum most-negative-fixnum-1)
+  (assert-typep (integer * 100) 1 10 100 most-negative-fixnum most-negative-fixnum-1)
+  (assert-typep (integer * (100)) 1 10 most-negative-fixnum most-negative-fixnum-1)
+  ;; combine
+  (assert-typep (integer 10 10) 10)
+  (assert-typep (integer 10 100) 10 100)
+  (assert-typep (integer 10 (100)) 10)
+  (assert-typep (integer (10) 100) 100)
+  )
+
+;; fixnum
+(define-test fixnum
+  (assert-typep fixnum 1 10 100 1000 most-positive-fixnum most-negative-fixnum))
+
+;; bignum
+(define-test bignum
+  (assert-typep bignum most-positive-fixnum+1 most-negative-fixnum-1))
+
+;; mod
+;; NOTE: The typespec `mod' is defined with `deftype` and need to be expanded
+;; by `si:canonicalize-type`.
+;; TODO: Need to test 0 on typespec `mod` as well.
+;(define-test mod
+;  (assert-typep (mod 30) 1 10)
+;  (assert-typep (mod 1000) 1 10 100)
+;  )
+
+;;; TODO: Tests for float types with LOWER/UPPER-LIMIT are missing
+;; float [lower-limit [upper-limit]]
+(define-test float
+  (assert-typep float single-float double-float))
+
+;; short-float [lower-limit [upper-limit]]
+(define-test short-float
+  (assert-typep short-float single-float))
+;; single-float [lower-limit [upper-limit]]
+(define-test single-float
+  (assert-typep single-float single-float))
+
+;; long-float [lower-limit [upper-limit]]
+(define-test long-float
+  (assert-typep long-float double-float))
+;; double-float [lower-limit [upper-limit]]
+(define-test double-float
+  (assert-typep double-float double-float))
+
+;; complex [typespec]
+;; TODO: Tests for `complex` with TYPESPEC are missing
+(define-test complex
+  (assert-typep complex complex))
+
+;;;;
+;;;; * Stream
+;;;; TODO: Write tests for stream
+#| 型一覧
+  ├stream                              ストリーム
+  │├two-way-stream                    双方向ストリーム
+  │├echo-stream                       －
+  │├broadcast-stream                  －
+  │├file-stream                       ファイルストリーム
+  │├synonym-stream                    文字列ストリーム
+  │├string-stream                     －
+  │└concatenated-stream               －
+|#
+;; stream
+;; broadcast-stream
+;; concatenated-stream
+;; string-stream
+;; echo-stream
+;; synonym-stream
+;; two-way-stream
+;; file-stream
+
+;;;;
+;;;; * Compound Only
+
+;; and TYPESPEC*
+(define-test and
+  (dolist (x *example-objects*)
+    ;; NOTE: The typespec `(and)` is equevalent to `t`.
+    (assert-true (typep x '(and)))
+    (assert-true (typep x '(and t)))
+    (assert-false (typep x '(and nil))))
+  ;; NOTE: `and` can't be a typespec without parenthesis. see [CLHS: Type Specifier AND][1].
+  ;;   [1]: http://www.lispworks.com/documentation/HyperSpec/Body/t_and.htm
+  ;(dolist (x *example-objects*)
+  ;  (assert-error (typep x 'and)))
+  ;; combination with t
+  (assert-typep (and function t) function compiled-function)
+  (assert-typep (and hash-table t) hashtable)
+  (assert-typep (and keyword t) :keyword)
+  (assert-typep (and readtable t) readtable)
+  (assert-typep (and list t) nil list-integer list-symbol list-string)
+  (assert-typep (and cons t) list-integer list-symbol list-string)
+  (assert-typep (and null t) nil)
+  (assert-typep (and character t) char-alpha char-num char-space char-lfd char-hiragana char-kanji)
+  (assert-typep (and vector t) string vector vector-symbol)
+  (assert-typep (and integer t) 1 10 100 1000 most-positive-fixnum most-negative-fixnum
+    most-positive-fixnum+1 most-negative-fixnum-1)
+  ;; combination with nil
+  (assert-typep (and function nil))
+  (assert-typep (and hash-table nil))
+  (assert-typep (and list nil))
+  (assert-typep (and null nil))
+  (assert-typep (and vector nil))
+  (assert-typep (and number nil))
+  ;; some random combinations
+  (assert-typep (and symbol list) nil)
+  (assert-typep (and atom list) nil)
+  (assert-typep (and number double-float) double-float)
+  (assert-typep (and function compiled-function) compiled-function)
+  )
+
+;; or TYPESPEC*
+(define-test or
+  ;; typespec `(or)` is equevalent to `nil`
+  (assert-typep (or))
+  (dolist (x *example-objects*)
+    (assert-true (typep x '(or t)))
+    (assert-false (typep x '(or nil))))
+  ;; NOTE: `or` can't be a typespec without parenthesis. see [CLHS: Type Specifier OR][2].
+  ;;   [2]: http://www.lispworks.com/documentation/HyperSpec/Body/t_or.htm
+  ;(dolist (x *example-objects*)
+  ;  (assert-erorr (typep x 'or))))
+  ;; combination with nil
+  (assert-typep (or function nil) function compiled-function)
+  (assert-typep (or character nil) char-alpha char-num char-space char-lfd char-hiragana char-kanji)
+  (assert-typep (or vector nil) vector vector-symbol string)
+  ;; combination with t is logically same with t
+  (dolist (x *example-objects*)
+    (assert-true (typep x '(or function t)))
+    (assert-true (typep x '(or character t)))
+    (assert-true (typep x '(or vector t))))
+  ;; some random combinations
+  (assert-typep (or character vector) char-alpha char-num char-space char-lfd char-hiragana char-kanji
+    vector vector-symbol string)
+  (assert-typep (or symbol function) t nil symbol :keyword function compiled-function)
+  )
+
+;; not TYPESPEC
+(define-test not
+  (assert-typep (not t))
+  (assert-typep (not atom) list-integer list-symbol list-string)
+  (assert-typep (not character) nil t 1/10 1 10 100 1000 most-positive-fixnum most-negative-fixnum
+    most-positive-fixnum+1 most-negative-fixnum-1 single-float double-float complex
+    function array string symbol :keyword list-integer list-symbol list-string vector vector-symbol
+    compiled-function package random-state readtable structure hashtable))
+
+;; member OBJECT*
+(define-test member
+  (assert-typep (member)) ; equivalent to nil
+  ;; NOTE: symbol `*` doesn't mean `t` here. it means a symbol `*` itself
+  (assert-typep (member *))
+  (assert-typep (member t nil) t nil)
+  (assert-typep (member "string")) ; use eql
+  (assert-typep (member #\c #\0 #\SPC) char-alpha char-num char-space)
+  (assert-typep (member symbol :keyword) symbol :keyword)
+  (assert-typep (member 10 12.3) 10 single-float)
+  ;; FIXME: The symbol `member` is not valid as a type specifier.
+  ;(assert-error 'type-error (typep 3 'member))
+  )
+
+;; eql OBJECT
+(define-test eql
+  (assert-typep (eql 10) 10)
+  (assert-typep (eql t) t)
+  (assert-typep (eql nil) nil)
+  (assert-typep (eql :keyword) :keyword)
+  (assert-typep (eql #\c) char-alpha))
+
+;; satisfies PREDICATE-NAME
+;; FIXME: CLHS explicitly says PREDICATE-NAME must be a symbol. But xyzzy allow to use
+;; quoted lambda-expression or function object as PREDICATE-NAME
+(define-test satisfies
+  (assert-typep (satisfies atom) nil t 1/10 1 10 100 1000 most-positive-fixnum most-negative-fixnum
+    most-positive-fixnum+1 most-negative-fixnum-1 single-float double-float complex
+    function array string symbol :keyword vector vector-symbol char-alpha char-num char-space
+    char-lfd char-hiragana char-kanji compiled-function package random-state readtable structure hashtable)
+  (assert-typep (satisfies numberp) 1/10 1 10 100 1000 most-positive-fixnum most-negative-fixnum
+    most-positive-fixnum+1 most-negative-fixnum-1 single-float double-float complex)
+  (assert-typep (satisfies stringp) string))
+
+;; NOTE: This is not allowed to used in `typep`.
+;; values
+
+;;;;
+;;;; * Conditions/Errors
+;;;; TODO: Write tests for conditions/errors
+;; simple-condition
+;; simple-error
+;; simple-type-error
+;; simple-warning
+;; arithmetic-error
+;; cell-error
+;; storage-condition
+;; condition
+;; stream-error
+;; package-error
+;; control-error
+;; parse-error
+;; division-by-zero
+;; program-error
+;; style-warning
+;; error
+;; reader-error
+;; file-error
+;; type-error
+;; unbound-slot
+;; unbound-variable
+;; undefined-function
+;; serious-condition
+;; floating-point-overflow
+;; floating-point-underflow
+;; warning
+;; floating-point-invalid-operation
+;; floating-point-inexact
+;; end-of-file
+;; print-not-readable
+
+;;;;
+;;;; * Xyzzy Specific
+;;;; TODO: Write tests for xyzzy specific types
+;; ed:buffer
+;; ed:marker
+;; ed:process
+;; ed:regexp
+;; ed:syntax-table
+;; ed:menu
+;; ed:dde-handle
+;; ed:window
+;; ed:oledata
+
+
+
+;;;;
+;;;; * CLOS (not implemented in xyzzy)
+;; generic-function
+;; method
+;; built-in-class
+;; method-combination
+;; standard-class
+;; standard-generic-function
+;; class
+;; standard-method
+;; standard-object
+
+;;; test/21_typep.lt ends here.

@@ -1,26 +1,42 @@
-Common Lisp の xyzzy にないもの詰め合わせ予定地。だったのだけど（カクカクシカジカ）というワケで機能毎に個別に作って公開してくことにしたので当面ココは放置になりそう。
+これは何
+========
+ANSI Common Lisp にあって xyzzy にないもの詰め合わせ予定地。
+
+
+インストール
+============
+
+NetInstaller から
+-----------------
+<del>[カフェイン中毒] からどうぞ。</del>
+
+  [カフェイン中毒]: http://bowbow99.sakura.ne.jp/xyzzy/packages.l
+
+設定
+====
+今のところなし。
 
 使い方
 ======
-読み込んでおいて、任意のパッケージ内で cl::install すると使えるようになる。
-lisp パッケージとぶつかるものは shadowing-import されて、lisp:xxx じゃなくて cl::xxx が見えるようになる。
+読み込んでおいて
 
-    (require "cl")
-    (cl::install)
+    (eval-when (:execute :compile-toplevel :load-toplevel)
+      (require "ansify"))
 
+任意のパッケージにインストールします。
 
-実装済み
-========
-- typecase
-- etypecase
-- ctypecase
-- print-unreadable-object
-- progv
-- pprint
+    (in-package :your-package)
+    (eval-when (:execute :compile-toplevel :load-toplevel)
+      (ansify::install))
+
+インストールするとそのパッケージ内で ansify で定義してある関数やマクロが見える
+ようになります。
 
 
-依存してるライブラリ
-====================
-- condition-restart ...そのうち同梱するかも
+注意点、既知の問題など
+======================
 
+バグ報告、質問、要望などは [GitHubIssues] か [@bowbow99] あたりへお願いします。
 
+  [GitHubIssues]: http://github.com/bowbow99/xyzzy.ansify/issues
+  [@bowbow99]: http://twitter.com/bowbow99
