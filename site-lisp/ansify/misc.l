@@ -57,7 +57,7 @@
        ,@body
        (when ,$identity
          ,(when body `(princ #\SPC ,$stream))
-         (prin1 (si:address-of ,$object)))
+         (prin1 (si:address-of ,$object) ,$stream))
        (princ ">" ,$stream)
        nil)))
 
