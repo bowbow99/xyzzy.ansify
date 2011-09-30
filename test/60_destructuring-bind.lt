@@ -1,0 +1,548 @@
+;;; -*- mode: lisp; package: test.ansify.destructuring-bind -*-
+;;;
+;;; test/60_destructuring-bind.lt
+;;;
+
+;;; Code:
+
+(require "lisp-unit")
+(require "ansify/destructuring-bind")
+(require "cmu_loop")
+
+(defpackage :test.ansify.destructuring-bind
+  (:use :lisp :lisp-unit))
+
+(in-package :test.ansify.destructuring-bind)
+
+(ansify::install)
+(remove-all-tests :test.ansify.destructuring-bind)
+
+(defun %bool (x)
+  (not (null x)))
+
+(defconstant +constant+ '#:dummy)
+
+(defmacro assert-invalid-lambda-list (&rest lambda-lists)
+  `(progn
+     ,@(mapcar (lambda (ll)
+                 `(assert-error 'invalid-lambda-list
+                      (macroexpand-1 '(destructuring-bind ,ll nil t))))
+         lambda-lists)))
+
+(defmacro assert-valid-lambda-list (&rest lambda-lists)
+  `(progn
+     ,@(mapcar (lambda (ll)
+                 `(assert-true
+                      (macroexpand-1 '(destructuring-bind ,ll nil t))))
+         lambda-lists)))
+#+xyzzy
+(setf (get 'assert-invalid-lambda-list 'ed:lisp-indent-hook) 0
+      (get 'assert-valid-lambda-list 'ed:lisp-indent-hook) 0)
+
+
+(defmacro assert-lambda-list-validity (valid lambda-list)
+  (let ((expand-form `(macroexpand-1 '(destructuring-bind ,lambda-list nil))))
+  (if valid
+    `(assert-true (multiple-value-bind (expansion expand?)
+                      ,expand-form
+                    expand?))
+    `(assert-error 'invalid-lambda-list ,expand-form))))
+#+xyzzy
+(setf (get 'assert-lambda-list-validity 'ed:lisp-indent-hook) 2)
+
+;;;;
+;;;; * Utilities: %assert-keyword-list
+
+(defparameter *allowed-keywords* nil)
+(defparameter *allow-other-keys* nil)
+
+(defmacro assert-keyword-list (expected keyword-list &rest extras)
+  (case expected
+    ((t)
+     `(assert-true
+          (ansify::%assert-keyword-list ,keyword-list *allowed-keywords* *allow-other-keys*)
+        ,@extras))
+    ((error nil)
+     `(assert-error 'invalid-keyword-list
+          (ansify::%assert-keyword-list ,keyword-list *allowed-keywords* *allow-other-keys*)
+        ,@extras))
+    (t
+     (error "assert-keyword-list: Invalid expectation: ~S" expected))))
+
+(define-test %assert-keyword-list-OK
+  (let ((*allowed-keywords* '(:foo :bar :baz))
+        (*allow-other-keys* nil))
+    (loop for x in '((:foo 1)
+                     (:bar 1)
+                     (:baz 1)
+                     (:foo 1 :bar 2)
+                     (:foo 1 :baz 3)
+                     (:foo 1 :bar 2 :baz 3)
+                     (:foo 1 :baz 3 :bar 2)
+                     (:bar 2 :baz 3)
+                     (:bar 2 :foo 1)
+                     (:bar 2 :foo 1 :baz 3)
+                     (:bar 2 :baz 3 :foo 1)
+                     (:baz 3 :bar 2))
+      do (assert-keyword-list t x))))
+
+(define-test %assert-keyword-list-odd-length
+  (let ((*allowed-keywords* '(:foo :bar :baz))
+        (*allow-other-keys* nil))
+    (loop for x in '((:foo) (1) (:foo 1 2) (:bar 2 :foo))
+      do (assert-keyword-list nil x))))
+
+(define-test %assert-keyword-list-not-a-list
+  (let ((*allowed-keywords* '(:foo :bar :baz))
+        (*allow-other-keys* nil))
+    (loop for x in '("foo" #(a b c) #(a b) #\LFD 33)
+      do (assert-keyword-list nil x))))
+
+(define-test %assert-keyword-list-dotted-list
+  (let ((*allowed-keywords* '(:foo :bar :baz))
+        (*allow-other-keys* nil))
+    (loop for x in '((:foo . 1)
+                     (:foo 1 . :bar)
+                     (:foo 1 :bar . 2)
+                     (:foo 1 :bar 2 . 3))
+      do (assert-keyword-list nil x))))
+
+(define-test %assert-keyword-list-circular-list
+  (let ((*allowed-keywords* '(:foo :bar :baz))
+        (*allow-other-keys* nil))
+    (loop for x in '(#1=(:foo . #1#)
+                     #2=(:foo 1 . #1#))
+      do (assert-keyword-list nil x))))
+
+(define-test %assert-keyword-list-unknown-keyword
+  (let ((*allowed-keywords* '(:foo :bar :baz))
+        (examples '((:foo 1 :hoge "hoge")
+                    (:foo 1 :bar 2 :hoge "hoge")
+                    (:hoge "hoge")
+                    (:hoge "hoge" :fuga "fuga"))))
+    (let ((*allow-other-keys* nil))
+      (loop for x in examples
+        do (assert-keyword-list nil x)))
+    (let ((*allow-other-keys* t))
+      (loop for x in examples
+        do (assert-keyword-list t x)))))
+
+(define-test %assert-keyword-list-suppressing-unknown-key-checking
+  (let ((*allowed-keywords* '(:foo :bar :baz)))
+    (let ((*allow-other-keys* t))
+      (loop for x in '((:foo 1 :a 1)
+                       (:foo 1 :a 1 :allow-other-keys t)
+                       (:foo 1 :a 1 :allow-other-keys nil)
+                       (:foo 1 :a 1 :allow-other-keys t :allow-other-keys nil)
+                       (:foo 1 :a 1 :allow-other-keys nil :allow-other-keys t))
+        do (assert-keyword-list t x)))
+    (let ((*allow-other-keys* nil))
+      (loop for x in '((:foo 1 :a 1)
+                       (:foo 1 :a 1 :allow-other-keys nil)
+                       (:foo 1 :a 1 :allow-other-keys nil :allow-other-keys t))
+        do (assert-keyword-list nil x))
+      (loop for x in '((:foo 1 :a 1 :allow-other-keys t)
+                       (:foo 1 :a 1 :allow-other-keys t :allow-other-keys nil))
+        do (assert-keyword-list t x)))))
+
+;;;;
+;;;; * &whole
+
+
+(define-test &whole-bindings
+  (assert-equal nil
+      (destructuring-bind (&whole x) nil x))
+  (assert-equal '(1 2)
+      (destructuring-bind (&whole x &rest y) '(1 2) x))
+  (assert-equal '(1 2 :d 1 :c 2)
+      (destructuring-bind (&whole x a b &key c d)
+          '(1 2 :d 1 :c 2)
+        x)))
+
+(define-test &whole-next
+  (assert-lambda-list-validity t (&whole a &optional b))
+  (assert-lambda-list-validity t (&whole a &rest b))
+  (assert-lambda-list-validity t (&whole a &key))
+  (assert-lambda-list-validity t (&whole a &key))
+  (assert-lambda-list-validity t (&whole a &aux)))
+
+
+;;;;
+;;;; * &required
+
+(define-test &required
+  (assert-equal '(1)
+      (destructuring-bind (foo)
+          '(1)
+        (list foo)))
+  (assert-equal '(1 2)
+      (destructuring-bind (foo bar)
+          '(1 2)
+        (list foo bar)))
+  (assert-equal '(1 2 3)
+      (destructuring-bind (foo bar baz)
+          '(1 2 3)
+        (list foo bar baz))))
+
+(define-test &required-destruct
+  (assert-equal '(1)
+      (destructuring-bind ((x))
+          '((1))
+        (list x)))
+  (assert-equal '(1 2)
+      (destructuring-bind ((x y))
+          '((1 2))
+        (list x y)))
+  (assert-equal '(1 2 3)
+      (destructuring-bind ((x y z))
+          '((1 2 3))
+        (list x y z)))
+  (assert-equal '(1 2 3)
+      (destructuring-bind (x (y z))
+          '(1 (2 3))
+        (list x y z)))
+  (assert-equal '(1 2 3)
+      (destructuring-bind ((x y) z)
+          '((1 2) 3)
+        (list x y z))))
+
+(define-test &required-wrong-number-of-arguments
+  (assert-error 'too-many-arguments
+      (destructuring-bind (a b)
+          '(1 2 3)
+        (list a b)))
+  (assert-error 'too-few-arguments
+      (destructuring-bind (a b)
+          '(1)
+        (list a b))))
+
+(define-test &required-destructuring-mismatch
+  (assert-error 'type-error
+      (destructuring-bind (a (b c))
+          '(1 2)
+        (list a b c)))
+  (assert-error 'type-error
+      (destructuring-bind ((a b) c)
+          '(1 2)
+        (list a b c))))
+
+;;;;
+;;;; * &optional
+
+(define-test &optional
+  (assert-equal '(1 2)
+      (destructuring-bind (a &optional b)
+          '(1 2)
+        (list a b)))
+  (assert-equal '(1 nil)
+      (destructuring-bind (a &optional b)
+          '(1)
+        (list a b))))
+
+(define-test &optional-w/default
+  (assert-equal '(1 2)
+      (destructuring-bind (a &optional (b :default))
+          '(1 2)
+        (list a b)))
+  (assert-equal '(1 :default)
+      (destructuring-bind (a &optional (b :default))
+          '(1)
+        (list a b))))
+
+(define-test &optional-w/default+supplied-p
+  (assert-equal '(1 2 t)
+      (destructuring-bind (a &optional (b :default b-supplied-p))
+          '(1 2)
+        (list a b (%bool b-supplied-p))))
+  (assert-equal '(1 :default nil)
+      (destructuring-bind (a &optional (b :default b-supplied-p))
+          '(1)
+        (list a b (%bool b-supplied-p)))))
+
+;;;  destructuring
+(define-test &optional-destruct
+  (assert-equal '(1 2 3)
+      (destructuring-bind (a &optional ((b c)))
+          '(1 (2 3))
+        (list a b c))))
+
+(define-test &optional-destruct-w/default
+  (assert-equal '(1 2 3)
+      (destructuring-bind (a &optional ((b c) '(:a :b)))
+          '(1 (2 3))
+        (list a b c)))
+  (assert-equal '(1 :a :b)
+      (destructuring-bind (a &optional ((b c) '(:a :b)))
+          '(1)
+        (list a b c))))
+
+(define-test &optional-destruct-w/default+supplied-p
+  (assert-equal '(1 2 3 t)
+      (destructuring-bind (a &optional ((b c) '(x y) b-c-supplied-p))
+          '(1 (2 3))
+        (list a b c (%bool b-c-supplied-p))))
+  (assert-equal '(1 x y nil)
+      (destructuring-bind (a &optional ((b c) '(x y) b-c-supplied-p))
+          '(1)
+        (list a b c (%bool b-c-supplied-p)))))
+
+(define-test &optional-destruct-mismatch
+  (assert-error 'too-few-arguments
+      (destructuring-bind (a &optional ((b c)))
+          '(1 (2))
+        (list a b c)))
+  (assert-error 'too-many-arguments
+      (destructuring-bind (a &optional ((b c)))
+          '(1 (2 3 4))
+        (list a b c))))
+
+(define-test &optional-destructuring-mismatch-in-initform
+  (assert-error 'too-few-arguments
+      (destructuring-bind (&optional ((a b) '(1)))
+          nil
+        (list a b)))
+  (assert-error 'too-many-arguments
+      (destructuring-bind (&optional ((a b) '(1 2 3)))
+          nil
+        (list a b))))
+
+(define-test &optional-initform-environment
+  (assert-equal '(1 1)
+      (destructuring-bind (a &optional (b a))
+          '(1)
+        (list a b)))
+  (assert-equal '(1 2)
+      (destructuring-bind (a &optional (b (1+ a)))
+          '(1)
+        (list a b)))
+  (assert-true
+      (destructuring-bind (a &optional (b a))
+          (list (gensym))
+        (eql a b))))
+
+;;;;
+;;;; * &rest
+
+(define-test &rest
+  (assert-equal '(1 nil)
+      (destructuring-bind (a &rest b)
+          '(1)
+        (list a b)))
+  (assert-equal '(1 (2))
+      (destructuring-bind (a &rest b)
+          '(1 2)
+        (list a b)))
+  (assert-equal '(1 (2 3))
+      (destructuring-bind (a &rest b)
+          '(1 2 3)
+        (list a b))))
+
+(define-test &rest-destruct
+  (assert-equal '(1 2 3)
+      (destructuring-bind (a &rest (b c))
+          '(1 2 3)
+        (list a b c)))
+  (assert-equal '(1 2 3 4)
+      (destructuring-bind (a &rest (b c d))
+          '(1 2 3 4)
+        (list a b c d))))
+
+(define-test &rest-by-dotted-list
+  (assert-equal '(1 nil)
+      (destructuring-bind (a . b)
+          '(1)
+        (list a b)))
+  (assert-equal '(1 (2))
+      (destructuring-bind (a . b)
+          '(1 2)
+        (list a b)))
+  (assert-equal '(1 (2 3))
+      (destructuring-bind (a . b)
+          '(1 2 3)
+        (list a b))))
+
+;;;;
+;;;; * &key
+
+(define-test &key
+  (assert-equal '(1 2)
+      (destructuring-bind (&key a b)
+          '(:a 1 :b 2)
+        (list a b)))
+  (assert-equal '(2 1)
+      (destructuring-bind (&key a b)
+          '(:b 1 :a 2)
+        (list a b)))
+  (assert-equal '(2 1)
+      (destructuring-bind (&key a b)
+          '(:a 2 :b 1)
+        (list a b)))
+  (assert-equal '(1 2)
+      (destructuring-bind (&key a b)
+          '(:b 2 :a 1)
+        (list a b))))
+
+(define-test &key-w/default
+  (assert-equal '(:default)
+      (destructuring-bind (&key (a :default))
+          '()
+        (list a)))
+  (assert-equal '(1)
+      (destructuring-bind (&key (a :default))
+          '(:a 1)
+        (list a))))
+
+(define-test &key-w/default+sp-var
+  (assert-equal '(1 t)
+      (destructuring-bind (&key (a :default b))
+          '(:a 1)
+        (list a (%bool b))))
+  (assert-equal '(:default nil)
+      (destructuring-bind (&key (a :default b))
+          '()
+        (list a (%bool b)))))
+
+(define-test &key-w/key
+  (assert-equal '(nil 1)
+      (destructuring-bind (&key ((:a b)) ((:b a)))
+          '(:a 1)
+        (list a b)))
+  (assert-equal '(2 1)
+      (destructuring-bind (&key ((:a b)) ((:b a)))
+          '(:a 1 :b 2)
+        (list a b))))
+
+(define-test &key-destruct-w/key
+  (assert-equal '(1 2 3)
+      (destructuring-bind (&key ((:foo (a b c))))
+          '(:foo (1 2 3))
+        (list a b c))))
+
+(define-test &key-given-unknown-keyword
+  (assert-error 'invalid-keyword-list
+      (destructuring-bind (&key a b)
+          '(:foo 3)
+        (list a b)))
+  (assert-error 'invalid-keyword-list
+      (destructuring-bind (&key a b)
+          '(:a 1 :b 2 :c 3)
+        (list a b))))
+
+(define-test &key-supress-keyword-check
+  (assert-equal '(1 2)
+      (destructuring-bind (&key a b)
+          '(:a 1 :b 2 :c 3 :allow-other-keys t)
+        (list a b)))
+  (assert-equal '(1 nil)
+      (destructuring-bind (&key a b)
+          '(:a 1 :c 3 :allow-other-keys t)
+        (list a b)))
+  (assert-error 'invalid-keyword-list
+      (destructuring-bind (&key a b)
+          '(:a 1 :b 2 :c 3 :allow-other-keys nil)
+        (list a b)))
+  (assert-equal '(1 2)
+      (destructuring-bind (&key a b)
+          '(:a 1 :b 2 :c 3 :allow-other-keys t :allow-other-keys nil)
+        (list a b)))
+  (assert-error 'invalid-keyword-list
+      (destructuring-bind (&key a b)
+          '(:a 1 :b 2 :c 3 :allow-other-keys nil :allow-other-keys t)
+        (list a b))))
+
+;;;;
+;;;; * &rest + &key
+
+(define-test &rest+&key
+  (assert-equal '((:a 1 :b 2) 1 2)
+      (destructuring-bind (&rest all &key a b)
+          '(:a 1 :b 2)
+        (list all a b)))
+  (assert-equal '((:b 2 :a 1) 1 2)
+      (destructuring-bind (&rest all &key a b)
+          '(:b 2 :a 1)
+        (list all a b)))
+  (assert-equal '((:a 1) 1 nil)
+      (destructuring-bind (&rest all &key a b)
+          '(:a 1)
+        (list all a b)))
+  (assert-equal '((:b 2) nil 2)
+      (destructuring-bind (&rest all &key a b)
+          '(:b 2)
+        (list all a b))))
+
+;;;;
+;;;; * &allow-other-keys
+
+(define-test &allow-other-keys
+  (assert-equal '(nil nil)
+      (destructuring-bind (&key a b &allow-other-keys)
+          '(:foo 1)
+        (list a b)))
+  (assert-equal '(1 nil)
+      (destructuring-bind (&key a b &allow-other-keys)
+          '(:a 1 :foo 1)
+        (list a b)))
+  (assert-equal '(1 2)
+      (destructuring-bind (&key a b &allow-other-keys)
+          '(:a 1 :b 2 :foo 3)
+        (list a b)))
+  (assert-equal '(nil 2)
+      (destructuring-bind (&key a b &allow-other-keys)
+          '(:b 2 :foo 3)
+        (list a b))))
+
+(define-test &allow-other-keys--without-&key
+  (assert-invalid-lambda-list
+    (&allow-other-keys)
+    (a &optional &allow-other-keys)
+    (a &optional b &allow-other-keys)
+    (a &optional b &rest c &allow-other-keys)))
+
+(define-test &allow-other-keys--after
+  (assert-invalid-lambda-list
+    ;; parameter
+    (&key &allow-other-keys a)
+    (&key &allow-other-keys (a 1))
+    ;; other lambda-list keywords (except &aux)
+    (&key &allow-other-keys &whole)
+    (&key &allow-other-keys &whole a)
+    (&key &allow-other-keys &optional)
+    (&key &allow-other-keys &optional a b)
+    (&key &allow-other-keys &optional a &rest)
+    (&key &allow-other-keys &optional a &rest b)
+    (&key &allow-other-keys &rest a)
+    (&key &allow-other-keys &key a b)
+    (&key &allow-other-keys &allow-other-keys))
+  (assert-valid-lambda-list
+    (&key a b &allow-other-keys &aux)
+    (&key a b &allow-other-keys &aux c)
+    (&key a b &allow-other-keys &aux c d)))
+
+;;;;
+;;;; * &aux
+
+(define-test &aux-bindings
+  (assert-equal '(1 2 3)
+      (destructuring-bind (&aux (a 1) (b 2) (c 3))
+          nil
+        (list a b c)))
+  (assert-equal '(1 2 nil)
+      (destructuring-bind (&aux (a 1) (b 2) c)
+          nil
+        (list a b c)))
+  (assert-equal '(1 nil 3)
+      (destructuring-bind (&aux (a 1) b (c 3))
+          nil
+        (list a b c))))
+
+(define-test &aux-after
+  ;; No lambda-list keyword allowed after &aux
+  (assert-lambda-list-validity nil (&aux &whole a))
+  (assert-lambda-list-validity nil (&aux &optional a))
+  (assert-lambda-list-validity nil (&aux &rest a))
+  (assert-lambda-list-validity nil (&aux &key a))
+  (assert-lambda-list-validity nil (&aux &aux a)))
+
+
+;;; tests/destructuring-bind.lt ends here.

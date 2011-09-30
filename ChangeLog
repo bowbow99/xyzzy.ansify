@@ -1,0 +1,47 @@
+20xx-xx-xx  TODO
+	* setf-values
+
+2011-09-30  bowbow99  <bowbow99@gmail.com>
+
+	* リリース用に細々した修正
+	- ed:read-value だったのを ansify::read-value に
+	- リファレンスの旧 condition-restart から残ってたような部分を修正
+
+2011-09-29  bowbow99  <bowbow99@gmail.com>
+
+	* print-unreadable-object を追加
+
+	* case, ecase, ccase を追加
+
+
+2011-08-24  bowbow99  <bowbow99@gmail.com>
+
+	* マクロをいくつか autoload するようにした
+
+
+2011-08-22  bowbow99  <bowbow99@gmail.com>
+
+	* typespec+ を取り込み
+
+	* condition-restart を取り込み
+	- ファイル名はちょっと変えた
+	  - condition-restart.l -> ansify/restart.l
+	  - assertions.l -> ansify/assertion.l
+	- condition-restart-support.l は（今のところ）取り込んでない
+
+	* typecase を取り込み
+
+	* destructuring-bind を取り込み
+
+
+2011-08-21  bowbow99  <bowbow99@gmail.com>
+
+	* symbol-macrolet を取り込み
+	- symbol-macrolet 内の multiple-value-setq 式を展開する際に、各
+	  place を自力で展開するようにした。
+	  これで setf-values に依存しなくなった。
+	# setf-value の機能を取り込むかどうかは今のところ未定
+
+
+2011-08-20  bowbow99  <bowbow99@gmail.com>
+	* やり直し開始
