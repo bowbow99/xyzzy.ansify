@@ -1,6 +1,12 @@
 20xx-xx-xx  TODO
 	* setf-values
 
+2011-09-30  bowbow99  <bowbow99@gmail.com>
+
+	* リリース用に細々した修正
+	- ed:read-value だったのを ansify::read-value に
+	- リファレンスの旧 condition-restart から残ってたような部分を修正
+
 2011-09-29  bowbow99  <bowbow99@gmail.com>
 
 	* print-unreadable-object を追加
