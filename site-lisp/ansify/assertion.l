@@ -39,7 +39,7 @@
                        ',places))
            :interactive (lambda ()
                           (mapcar (lambda (place)
-                                    (ed:read-value
+                                    (read-value
                                      (format nil "`~S' の値: " place)))
                             ',places))
            (setf ,@(let ((i -1))
@@ -64,7 +64,7 @@
              :report (lambda (stream)
                        (format stream "`~S' の値を変更してやり直す。" ',place))
              :interactive (lambda ()
-                            (list (ed:read-value
+                            (list (read-value
                                    (format nil "`~S' の値: " ',place)
                                    (typepred ,typespec))))
              (setf ,place new-value)

@@ -43,14 +43,9 @@
                       #:store-value
                       ;; as a typespec
                       #:restart
+                      ;; misc
+                      read-value
                       ))
-
-  ;; NOTE: Export `read-value` from editor package to be visible from
-  ;; most of user code.
-  (export (mapcar (lambda (name) (intern (string name) :editor))
-            '(#:read-value
-              ))
-          :editor)
 
   ) ; end of `eval-when`
 
@@ -395,12 +390,12 @@
 
 
 ;;;;
-;;;; * Function ed:read-value
+;;;; * Function read-value
 
-(defun ed:read-value (prompt &optional predicate)
+(defun read-value (prompt &optional predicate)
   (labels ((again (msg &rest args)
              (apply #'ed:message msg args)
-             (ed:read-value prompt predicate)))
+             (read-value prompt predicate)))
     (let ((form (ed:read-sexp prompt)))
       (handler-case
           (let ((value (eval form)))

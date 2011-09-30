@@ -47,7 +47,7 @@
      :report ,(format nil "`~S` の値を変更する" key-place)
      :interactive (lambda ()
                     (message "元の値は ~S でした" ,key-var)
-                    (list (ed:read-value
+                    (list (read-value
                            (format nil "`~S` の値: " ',key-place))))
      (setf ,key-place #1#)
      (go ,tag)))
