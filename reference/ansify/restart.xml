@@ -20,7 +20,7 @@
 <title>read-value</title>
 <type>Function</type>
 <arguments>read-value PROMPT &amp; PREDICATE</arguments>
-<package>editor</package>
+<package>ansify</package>
 <description>
 ミニバッファにプロンプトを表示して、ユーザーから値の入力を受け付けます。
 
