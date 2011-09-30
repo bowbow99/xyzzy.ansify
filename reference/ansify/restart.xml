@@ -175,13 +175,12 @@ PLACE の値が TYPESPEC の型であれば、check-type 式は nil を返して
                    (use-value (new-x)
                      :report "他の文字列を使う"
                      :interactive (lambda ()
-                                    (list (prompt-for 'string "string&gt; ")))
+                                    (list (read-string "string&gt; ")))
                      (ensure-string new-x))))))
       (apply #'concat (mapcar #'ensure-string strings))))
   =&gt; my-concat
   
-  ;; ハンドラなしだとエラーで終了。（condition-restart-support とか使っ
-  ;; てると再起動を選んで起動できたりします。）
+  ;; ハンドラなしだとエラーで終了。
   (my-concat "foo" 'bar "baz")
   &gt;&gt; 不正なデータ型です: bar: string
   
@@ -372,7 +371,7 @@ muffle-warning 再起動について:
 <arguments>warn DATUM &amp;rest ARGS</arguments>
 <package>ansify</package>
 <description>
-※これは condition-restart.l で上書きされた warn の説明です。
+※これは ansify/restart.l で定義されている warn の説明です。
 警告（warning コンディション）を投げます。
 
 warn 関数は、警告を投げるときに再起動 muffle-warning を用意しておきま
