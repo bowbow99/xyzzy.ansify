@@ -19,7 +19,7 @@
   (shadowing-export '(#:typecase
                       #:etypecase
                       #:ctypecase
-                      #:otherwise
+                      ;#:otherwise
                       #:case
                       #:ecase
                       #:ccase
@@ -117,8 +117,6 @@
 
 
 ;;;; case family
-
-;; - otherwise is supported
 
 (defvar *case-warn-on-t/otherwise-in-middle* nil
   "*If non-nil, macro `case` signal a waring when `t` or `otherwise`

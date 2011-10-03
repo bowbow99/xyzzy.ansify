@@ -47,8 +47,6 @@
 (dolist (sym '(typecase etypecase ctypecase case ecase ccase))
   (setf (get sym 'ed:lisp-indent-hook) 1))
 
-(shadowing-export '(otherwise))
-
 
 (provide "ansify/autoload-defs")
 ;;; ansify/autoload-defs.l ends here.

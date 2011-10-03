@@ -1,6 +1,13 @@
 20xx-xx-xx  TODO
 	* setf-values
 
+2011-10-03  bowbow99  <bowbow99@gmail.com>
+
+	* `lisp:otherwise` が元々存在してたことが発覚した（thx to @miyamuko）
+	ので shadowing-export はやめて `lisp:otherwise` を使うように。
+	`case` は xyzzy オリジナルの物とは `t` や `otherwise` を途中に置いた
+	場合の挙動が違うのでとりあえずそのまま。
+
 2011-09-30  bowbow99  <bowbow99@gmail.com>
 
 	* リリース用に細々した修正
