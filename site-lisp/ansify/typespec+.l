@@ -17,8 +17,6 @@
 
 (in-package :ansify)
 
-;(defconstant +original-typep-function+ #'typep)
-
 (eval-when (:execute :compile-toplevel :load-toplevel)
   (shadowing-export '(#:typep
                       )))
@@ -26,13 +24,13 @@
 (export '(*warn-on-undefined-typespec*
           ))
 
-;;;;
+
 ;;;; * User Configuration
 
 (defvar *warn-on-undefined-typespec* nil
   "If non-nil, warn when undefined typespec used on `typep` or `optimize-type-check.")
 
-;;;;
+
 ;;;; * Utilities
 
 (defun *let (binding &rest body)
@@ -64,7 +62,7 @@
 (defun both (a b &optional (pred #'identity))
   (and (funcall pred a) (funcall pred b)))
 
-;;;;
+
 ;;;; * Funciton typep
 #|
 Implementation Note
@@ -124,7 +122,6 @@ object".
             (si::*structure-subtypep (si:*structure-definition OBJECT)
                                      #<structure-definition: STRUCTURE>))
 
-
 |#
 
 (defun typep (object typespec)
@@ -149,7 +146,7 @@ object".
          (warn "type specifier ‚¶‚á‚È‚¢‚Ý‚½‚¢: ~S" typespec))
        nil))))
 
-;;;;
+
 ;;;; * Optimize `typep` form
 
 (defparameter *typep-optimizer-table* (make-hash-table))
@@ -157,7 +154,6 @@ object".
 (defmacro define-typep-optimizer (name (&rest args) &body body)
   `(setf (gethash ',name *typep-optimizer-table*)
          (lambda (,@args) (block ,name ,@body))))
-
 
 ;;; typespecs defined via `defpred` in lisp/typespec.l has their predicate
 ;;; function, but can be transformed into more straightforward form.
@@ -217,9 +213,8 @@ object".
 (define-typep-optimizer extended-character (object)
   (*let `(#:object ,object) nil))
 
-
-;;;
-;;; Numbers
+
+;;;;; Numbers
 
 (defun expand-number-range-check (object low high)
   (cond ((both low high #'numberp)
@@ -259,9 +254,8 @@ object".
                   (if (eql typespec '*) t
                     (optimize-type-check '(realpart #1#) typespec)))))))
 
-
-;;;
-;;; Arrays
+
+;;;;; Arrays
 
 (defun expand-array-element-type-check (object element-type)
   (if (eql element-type '*) t
@@ -314,8 +308,8 @@ object".
 ;; simple-string  [size]
 (defopt-array simple-string simple-string-p :size)
 
-
-;;; * Function optimize-typep
+
+;;;; * Function optimize-typep
 
 (defun optimize-type-check (object-form typespec
                             &optional (no-warn (null *warn-on-undefined-typespec*)))
@@ -342,8 +336,9 @@ object".
          (warn "type specifier ‚¶‚á‚È‚¢‚Ý‚½‚¢: ~S" typespec))
        `(typep ,object-form ',typespec)))))
 
-;;;;
+
 ;;;; * Macro `typepred`
+
 (defmacro typepred (typespec)
   "Create a function which takes an object and return true if the object is type of TYPESPEC."
   (let ((form (optimize-type-check '#1=#:object typespec)))
@@ -351,6 +346,7 @@ object".
              (eql (second form) '#1#))
       `#',(car form)
       `(lambda (#1#) ,form))))
+
 
 (provide "ansify/typespec+")
 ;;; ansify/typespec+.l ends here.
