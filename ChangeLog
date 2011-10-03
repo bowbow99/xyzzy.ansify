@@ -3,6 +3,8 @@
 
 2011-10-03  bowbow99  <bowbow99@gmail.com>
 
+	* style-warning, simple-style-warning を定義しておいた。
+
 	* `lisp:otherwise` が元々存在してたことが発覚した（thx to @miyamuko）
 	ので shadowing-export はやめて `lisp:otherwise` を使うように。
 	`case` は xyzzy オリジナルの物とは `t` や `otherwise` を途中に置いた

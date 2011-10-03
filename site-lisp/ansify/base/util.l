@@ -33,6 +33,12 @@
                  ((atom (cdr fast)) (return nil))
                  ((eql fast slow) (return nil)))))))
 
+
+;;;; symbols
+
+(defun mksym (fmt &rest args)
+  (intern (apply #'format nil fmt args)))
+
 ;;;;
 ;;;; * Binding Macros
 
