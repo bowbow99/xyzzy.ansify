@@ -32,7 +32,7 @@
 
 (define-condition style-warning (warning) ()
   (:report (lambda (sw stream)
-             (format streame "(•AÅE)≤∏≈≤"))))
+             (format stream "(•AÅE)≤∏≈≤"))))
 
 (define-simple-condition style-warning)
 
