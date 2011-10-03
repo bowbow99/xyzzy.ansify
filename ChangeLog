@@ -1,6 +1,17 @@
 20xx-xx-xx  TODO
 	* setf-values
 
+2011-10-04  bowbow99  <bowbow99@gmail.com>
+
+	* 警告を出すかどうか設定する変数を export しておいた。
+	- `*warn-on-undefined-typespec*` for `typep`
+	- `*case-warn-on-t/otherwise-in-middle*` for `case`
+
+	* `case` の途中に otherwise-clause があった場合の挙動を `lisp:case`
+	と同じにした。
+	`lisp:case` との違いは（設定次第で）途中にある otherwise-clause を
+	警告するってだけに。
+
 2011-10-03  bowbow99  <bowbow99@gmail.com>
 
 	* style-warning, simple-style-warning を定義しておいた。
