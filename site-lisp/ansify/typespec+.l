@@ -23,11 +23,13 @@
   (shadowing-export '(#:typep
                       )))
 
+(export '(*warn-on-undefined-typespec*
+          ))
 
 ;;;;
 ;;;; * User Configuration
 
-(defparameter *warn-on-undefined-typespec* t
+(defvar *warn-on-undefined-typespec* nil
   "If non-nil, warn when undefined typespec used on `typep` or `optimize-type-check.")
 
 ;;;;
