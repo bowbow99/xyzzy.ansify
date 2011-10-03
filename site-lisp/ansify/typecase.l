@@ -7,6 +7,8 @@
 ;;;
 ;;; This file is part of xyzzy extension "ansify".
 
+;; NOTE: This file is autoloaded by default
+
 ;;; Code:
 
 (eval-when (:execute :compile-toplevel :load-toplevel)
@@ -76,6 +78,7 @@ They should be `(t)` and `(otherwise)` respectively.")
     `(,(optimize-type-check var type)
       (progn ,@(cdr clause)))))
 
+
 ;;;; typecase family
 
 ;;; Macro `typecase`
@@ -127,7 +130,7 @@ They should be `(t)` and `(otherwise)` respectively.")
 (defmacro ctypecase (place &rest clauses)
   (expand-ctypecase place clauses))
 
-
+
 ;;;; case family
 
 (defun expand-case-clauses (var clauses)
