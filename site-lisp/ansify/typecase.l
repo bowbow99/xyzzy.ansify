@@ -21,7 +21,6 @@
   (shadowing-export '(#:typecase
                       #:etypecase
                       #:ctypecase
-                      ;#:otherwise
                       #:case
                       #:ecase
                       #:ccase
