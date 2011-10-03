@@ -25,6 +25,9 @@
                       #:ccase
                       )))
 
+(export '(*case-warn-on-t/otherwise-in-middle*
+          ))
+
 ;;; Indentation settings
 #+xyzzy
 (mapc (lambda (name)
@@ -36,6 +39,15 @@
         ecase
         ccase))
 
+
+;;;; Configuration
+
+(defvar *case-warn-on-t/otherwise-in-middle* nil
+  "*If non-nil, macro `case` signal a waring when `t` or `otherwise`
+found at middle of clauses.
+They should be `(t)` and `(otherwise)` respectively.")
+
+
 ;;;; helper functions
 
 (defun make-type-error-form (datum expected)
@@ -117,11 +129,6 @@
 
 
 ;;;; case family
-
-(defvar *case-warn-on-t/otherwise-in-middle* nil
-  "*If non-nil, macro `case` signal a waring when `t` or `otherwise`
-found at middle of clauses.
-They should be `(t)` and `(otherwise)` respectively.")
 
 (defun expand-case-clauses (var clauses)
   (labels ((otherwise-key-p (x)
