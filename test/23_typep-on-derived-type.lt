@@ -1,0 +1,134 @@
+;;; -*- mode: lisp; package: test.ansify.typep-on-derived-type -*-
+;;;
+;;; test/23_typep-on-derived-type.lt
+;;;
+
+;;; Code:
+
+(require "lisp-unit")
+(require "ansify/typespec+")
+
+(defpackage :test.ansify.typep-on-derived-type
+  (:use :lisp :lisp-unit))
+
+(in-package :test.ansify.typep-on-derived-type)
+
+;(ansify::install)
+#|
+(mapc (lambda (name) (import (find-symbol (string name) :ansify)))
+      '(
+        ))
+;|#
+
+(remove-all-tests :test.ansify.typep-on-derived-type)
+
+
+;;;;; bare
+
+(deftype proper-list ()
+  `(and list (satisfies ansify::proper-list-p)))
+
+(define-test proper-list
+  ;; proper-list
+  (dolist (x '(nil (1) (1 2) (1 2 3)
+               (foo) (foo bar) (foo (bar)) (foo (bar) (baz))
+               ("foo") ("foo" "bar") ("foo" ("bar" ("baz")))))
+    (assert-true (ansify::typep x 'proper-list) x))
+  ;; non list
+  (dolist (x '(t 1 "foo" foo))
+    (assert-false (ansify::typep x 'proper-list) x))
+  ;; list but not proper
+  (dolist (x (list '(1 2 . 3) '(foo . bar)
+                   '#1=(1 2 . #1#)))
+    (assert-false (ansify::typep x 'proper-list) x)))
+
+
+;;;; use of `and`
+
+(defun expand-list-element-check (element-type)
+  "Return a lambda expression which check that all elements of LIST is
+of type ELEMENT-TYPE."
+  ;; NOTE: Use of lambda expression in `satisfies` typespec is invalid in CL
+  `(lambda (list)
+     (dolist (x list t)
+       (unless ,(ansify::optimize-type-check 'x element-type)
+         (return nil)))))
+
+(deftype list-of (element-type)
+  `(and proper-list
+        (satisfies ,(expand-list-element-check element-type))))
+
+(define-test list-of
+  (dolist (element-type '(fixnum string symbol))
+    ;; non-list
+    (dolist (x '(t 1 "foo" foo))
+      (assert-false (ansify::typep x `(list-of ,element-type)) x element-type))
+    ;; list but not proper
+    (dolist (x '((1 2 . 3) (foo . bar) #1=(1 2 . #1#)))
+      (assert-false (ansify::typep x `(list-of ,element-type)) x element-type))
+    ;; list of xxx
+    (dolist (set '((fixnum     (1) (1 2) (1 2 3))
+                   (string     ("foo") ("foo" "bar") ("foo" "bar" "baz"))
+                   (symbol     (foo) (foo bar) (foo bar baz))
+                   (character  (#\a) (#\a #\b) (#\a #\b #\c))))
+      (if (eql (car set) element-type)
+        (dolist (x (cdr set))
+          (assert-true (ansify::typep x `(list-of ,element-type)) x element-type))
+        (dolist (x (cdr set))
+          (assert-false (ansify::typep x `(list-of ,element-type)) x element-type))))))
+
+
+;;;; use of `or`
+
+(deftype proper-list-or-simple-vector ()
+  `(or proper-list simple-vector))
+
+(define-test proper-list-or-simple-vector
+  ;; atoms
+  (dolist (x '(t 1 foo "hoge" #\SPC))
+    (assert-false (ansify::typep x 'proper-list-or-simple-vector) x))
+  ;; simple-vector
+  (dolist (x (list #(a) #(1 2) #("foo" "bar" "baz")))
+    (assert-true (ansify::typep x 'proper-list-or-simple-vector) x))
+  ;; non-simple vector
+  ;; NOTE: simple-vector is...
+  ;; - not displaced to another array
+  ;; - has no fill-pointer
+  ;; - is not expressly adjustable
+  ;; - is able to hold elements of any type
+  (dolist (x (list (make-vector 3 :adjustable t :fill-pointer 0)
+                   (make-vector 3 :element-type 'character)))
+    (assert-false (ansify::typep x 'proper-list-or-simple-vector) x))
+  ;; proper-list
+  (dolist (x '(nil (1) (foo bar) ("hoge" "fuga" "piyo")))
+    (assert-true (ansify::typep x 'proper-list-or-simple-vector) x))
+  ;; non-proper-list
+  (dolist (x '((1 . 2) (foo bar . baz) #1=("hoge" "fuga" . #1#)))
+    (assert-false (ansify::typep x 'proper-list-or-simple-vector) x)))
+
+
+;;;; use of `not`
+
+(deftype non-proper-list ()
+  `(and list (not proper-list)))
+
+(define-test non-proper-list
+  ;; non-list
+  (dolist (x '(t 1 "foo" foo))
+    (assert-false (ansify::typep x 'non-proper-list) x))
+  ;; proper-list
+  (dolist (x '(nil (1) (1 2) (1 2 3)
+               (foo) (foo bar) (foo bar baz)
+               ("foo") ("foo" ("bar")) ("foo" ("bar") ("baz"))))
+    (assert-false (ansify::typep x 'non-proper-list) x))
+  ;; list but not proper
+  (dolist (x '((1 2 . 3) (foo . bar) #1=(1 2 . #1#)))
+    (assert-true (ansify::typep x 'non-proper-list) x)))
+
+
+;;;; array
+;;;; vector
+
+;;;; complex
+
+;;; test/23_typep-on-derived-type.lt ends here.
