@@ -62,8 +62,6 @@
 (defun both (a b &optional (pred #'identity))
   (and (funcall pred a) (funcall pred b)))
 
-;;;;
-;;;; * Funciton typep
 #|
 Implementation Note
 ===================
@@ -122,9 +120,54 @@ object".
             (si::*structure-subtypep (si:*structure-definition OBJECT)
                                      #<structure-definition: STRUCTURE>))
 
-
+ansify::typespec-canonicalizer
+------------------------------
+<ansify specific>
+Used to expand a derived typespec into completely a combination of primitive
+types.
+`si:canonicalize-type` is meant to do that, but it doesn't expands typespecs
+given as arguments to another typespec, like `(and DERIVED-TYPESPEC ...)`, so
+I made fixed version and function stored on `ansify::typespec-canonicalizer`
+do the job for each types.
 |#
 
+
+;;;; * fixed canonicalize-type
+
+(defmacro define-typespec-canonicalize (type lambda-list &body body)
+  `(setf (get ',type 'typespec-canonicalizer)
+         (lambda ,lambda-list ,@body)))
+
+(define-typespec-canonicalize and (&rest typespecs)
+  `(and ,@(mapcar #'canonicalize-typespec typespecs)))
+
+(define-typespec-canonicalize or (&rest typespecs)
+  `(or ,@(mapcar #'canonicalize-typespec typespecs)))
+
+(define-typespec-canonicalize not (typespec)
+  `(not ,(canonicalize-typespec typespec)))
+
+(defun canonicalize-typespec (typespec)
+  "Expand TYPESPEC into combination of primitive typespecs.
+This is modified version of `si:canonicalize-type`.
+The difference is that `canonicalize-typespec` does expand typespecs used
+as argument for another typespec."
+  (let (name args)
+    (lisp::*loop
+     (if (atom typespec)
+       (setf name typespec        args nil)
+       (setf name (car typespec)  args (cdr typespec)))
+     (acond ((get name 'si::deftype-definition)
+             (setf typespec (apply it args)))
+            ((get name 'typespec-canonicalizer)
+             (return-from canonicalize-typespec
+               (apply it args)))
+            (t
+             (return-from canonicalize-typespec
+               (if (atom typespec) (list typespec) typespec)))))))
+
+
+;;;; * Funciton typep
 (defun typep (object typespec)
   "Return true if OBJECT is type of TYPESPEC."
   (multiple-value-bind (type args)
@@ -141,7 +184,7 @@ object".
        (and (si:*structurep object)
             (si:*structure-subtypep (si:*structure-definition object) it)))
       ((get type 'si::deftype-definition)
-       (typep object (si:canonicalize-type typespec)))
+       (typep object (canonicalize-typespec typespec)))
       (t
        (when *warn-on-undefined-typespec*
          (warn "type specifier ‚¶‚á‚È‚¢‚Ý‚½‚¢: ~S" typespec))
