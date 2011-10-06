@@ -62,6 +62,8 @@
 (defun both (a b &optional (pred #'identity))
   (and (funcall pred a) (funcall pred b)))
 
+
+;;;; Function typep
 #|
 Implementation Note
 ===================
@@ -138,7 +140,7 @@ do the job for each types.
 |#
 
 
-;;;; fixed canonicalize-type
+;;;;; fixed canonicalize-type
 
 (defmacro define-typespec-canonicalize (type lambda-list &body body)
   `(setf (get ',type 'typespec-canonicalizer)
@@ -173,7 +175,7 @@ as argument for another typespec."
                (if (atom typespec) (list typespec) typespec)))))))
 
 
-;;;; overriding si::type-specifier-list
+;;;;; overriding si::type-specifier-list
 
 ;; borrowed from lisp/typespec.l
 (defmacro defpred (name (object r) &body body)
@@ -182,7 +184,7 @@ as argument for another typespec."
              (progn ,@body))))
 
 
-;;;; Funciton typep
+;;;;; Funciton typep
 (defun typep (object typespec)
   "Return true if OBJECT is type of TYPESPEC."
   (multiple-value-bind (type args)
@@ -206,8 +208,8 @@ as argument for another typespec."
          (warn "type specifier ‚¶‚á‚È‚¢‚Ý‚½‚¢: ~S" typespec))
        nil))))
 
-;;;;
-;;;; * Optimize `typep` form
+
+;;;; Optimize `typep` form
 
 (defparameter *typep-optimizer-table* (make-hash-table))
 
@@ -274,9 +276,8 @@ as argument for another typespec."
 (define-typep-optimizer extended-character (object)
   (*let `(#:object ,object) nil))
 
-
-;;;
-;;; Numbers
+
+;;;;; Numbers
 
 (defun expand-number-range-check (object low high)
   (cond ((both low high #'numberp)
@@ -316,9 +317,8 @@ as argument for another typespec."
                   (if (eql typespec '*) t
                     (optimize-type-check '(realpart #1#) typespec)))))))
 
-
-;;;
-;;; Arrays
+
+;;;;; Arrays
 
 (defun expand-array-element-type-check (object element-type)
   (if (eql element-type '*) t
@@ -371,8 +371,8 @@ as argument for another typespec."
 ;; simple-string  [size]
 (defopt-array simple-string simple-string-p :size)
 
-
-;;; * Function optimize-typep
+
+;;;;; Function optimize-typep
 
 (defun optimize-type-check (object-form typespec
                             &optional (no-warn (null *warn-on-undefined-typespec*)))
@@ -399,8 +399,9 @@ as argument for another typespec."
          (warn "type specifier ‚¶‚á‚È‚¢‚Ý‚½‚¢: ~S" typespec))
        `(typep ,object-form ',typespec)))))
 
-;;;;
+
 ;;;; * Macro `typepred`
+
 (defmacro typepred (typespec)
   "Create a function which takes an object and return true if the object is type of TYPESPEC."
   (let ((form (optimize-type-check '#1=#:object typespec)))
@@ -408,6 +409,7 @@ as argument for another typespec."
              (eql (second form) '#1#))
       `#',(car form)
       `(lambda (#1#) ,form))))
+
 
 (provide "ansify/typespec+")
 ;;; ansify/typespec+.l ends here.
