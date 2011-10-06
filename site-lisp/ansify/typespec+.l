@@ -194,6 +194,11 @@ as argument for another typespec."
          #'(lambda (,object ,r)
              (progn ,@body))))
 
+(defpred complex (object r)
+  (and (complexp object)
+       (or (null r)
+           (typep (realpart object) (upgraded-complex-part-type (car r))))))
+
 
 ;;;;; Funciton typep
 (defun typep (object typespec)

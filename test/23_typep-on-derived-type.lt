@@ -148,4 +148,18 @@ of type ELEMENT-TYPE."
 
 ;;;; complex
 
+(define-test complex-w/derived-types
+  (dolist (part-type '(even-fixnum odd-fixnum))
+    (let ((type `(complex ,part-type)))
+      ;; integers
+      (dolist (x '(#C(1 1) #C(2 2) #C(10 10) #C(333 333)))
+        (assert-true (ansify::typep x type) x type))
+      ;; (single-)floats
+      (dolist (x '(#(1.2 2.3) #(0.0 0.0) #(123.456 7.89)))
+        (assert-false (ansify::typep x type) x type))
+      ;; ratio
+      (dolist (x '(#(1/2 2/3) #(0/8 0/9) #(123/456 7/89)))
+        (assert-false (ansify::typep x type) x type)))))
+
+
 ;;; test/23_typep-on-derived-type.lt ends here.
