@@ -96,6 +96,12 @@ all arguments are optional. In most cases, it can be just a symbol (with-
 out parenthesis) if there's no argument. But some type specifiers like `and`
 doesn't allowed to be just a symbol.
 
+ansify::type-specifier-list
+---------------------------
+Same as above, but overridden by ansify.
+
+NOTE: Currently, only `complex` using this.
+
 
 si::deftype-definition
 ----------------------
@@ -132,7 +138,7 @@ do the job for each types.
 |#
 
 
-;;;; * fixed canonicalize-type
+;;;; fixed canonicalize-type
 
 (defmacro define-typespec-canonicalize (type lambda-list &body body)
   `(setf (get ',type 'typespec-canonicalizer)
@@ -167,7 +173,16 @@ as argument for another typespec."
                (if (atom typespec) (list typespec) typespec)))))))
 
 
-;;;; * Funciton typep
+;;;; overriding si::type-specifier-list
+
+;; borrowed from lisp/typespec.l
+(defmacro defpred (name (object r) &body body)
+  `(setf (get ',name 'ansify::type-specifier-list)
+         #'(lambda (,object ,r)
+             (progn ,@body))))
+
+
+;;;; Funciton typep
 (defun typep (object typespec)
   "Return true if OBJECT is type of TYPESPEC."
   (multiple-value-bind (type args)
@@ -177,7 +192,8 @@ as argument for another typespec."
     (acond
       ((get type 'si::type-predicate)
        (funcall it object))
-      ((get type 'si::type-specifier-list)
+      ((or (get type 'ansify::type-specifier-list)
+           (get type 'si::type-specifier-list))
        ;; TODO: some typespecs (ie. `and`, `or`) are not allowed to be a symbol
        (funcall it object args))
       ((get type 'si::structure-definition)
