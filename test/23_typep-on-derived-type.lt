@@ -23,7 +23,24 @@
 (remove-all-tests :test.ansify.typep-on-derived-type)
 
 
-;;;;; bare
+;;;; Function upgraded-complex-part-type
+
+(define-test upgraded-complex-part-type--standard
+  (dolist (type '(real rational ratio integer bignum single-float double-float))
+    (assert-eql type (ansify::upgraded-complex-part-type type) type))
+  (assert-eql 'single-float (ansify::upgraded-complex-part-type 'short-float))
+  (assert-eql 'double-float (ansify::upgraded-complex-part-type 'long-float)))
+
+
+(deftype even-fixnum () `(and fixnum (satisfies evenp)))
+(deftype odd-fixnum () `(and fixnum (satisfies odd)))
+
+(define-test upgraded-complex-part-type--derived
+  (assert-eql 'integer (ansify::upgraded-complex-part-type 'even-fixnum))
+  (assert-eql 'integer (ansify::upgraded-complex-part-type 'odd-fixnum)))
+
+
+;;;; bare
 
 (deftype proper-list ()
   `(and list (satisfies ansify::proper-list-p)))

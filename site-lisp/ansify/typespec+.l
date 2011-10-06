@@ -21,6 +21,7 @@
 
 (eval-when (:execute :compile-toplevel :load-toplevel)
   (shadowing-export '(#:typep
+                      #:upgraded-complex-part-type
                       )))
 
 
@@ -61,6 +62,16 @@
 
 (defun both (a b &optional (pred #'identity))
   (and (funcall pred a) (funcall pred b)))
+
+
+;;;; Misc
+
+(defun upgraded-complex-part-type (typespec &optional environment)
+  (declare (ignore environment))
+  (or (dolist (x '(bignum integer single-float double-float ratio
+                   rational float real))
+        (when (subtypep typespec x) (return x)))
+      (error "Type `~S` is not a subtype of `real`." typespec)))
 
 
 ;;;; Function typep
