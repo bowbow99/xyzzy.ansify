@@ -1,6 +1,16 @@
 20xx-xx-xx  TODO
 	* setf-values
 
+2011-10-07  bowbow99  <bowbow99@gmail.com>
+
+	* `ansify::upgraded-complex-part-type` を追加。
+	;; 返す値がこれであってるのかあまり自信がない。
+	指定された型が real じゃない場合には（とりあえず）エラーを投げるよう
+	にしておいた。
+
+	* `ansify::typep` で `(complex PART-TYPE)` の PART-TYPE に derived
+	type specifier を指定されたら展開するように。
+
 2011-10-05  bowbow99  <bowbow99@gmail.com>
 
 	* `ansify::typep` で derived type specifier を上手く展開できないこと
