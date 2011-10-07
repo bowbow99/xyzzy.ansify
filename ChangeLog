@@ -1,6 +1,15 @@
 20xx-xx-xx  TODO
 	* setf-values
 
+2011-10-05  bowbow99  <bowbow99@gmail.com>
+
+	* `ansify::typep` で derived type specifier を上手く展開できないこと
+	があった（thx to @miyamuko）のを一部修正。
+	typespec の引数として受け取った別の typespec が展開されてなかった。
+	- `and`, `or`, `not` は修正済み
+	- 引数として typespec を受け取る typespec としては上記以外に `array`,
+	`vector`, `complex` があるが調査中。
+
 2011-10-03  bowbow99  <bowbow99@gmail.com>
 
 	* `lisp:otherwise` が元々存在してたことが発覚した（thx to @miyamuko）

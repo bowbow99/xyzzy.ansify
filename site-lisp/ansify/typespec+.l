@@ -21,6 +21,7 @@
 
 (eval-when (:execute :compile-toplevel :load-toplevel)
   (shadowing-export '(#:typep
+                      #:upgraded-complex-part-type
                       )))
 
 
@@ -62,6 +63,18 @@
 (defun both (a b &optional (pred #'identity))
   (and (funcall pred a) (funcall pred b)))
 
+
+;;;; Misc
+
+(defun upgraded-complex-part-type (typespec &optional environment)
+  (declare (ignore environment))
+  (or (dolist (x '(bignum integer single-float double-float ratio
+                   rational float real))
+        (when (subtypep typespec x) (return x)))
+      (error "Type `~S` is not a subtype of `real`." typespec)))
+
+
+;;;; Function typep
 #|
 Implementation Note
 ===================
@@ -95,6 +108,12 @@ NOTE: Some compound type specifiers accepts `nil` as ARGS. In other words,
 all arguments are optional. In most cases, it can be just a symbol (with-
 out parenthesis) if there's no argument. But some type specifiers like `and`
 doesn't allowed to be just a symbol.
+
+ansify::type-specifier-list
+---------------------------
+Same as above, but overridden by ansify.
+
+NOTE: Currently, only `complex` using this.
 
 
 si::deftype-definition
@@ -132,7 +151,7 @@ do the job for each types.
 |#
 
 
-;;;; * fixed canonicalize-type
+;;;;; fixed canonicalize-type
 
 (defmacro define-typespec-canonicalize (type lambda-list &body body)
   `(setf (get ',type 'typespec-canonicalizer)
@@ -167,7 +186,21 @@ as argument for another typespec."
                (if (atom typespec) (list typespec) typespec)))))))
 
 
-;;;; * Funciton typep
+;;;;; overriding si::type-specifier-list
+
+;; borrowed from lisp/typespec.l
+(defmacro defpred (name (object r) &body body)
+  `(setf (get ',name 'ansify::type-specifier-list)
+         #'(lambda (,object ,r)
+             (progn ,@body))))
+
+(defpred complex (object r)
+  (and (complexp object)
+       (or (null r)
+           (typep (realpart object) (upgraded-complex-part-type (car r))))))
+
+
+;;;;; Funciton typep
 (defun typep (object typespec)
   "Return true if OBJECT is type of TYPESPEC."
   (multiple-value-bind (type args)
@@ -177,7 +210,8 @@ as argument for another typespec."
     (acond
       ((get type 'si::type-predicate)
        (funcall it object))
-      ((get type 'si::type-specifier-list)
+      ((or (get type 'ansify::type-specifier-list)
+           (get type 'si::type-specifier-list))
        ;; TODO: some typespecs (ie. `and`, `or`) are not allowed to be a symbol
        (funcall it object args))
       ((get type 'si::structure-definition)
@@ -190,8 +224,8 @@ as argument for another typespec."
          (warn "type specifier ‚¶‚á‚È‚¢‚Ý‚½‚¢: ~S" typespec))
        nil))))
 
-;;;;
-;;;; * Optimize `typep` form
+
+;;;; Optimize `typep` form
 
 (defparameter *typep-optimizer-table* (make-hash-table))
 
@@ -258,9 +292,8 @@ as argument for another typespec."
 (define-typep-optimizer extended-character (object)
   (*let `(#:object ,object) nil))
 
-
-;;;
-;;; Numbers
+
+;;;;; Numbers
 
 (defun expand-number-range-check (object low high)
   (cond ((both low high #'numberp)
@@ -300,9 +333,8 @@ as argument for another typespec."
                   (if (eql typespec '*) t
                     (optimize-type-check '(realpart #1#) typespec)))))))
 
-
-;;;
-;;; Arrays
+
+;;;;; Arrays
 
 (defun expand-array-element-type-check (object element-type)
   (if (eql element-type '*) t
@@ -355,8 +387,8 @@ as argument for another typespec."
 ;; simple-string  [size]
 (defopt-array simple-string simple-string-p :size)
 
-
-;;; * Function optimize-typep
+
+;;;;; Function optimize-typep
 
 (defun optimize-type-check (object-form typespec
                             &optional (no-warn (null *warn-on-undefined-typespec*)))
@@ -383,8 +415,9 @@ as argument for another typespec."
          (warn "type specifier ‚¶‚á‚È‚¢‚Ý‚½‚¢: ~S" typespec))
        `(typep ,object-form ',typespec)))))
 
-;;;;
+
 ;;;; * Macro `typepred`
+
 (defmacro typepred (typespec)
   "Create a function which takes an object and return true if the object is type of TYPESPEC."
   (let ((form (optimize-type-check '#1=#:object typespec)))
@@ -392,6 +425,7 @@ as argument for another typespec."
              (eql (second form) '#1#))
       `#',(car form)
       `(lambda (#1#) ,form))))
+
 
 (provide "ansify/typespec+")
 ;;; ansify/typespec+.l ends here.
