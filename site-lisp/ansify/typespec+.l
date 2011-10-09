@@ -19,19 +19,20 @@
 
 (eval-when (:execute :compile-toplevel :load-toplevel)
   (shadowing-export '(#:typep
+                      #:upgraded-complex-part-type
                       )))
 
 (export '(*warn-on-undefined-typespec*
           ))
 
 
-;;;; * User Configuration
+;;;; User Configuration
 
 (defvar *warn-on-undefined-typespec* nil
   "If non-nil, warn when undefined typespec used on `typep` or `optimize-type-check.")
 
 
-;;;; * Utilities
+;;;; Utilities
 
 (defun *let (binding &rest body)
   (let ((var (first binding))
@@ -63,7 +64,17 @@
   (and (funcall pred a) (funcall pred b)))
 
 
-;;;; * Funciton typep
+;;;; Misc
+
+(defun upgraded-complex-part-type (typespec &optional environment)
+  (declare (ignore environment))
+  (or (dolist (x '(bignum integer single-float double-float ratio
+                   rational float real))
+        (when (subtypep typespec x) (return x)))
+      (error "Type `~S` is not a subtype of `real`." typespec)))
+
+
+;;;; Function typep
 #|
 Implementation Note
 ===================
@@ -98,6 +109,12 @@ all arguments are optional. In most cases, it can be just a symbol (with-
 out parenthesis) if there's no argument. But some type specifiers like `and`
 doesn't allowed to be just a symbol.
 
+ansify::type-specifier-list
+---------------------------
+Same as above, but overridden by ansify.
+
+NOTE: Currently, only `complex` using this.
+
 
 si::deftype-definition
 ----------------------
@@ -122,8 +139,68 @@ object".
             (si::*structure-subtypep (si:*structure-definition OBJECT)
                                      #<structure-definition: STRUCTURE>))
 
+ansify::typespec-canonicalizer
+------------------------------
+<ansify specific>
+Used to expand a derived typespec into completely a combination of primitive
+types.
+`si:canonicalize-type` is meant to do that, but it doesn't expands typespecs
+given as arguments to another typespec, like `(and DERIVED-TYPESPEC ...)`, so
+I made fixed version and function stored on `ansify::typespec-canonicalizer`
+do the job for each types.
 |#
 
+
+;;;;; fixed canonicalize-type
+
+(defmacro define-typespec-canonicalize (type lambda-list &body body)
+  `(setf (get ',type 'typespec-canonicalizer)
+         (lambda ,lambda-list ,@body)))
+
+(define-typespec-canonicalize and (&rest typespecs)
+  `(and ,@(mapcar #'canonicalize-typespec typespecs)))
+
+(define-typespec-canonicalize or (&rest typespecs)
+  `(or ,@(mapcar #'canonicalize-typespec typespecs)))
+
+(define-typespec-canonicalize not (typespec)
+  `(not ,(canonicalize-typespec typespec)))
+
+(defun canonicalize-typespec (typespec)
+  "Expand TYPESPEC into combination of primitive typespecs.
+This is modified version of `si:canonicalize-type`.
+The difference is that `canonicalize-typespec` does expand typespecs used
+as argument for another typespec."
+  (let (name args)
+    (lisp::*loop
+     (if (atom typespec)
+       (setf name typespec        args nil)
+       (setf name (car typespec)  args (cdr typespec)))
+     (acond ((get name 'si::deftype-definition)
+             (setf typespec (apply it args)))
+            ((get name 'typespec-canonicalizer)
+             (return-from canonicalize-typespec
+               (apply it args)))
+            (t
+             (return-from canonicalize-typespec
+               (if (atom typespec) (list typespec) typespec)))))))
+
+
+;;;;; overriding si::type-specifier-list
+
+;; borrowed from lisp/typespec.l
+(defmacro defpred (name (object r) &body body)
+  `(setf (get ',name 'ansify::type-specifier-list)
+         #'(lambda (,object ,r)
+             (progn ,@body))))
+
+(defpred complex (object r)
+  (and (complexp object)
+       (or (null r)
+           (typep (realpart object) (upgraded-complex-part-type (car r))))))
+
+
+;;;;; Funciton typep
 (defun typep (object typespec)
   "Return true if OBJECT is type of TYPESPEC."
   (multiple-value-bind (type args)
@@ -133,21 +210,22 @@ object".
     (acond
       ((get type 'si::type-predicate)
        (funcall it object))
-      ((get type 'si::type-specifier-list)
+      ((or (get type 'ansify::type-specifier-list)
+           (get type 'si::type-specifier-list))
        ;; TODO: some typespecs (ie. `and`, `or`) are not allowed to be a symbol
        (funcall it object args))
       ((get type 'si::structure-definition)
        (and (si:*structurep object)
             (si:*structure-subtypep (si:*structure-definition object) it)))
       ((get type 'si::deftype-definition)
-       (typep object (si:canonicalize-type typespec)))
+       (typep object (canonicalize-typespec typespec)))
       (t
        (when *warn-on-undefined-typespec*
          (warn "type specifier ‚¶‚á‚È‚¢‚Ý‚½‚¢: ~S" typespec))
        nil))))
 
 
-;;;; * Optimize `typep` form
+;;;; Optimize `typep` form
 
 (defparameter *typep-optimizer-table* (make-hash-table))
 
@@ -309,7 +387,7 @@ object".
 (defopt-array simple-string simple-string-p :size)
 
 
-;;;; * Function optimize-typep
+;;;;; Function optimize-typep
 
 (defun optimize-type-check (object-form typespec
                             &optional (no-warn (null *warn-on-undefined-typespec*)))
@@ -337,7 +415,7 @@ object".
        `(typep ,object-form ',typespec)))))
 
 
-;;;; * Macro `typepred`
+;;;; Macro `typepred`
 
 (defmacro typepred (typespec)
   "Create a function which takes an object and return true if the object is type of TYPESPEC."
