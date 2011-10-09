@@ -1,6 +1,25 @@
 20xx-xx-xx  TODO
 	* setf-values
 
+2011-10-07  bowbow99  <bowbow99@gmail.com>
+
+	* `ansify::upgraded-complex-part-type` を追加。
+	;; 返す値がこれであってるのかあまり自信がない。
+	指定された型が real じゃない場合には（とりあえず）エラーを投げるよう
+	にしておいた。
+
+	* `ansify::typep` で `(complex PART-TYPE)` の PART-TYPE に derived
+	type specifier を指定されたら展開するように。
+
+2011-10-05  bowbow99  <bowbow99@gmail.com>
+
+	* `ansify::typep` で derived type specifier を上手く展開できないこと
+	があった（thx to @miyamuko）のを一部修正。
+	typespec の引数として受け取った別の typespec が展開されてなかった。
+	- `and`, `or`, `not` は修正済み
+	- 引数として typespec を受け取る typespec としては上記以外に `array`,
+	`vector`, `complex` があるが調査中。
+
 2011-10-04  bowbow99  <bowbow99@gmail.com>
 
 	* 警告を出すかどうか設定する変数を export しておいた。
@@ -43,11 +62,9 @@
 
 	* case, ecase, ccase を追加
 
-
 2011-08-24  bowbow99  <bowbow99@gmail.com>
 
 	* マクロをいくつか autoload するようにした
-
 
 2011-08-22  bowbow99  <bowbow99@gmail.com>
 
@@ -63,7 +80,6 @@
 
 	* destructuring-bind を取り込み
 
-
 2011-08-21  bowbow99  <bowbow99@gmail.com>
 
 	* symbol-macrolet を取り込み
@@ -71,7 +87,6 @@
 	  place を自力で展開するようにした。
 	  これで setf-values に依存しなくなった。
 	# setf-value の機能を取り込むかどうかは今のところ未定
-
 
 2011-08-20  bowbow99  <bowbow99@gmail.com>
 	* やり直し開始
