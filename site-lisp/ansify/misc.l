@@ -10,7 +10,8 @@
 ;;; Code:
 
 (eval-when (:execute :compile-toplevel :load-toplevel)
-  (require "ansify/base"))
+  (require "ansify/base")
+  (require "ansify/condition"))
 
 (in-package :ansify)
 
@@ -54,6 +55,8 @@
            (,$stream ,stream)
            (,$type   ,type)
            (,$identity ,identity))
+       (when *print-readably*
+         (error 'print-not-readable :object ,$object))
        (princ "#<" ,$stream)
        (when ,$type
          (prin1 (type-of ,$object) ,$stream)

@@ -14,6 +14,11 @@
 
 (in-package :ansify)
 
+(shadowing-export '(#:style-warning
+                    #:print-not-readable
+                    #:print-not-readable-object
+                    ))
+
 
 ;;;; local utilities
 
@@ -62,6 +67,14 @@ Note that you need to define CONDITION and `simple-CONDITION` first."
 
 (define-simple-condition style-warning)
 (define-signaller style-warning)
+
+;;;;; print-not-readable
+
+(define-condition print-not-readable (error)
+  (object)
+  (:report (lambda (x stream)
+             (format stream "ì«Ç›çûÇ›â¬î\Ç»å`éÆÇ≈èoóÕÇ≈Ç´Ç‹ÇπÇÒ: ~S"
+                   (print-not-readable-object x)))))
 
 
 (provide "ansify/condition")
