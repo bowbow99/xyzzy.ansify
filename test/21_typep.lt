@@ -423,6 +423,7 @@
 
 ;; and TYPESPEC*
 (define-test and
+  (assert-error 'bad-type-specifier (typep 3 'and))
   (dolist (x *example-objects*)
     ;; NOTE: The typespec `(and)` is equevalent to `t`.
     (assert-true (typep x '(and)))
@@ -460,6 +461,7 @@
 
 ;; or TYPESPEC*
 (define-test or
+  (assert-error 'bad-type-specifier (typep 3 'or))
   ;; typespec `(or)` is equevalent to `nil`
   (assert-typep (or))
   (dolist (x *example-objects*)
@@ -486,6 +488,7 @@
 
 ;; not TYPESPEC
 (define-test not
+  (assert-error 'bad-type-specifier (typep 3 'not))
   (assert-typep (not t))
   (assert-typep (not atom) list-integer list-symbol list-string)
   (assert-typep (not character) nil t 1/10 1 10 100 1000 most-positive-fixnum most-negative-fixnum
@@ -495,6 +498,7 @@
 
 ;; member OBJECT*
 (define-test member
+  (assert-error 'bad-type-specifier (typep 3 'member))
   (assert-typep (member)) ; equivalent to nil
   ;; NOTE: symbol `*` doesn't mean `t` here. it means a symbol `*` itself
   (assert-typep (member *))
@@ -509,6 +513,7 @@
 
 ;; eql OBJECT
 (define-test eql
+  (assert-error 'bad-type-specifier (typep 3 'eql))
   (assert-typep (eql 10) 10)
   (assert-typep (eql t) t)
   (assert-typep (eql nil) nil)
@@ -519,6 +524,7 @@
 ;; FIXME: CLHS explicitly says PREDICATE-NAME must be a symbol. But xyzzy allow to use
 ;; quoted lambda-expression or function object as PREDICATE-NAME
 (define-test satisfies
+  (assert-error 'bad-type-specifier (typep 3 'satisfies))
   (assert-typep (satisfies atom) nil t 1/10 1 10 100 1000 most-positive-fixnum most-negative-fixnum
     most-positive-fixnum+1 most-negative-fixnum-1 single-float double-float complex
     function array string symbol :keyword vector vector-symbol char-alpha char-num char-space

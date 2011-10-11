@@ -73,6 +73,20 @@
         (when (subtypep typespec x) (return x)))
       (error "Type `~S` is not a subtype of `real`." typespec)))
 
+(defconstant +compound-only-typespecs+ '(and mod satisfies eql not values member or))
+
+(defun split-typespec (typespec)
+  "Return a symbol naming the type, and subsidiary info for compound typespec from TYPESPEC.
+Signal an error of `lisp:bad-type-specifier` if TYPESPEC is invalid."
+  (cond ((symbolp typespec)
+         (when (member typespec +compound-only-typespecs+)
+           (error 'bad-type-specifier :datum typespec))
+         (values typespec))
+        ((consp typespec)
+         (unless (symbolp (car typespec))
+           (error 'bad-type-specifier :datum typespec))
+         (values (car typespec) (cdr typespec)))))
+
 
 ;;;; Function typep
 #|
@@ -173,9 +187,7 @@ The difference is that `canonicalize-typespec` does expand typespecs used
 as argument for another typespec."
   (let (name args)
     (lisp::*loop
-     (if (atom typespec)
-       (setf name typespec        args nil)
-       (setf name (car typespec)  args (cdr typespec)))
+     (multiple-value-setq (name args) (split-typespec typespec))
      (acond ((get name 'si::deftype-definition)
              (setf typespec (apply it args)))
             ((get name 'typespec-canonicalizer)
@@ -203,10 +215,7 @@ as argument for another typespec."
 ;;;;; Funciton typep
 (defun typep (object typespec)
   "Return true if OBJECT is type of TYPESPEC."
-  (multiple-value-bind (type args)
-      (if (consp typespec)
-        (values (car typespec) (cdr typespec))
-        (values typespec nil))
+  (multiple-value-bind (type args) (split-typespec typespec)
     (acond
       ((get type 'si::type-predicate)
        (funcall it object))
@@ -391,10 +400,7 @@ as argument for another typespec."
 
 (defun optimize-type-check (object-form typespec
                             &optional (no-warn (null *warn-on-undefined-typespec*)))
-  (multiple-value-bind (type args)
-      (if (consp typespec)
-        (values (car typespec) (cdr typespec))
-        (values typespec nil))
+  (multiple-value-bind (type args) (split-typespec typespec)
     (acond
       ((gethash type *typep-optimizer-table*)
        (apply it object-form args))
