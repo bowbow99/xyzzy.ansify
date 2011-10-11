@@ -23,6 +23,7 @@
                       )))
 
 (export '(*warn-on-undefined-typespec*
+          *invalid-typespec-treatment*
           ))
 
 
@@ -30,6 +31,23 @@
 
 (defvar *warn-on-undefined-typespec* nil
   "If non-nil, warn when undefined typespec used on `typep` or `optimize-type-check.")
+
+(defvar *invalid-typespec-treatment* :error
+  "Treatment of invalid typespec.
+
+Currently, followings are considered invalid typespec:
+- not a symbol nor a list
+- a list but its car is not a symbol
+- compound-only typespec (e.g. `and`) in atomic form
+- `satisfies` with non-symbol as PREDICATE
+
+Possible value is:
+nil    - `typep` returns nil. `optimize-type-check` produces `typep`
+         form with no modification to TYPESPEC, which returns nil when
+         evaluated.
+:warn  - same as above, but signal a warning.
+:error - (or any value other than listed above) signal an error of type
+         `lisp:bad-type-specifier`.")
 
 
 ;;;; Utilities
@@ -75,19 +93,25 @@
 
 (defconstant +compound-only-typespecs+ '(and mod satisfies eql not values member or))
 
+(defun !!invalid-type-specifier (typespec)
+  (case *invalid-typespec-treatment*
+    ((nil) nil)
+    (:warn (warn "ÇªÇÃå^éwíËéqÇÕïsê≥Ç≈Ç∑ÇÊ: ~S" typespec))
+    (t     (error 'bad-type-specifier :datum typespec))))
+
 (defun split-typespec (typespec)
   "Return a symbol naming the type, and subsidiary info for compound typespec from TYPESPEC.
 Signal an error of `lisp:bad-type-specifier` if TYPESPEC is invalid."
   (cond ((symbolp typespec)
          (when (member typespec +compound-only-typespecs+)
-           (error 'bad-type-specifier :datum typespec))
+           (!!invalid-type-specifier typespec))
          (values typespec))
         ((consp typespec)
          (unless (symbolp (car typespec))
-           (error 'bad-type-specifier :datum typespec))
+           (!!invalid-type-specifier typespec))
          (values (car typespec) (cdr typespec)))
         (t
-         (error 'bad-type-specifier :datum typespec))))
+         (!!invalid-type-specifier typespec))))
 
 
 ;;;; Function typep
