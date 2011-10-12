@@ -50,6 +50,23 @@ nil    - `typep` returns nil. `optimize-type-check` produces `typep`
          `lisp:bad-type-specifier`.")
 
 
+;;;; Fixes
+
+;; NOTE: Typespec `eql` has broken definition on `si::deftype-definition`
+;; (by `deftype`). For default `lisp:typep` which doesn't use definition
+;; defined by `deftype` ignore this broken definition and doesn't cause
+;; problem. When it is expanded by `si:canonicalize-type`, which expands
+;; into a invalid typespec and result would be... wrong.
+;;
+;;     (si:canonicalize-type '(eql 3))
+;;     => (member (3))
+;;
+;; I remove this broken definition. This change affects globaly, but
+;; shouldn't cause any harm.
+(eval-when (:execute :compile-toplevel :load-toplevel)
+  (remprop 'eql 'si::deftype-definition))
+
+
 ;;;; Utilities
 
 (defun *let (binding &rest body)
