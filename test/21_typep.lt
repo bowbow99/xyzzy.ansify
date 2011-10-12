@@ -521,10 +521,9 @@
   (assert-typep (eql #\c) char-alpha))
 
 ;; satisfies PREDICATE-NAME
-;; FIXME: CLHS explicitly says PREDICATE-NAME must be a symbol. But xyzzy allow to use
-;; quoted lambda-expression or function object as PREDICATE-NAME
 (define-test satisfies
   (assert-error 'bad-type-specifier (typep 3 'satisfies))
+  (assert-error 'bad-type-specifier (typep 3 '(satisfies (lambda (x) (= x 3)))))
   (assert-typep (satisfies atom) nil t 1/10 1 10 100 1000 most-positive-fixnum most-negative-fixnum
     most-positive-fixnum+1 most-negative-fixnum-1 single-float double-float complex
     function array string symbol :keyword vector vector-symbol char-alpha char-num char-space

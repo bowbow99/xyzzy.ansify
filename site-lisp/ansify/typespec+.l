@@ -247,7 +247,9 @@ as argument for another typespec."
        (funcall it object))
       ((or (get type 'ansify::type-specifier-list)
            (get type 'si::type-specifier-list))
-       ;; TODO: some typespecs (ie. `and`, `or`) are not allowed to be a symbol
+       (when (and (eql type 'satisfies)
+                  (not (symbolp (first args))))
+         (!!invalid-type-specifier typespec))
        (funcall it object args))
       ((get type 'si::structure-definition)
        (and (si:*structurep object)
@@ -277,7 +279,8 @@ as argument for another typespec."
 
 ;; satisfies
 (define-typep-optimizer satisfies (object pred)
-  ;; TODO: CLHS explicitly denying use of lambda-expression as pred
+  (unless (symbolp pred)
+    (!!invalid-type-specifier *this-typespec*))
   `(,pred ,object))
 
 ;; member
@@ -424,8 +427,12 @@ as argument for another typespec."
 
 ;;;;; Function optimize-typep
 
+(defparameter *this-typespec* nil
+  "Bound to whole typespec currently optimizing.")
+
 (defun optimize-type-check (object-form typespec
-                            &optional (no-warn (null *warn-on-undefined-typespec*)))
+                            &optional (no-warn (null *warn-on-undefined-typespec*))
+                            &aux (*this-typespec* (or *this-typespec* typespec)))
   (multiple-value-bind (type args) (split-typespec typespec)
     (acond
       ((gethash type *typep-optimizer-table*)

@@ -1039,9 +1039,11 @@
   (assert-optimize (foo x y z) (satisfies atom) (atom (foo x y z)))
   (assert-optimize (foo x y z) (satisfies identity) (identity (foo x y z)))
   (assert-optimize (foo x y z) (satisfies oddp) (oddp (foo x y z)))
-  ;; atomic form is not allowed
+  (progn ;invalid forms
   (assert-error 'bad-type-specifier
-      (ansify::optimize-type-check 'X 'satisfies)))
+      (ansify::optimize-type-check 'X 'satisfies))
+  (assert-error 'bad-type-specifier
+      (ansify::optimize-type-check 'X '(satisfies (lambda (x) (= x 3)))))))
 
 ;;; NOTE: `values` is only for declarations, not allowed in `typep`
 ;; values
