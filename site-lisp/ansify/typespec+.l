@@ -84,6 +84,9 @@ nil    - `typep` returns nil. `optimize-type-check` produces `typep`
 
 ;;;; Misc
 
+(defparameter *this-typespec* nil
+  "Bound to whole typespec currently optimizing.")
+
 (defun upgraded-complex-part-type (typespec &optional environment)
   (declare (ignore environment))
   (or (dolist (x '(bignum integer single-float double-float ratio
@@ -206,7 +209,12 @@ do the job for each types.
 (define-typespec-canonicalize not (typespec)
   `(not ,(canonicalize-typespec typespec)))
 
-(defun canonicalize-typespec (typespec)
+(define-typespec-canonicalize satisfies (predicate)
+  (unless (symbolp predicate)
+    (!!invalid-type-specifier *this-typespec*))
+  `(satisfies ,predicate))
+
+(defun canonicalize-typespec (typespec &aux (*this-typespec* (or *this-typespec* typespec)))
   "Expand TYPESPEC into combination of primitive typespecs.
 This is modified version of `si:canonicalize-type`.
 The difference is that `canonicalize-typespec` does expand typespecs used
@@ -241,6 +249,7 @@ as argument for another typespec."
 ;;;;; Funciton typep
 (defun typep (object typespec)
   "Return true if OBJECT is type of TYPESPEC."
+  (setf typespec (canonicalize-typespec typespec))
   (multiple-value-bind (type args) (split-typespec typespec)
     (acond
       ((get type 'si::type-predicate)
@@ -254,8 +263,6 @@ as argument for another typespec."
       ((get type 'si::structure-definition)
        (and (si:*structurep object)
             (si:*structure-subtypep (si:*structure-definition object) it)))
-      ((get type 'si::deftype-definition)
-       (typep object (canonicalize-typespec typespec)))
       (t
        (when *warn-on-undefined-typespec*
          (warn "type specifier ‚¶‚á‚È‚¢‚Ý‚½‚¢: ~S" typespec))
@@ -426,9 +433,6 @@ as argument for another typespec."
 
 
 ;;;;; Function optimize-typep
-
-(defparameter *this-typespec* nil
-  "Bound to whole typespec currently optimizing.")
 
 (defun optimize-type-check (object-form typespec
                             &optional (no-warn (null *warn-on-undefined-typespec*))
