@@ -1,6 +1,19 @@
 20xx-xx-xx  TODO
 	* setf-values
 
+2011-10-12  bowbow99  <bowbow99@gmail.com>
+
+	* 不正な型指定子でエラー投げるように
+	- symbol でも list でもない
+	- car が symbol じゃない list
+	- compound-only な連中（`and`, `not` など）が symbol のみ
+	- `satisfies` の PREDICATE が symbol じゃない
+
+	* `lisp:eql` のバグってる型情報を削除する fix を追加。
+	`lisp:typep` だと（`si:canonicalize-type` しない限り）使われないの
+	で問題無いのだけど、`ansify::typep` では常に canonicalize するよう
+	にしたので邪魔になった。
+
 2011-10-11  bowbow99  <bowbow99@gmail.com>
 
 	* エラー `print-not-readable` を追加

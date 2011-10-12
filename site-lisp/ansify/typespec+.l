@@ -23,6 +23,7 @@
                       )))
 
 (export '(*warn-on-undefined-typespec*
+          *invalid-typespec-treatment*
           ))
 
 
@@ -30,6 +31,40 @@
 
 (defvar *warn-on-undefined-typespec* nil
   "If non-nil, warn when undefined typespec used on `typep` or `optimize-type-check.")
+
+(defvar *invalid-typespec-treatment* :error
+  "Treatment of invalid typespec.
+
+Currently, followings are considered invalid typespec:
+- not a symbol nor a list
+- a list but its car is not a symbol
+- compound-only typespec (e.g. `and`) in atomic form
+- `satisfies` with non-symbol as PREDICATE
+
+Possible value is:
+nil    - `typep` returns nil. `optimize-type-check` produces `typep`
+         form with no modification to TYPESPEC, which returns nil when
+         evaluated.
+:warn  - same as above, but signal a warning.
+:error - (or any value other than listed above) signal an error of type
+         `lisp:bad-type-specifier`.")
+
+
+;;;; Fixes
+
+;; NOTE: Typespec `eql` has broken definition on `si::deftype-definition`
+;; (by `deftype`). For default `lisp:typep` which doesn't use definition
+;; defined by `deftype` ignore this broken definition and doesn't cause
+;; problem. When it is expanded by `si:canonicalize-type`, which expands
+;; into a invalid typespec and result would be... wrong.
+;;
+;;     (si:canonicalize-type '(eql 3))
+;;     => (member (3))
+;;
+;; I remove this broken definition. This change affects globaly, but
+;; shouldn't cause any harm.
+(eval-when (:execute :compile-toplevel :load-toplevel)
+  (remprop 'eql 'si::deftype-definition))
 
 
 ;;;; Utilities
@@ -66,12 +101,37 @@
 
 ;;;; Misc
 
+(defparameter *this-typespec* nil
+  "Bound to whole typespec currently optimizing.")
+
 (defun upgraded-complex-part-type (typespec &optional environment)
   (declare (ignore environment))
   (or (dolist (x '(bignum integer single-float double-float ratio
                    rational float real))
         (when (subtypep typespec x) (return x)))
       (error "Type `~S` is not a subtype of `real`." typespec)))
+
+(defconstant +compound-only-typespecs+ '(and mod satisfies eql not values member or))
+
+(defun !!invalid-type-specifier (typespec)
+  (case *invalid-typespec-treatment*
+    ((nil) nil)
+    (:warn (warn "ÇªÇÃå^éwíËéqÇÕïsê≥Ç≈Ç∑ÇÊ: ~S" typespec))
+    (t     (error 'bad-type-specifier :datum typespec))))
+
+(defun split-typespec (typespec)
+  "Return a symbol naming the type, and subsidiary info for compound typespec from TYPESPEC.
+Signal an error of `lisp:bad-type-specifier` if TYPESPEC is invalid."
+  (cond ((symbolp typespec)
+         (when (member typespec +compound-only-typespecs+)
+           (!!invalid-type-specifier typespec))
+         (values typespec))
+        ((consp typespec)
+         (unless (symbolp (car typespec))
+           (!!invalid-type-specifier typespec))
+         (values (car typespec) (cdr typespec)))
+        (t
+         (!!invalid-type-specifier typespec))))
 
 
 ;;;; Function typep
@@ -166,16 +226,19 @@ do the job for each types.
 (define-typespec-canonicalize not (typespec)
   `(not ,(canonicalize-typespec typespec)))
 
-(defun canonicalize-typespec (typespec)
+(define-typespec-canonicalize satisfies (predicate)
+  (unless (symbolp predicate)
+    (!!invalid-type-specifier *this-typespec*))
+  `(satisfies ,predicate))
+
+(defun canonicalize-typespec (typespec &aux (*this-typespec* (or *this-typespec* typespec)))
   "Expand TYPESPEC into combination of primitive typespecs.
 This is modified version of `si:canonicalize-type`.
 The difference is that `canonicalize-typespec` does expand typespecs used
 as argument for another typespec."
   (let (name args)
     (lisp::*loop
-     (if (atom typespec)
-       (setf name typespec        args nil)
-       (setf name (car typespec)  args (cdr typespec)))
+     (multiple-value-setq (name args) (split-typespec typespec))
      (acond ((get name 'si::deftype-definition)
              (setf typespec (apply it args)))
             ((get name 'typespec-canonicalizer)
@@ -203,22 +266,20 @@ as argument for another typespec."
 ;;;;; Funciton typep
 (defun typep (object typespec)
   "Return true if OBJECT is type of TYPESPEC."
-  (multiple-value-bind (type args)
-      (if (consp typespec)
-        (values (car typespec) (cdr typespec))
-        (values typespec nil))
+  (setf typespec (canonicalize-typespec typespec))
+  (multiple-value-bind (type args) (split-typespec typespec)
     (acond
       ((get type 'si::type-predicate)
        (funcall it object))
       ((or (get type 'ansify::type-specifier-list)
            (get type 'si::type-specifier-list))
-       ;; TODO: some typespecs (ie. `and`, `or`) are not allowed to be a symbol
+       (when (and (eql type 'satisfies)
+                  (not (symbolp (first args))))
+         (!!invalid-type-specifier typespec))
        (funcall it object args))
       ((get type 'si::structure-definition)
        (and (si:*structurep object)
             (si:*structure-subtypep (si:*structure-definition object) it)))
-      ((get type 'si::deftype-definition)
-       (typep object (canonicalize-typespec typespec)))
       (t
        (when *warn-on-undefined-typespec*
          (warn "type specifier Ç∂Ç·Ç»Ç¢Ç›ÇΩÇ¢: ~S" typespec))
@@ -242,7 +303,8 @@ as argument for another typespec."
 
 ;; satisfies
 (define-typep-optimizer satisfies (object pred)
-  ;; TODO: CLHS explicitly denying use of lambda-expression as pred
+  (unless (symbolp pred)
+    (!!invalid-type-specifier *this-typespec*))
   `(,pred ,object))
 
 ;; member
@@ -390,11 +452,9 @@ as argument for another typespec."
 ;;;;; Function optimize-typep
 
 (defun optimize-type-check (object-form typespec
-                            &optional (no-warn (null *warn-on-undefined-typespec*)))
-  (multiple-value-bind (type args)
-      (if (consp typespec)
-        (values (car typespec) (cdr typespec))
-        (values typespec nil))
+                            &optional (no-warn (null *warn-on-undefined-typespec*))
+                            &aux (*this-typespec* (or *this-typespec* typespec)))
+  (multiple-value-bind (type args) (split-typespec typespec)
     (acond
       ((gethash type *typep-optimizer-table*)
        (apply it object-form args))

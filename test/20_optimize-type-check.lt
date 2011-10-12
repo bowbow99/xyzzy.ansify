@@ -39,7 +39,6 @@
          ,(ansify::optimize-type-check '#1# typespec)
        #1# ',typespec)))
 
-
 (defmacro assert-optimize (object-form typespec optimized)
   `(assert-equality #'form-equal
        ',optimized
@@ -932,7 +931,10 @@
     (let ((#:object (foo x y z))) t))
   (assert-optimize (foo x y z) (and number integer)
     (let ((#:object (foo x y z)))
-      (and (numberp #:object) (integerp #:object)))))
+      (and (numberp #:object) (integerp #:object))))
+  ;; atomic form is not allowed
+  (assert-error 'bad-type-specifier
+      (ansify::optimize-type-check 'X 'and)))
 
 ;; or  TYPESPEC*
 (define-test or
@@ -955,7 +957,10 @@
     (let ((#:object (foo x y z))) nil))
   (assert-optimize (foo x y z) (or string symbol)
     (let ((#:object (foo x y z)))
-      (or (stringp #:object) (symbolp #:object)))))
+      (or (stringp #:object) (symbolp #:object))))
+  ;; atomic form is not allowed
+  (assert-error 'bad-type-specifier
+      (ansify::optimize-type-check 'X 'or)))
 
 
 ;; not  TYPESPEC
@@ -976,7 +981,10 @@
     (let ((#:object (foo x y z))) t))
   (assert-optimize (foo x y z) (not string)
     (let ((#:object (foo x y z)))
-      (not (stringp #:object)))))
+      (not (stringp #:object))))
+  ;; atomic form is not allowed
+  (assert-error 'bad-type-specifier
+      (ansify::optimize-type-check 'X 'not)))
 
 ;; eql  OBJECT
 (define-test eql
@@ -994,7 +1002,9 @@
   (assert-optimize (foo x y z) (eql nil) (eql (foo x y z) 'nil))
   (assert-optimize (foo x y z) (eql 0) (eql (foo x y z) '0))
   (assert-optimize (foo x y z) (eql foo) (eql (foo x y z) 'foo))
-  )
+  ;; atomic form is not allowed
+  (assert-error 'bad-type-specifier
+      (ansify::optimize-type-check 'X 'eql)))
 
 ;; member  OBJECT
 (define-test member
@@ -1011,7 +1021,10 @@
   (assert-optimize (foo x y z) (member foo bar baz)
     (member (foo x y z) '(foo bar baz) :test #'eql))
   (assert-optimize (foo x y z) (member 0 1 2 3 4 5 6 7 8 9)
-    (member (foo x y z) '(0 1 2 3 4 5 6 7 8 9) :test #'eql)))
+    (member (foo x y z) '(0 1 2 3 4 5 6 7 8 9) :test #'eql))
+  ;; atomic form is not allowed
+  (assert-error 'bad-type-specifier
+      (ansify::optimize-type-check 'X 'member)))
 
 ;; satisfies  FUNCTION
 (define-test satisfies
@@ -1026,7 +1039,11 @@
   (assert-optimize (foo x y z) (satisfies atom) (atom (foo x y z)))
   (assert-optimize (foo x y z) (satisfies identity) (identity (foo x y z)))
   (assert-optimize (foo x y z) (satisfies oddp) (oddp (foo x y z)))
-  )
+  (progn ;invalid forms
+  (assert-error 'bad-type-specifier
+      (ansify::optimize-type-check 'X 'satisfies))
+  (assert-error 'bad-type-specifier
+      (ansify::optimize-type-check 'X '(satisfies (lambda (x) (= x 3)))))))
 
 ;;; NOTE: `values` is only for declarations, not allowed in `typep`
 ;; values

@@ -63,13 +63,16 @@
 ;;;; use of `and`
 
 (defun expand-list-element-check (element-type)
-  "Return a lambda expression which check that all elements of LIST is
+  "Return a symbol naming a function which check that all elements of LIST is
 of type ELEMENT-TYPE."
-  ;; NOTE: Use of lambda expression in `satisfies` typespec is invalid in CL
-  `(lambda (list)
-     (dolist (x list t)
-       (unless ,(ansify::optimize-type-check 'x element-type)
-         (return nil)))))
+  (let ((name (intern (format nil "(list-of ~S)" element-type))))
+    (setf (symbol-function name)
+          (coerce `(lambda (list)
+                     (dolist (x list t)
+                       (unless ,(ansify::optimize-type-check 'x element-type)
+                         (return nil))))
+                  'function))
+    name))
 
 (deftype list-of (element-type)
   `(and proper-list
