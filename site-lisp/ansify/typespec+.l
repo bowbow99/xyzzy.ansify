@@ -462,13 +462,13 @@ as argument for another typespec."
        `(,it ,object-form))
       ((get type 'si::type-specifier-list)
        `(,it ,object-form '(,@args)))
-      ((get type 'si:structure-definition)
-       `(let ((#1=#:object ,object-form))
-          (and (si:*structurep #1#)
-               (si:*structure-subtypep (si:*structure-definition #1#)
-                                       (get ',type 'si:structure-definition)))))
       ((get type 'si::deftype-definition)
        (optimize-type-check object-form (si:canonicalize-type typespec)))
+      ((get type 'si:structure-definition)
+       (*let `(#1=#:object ,object-form)
+         `(and (si:*structurep #1#)
+               (si:*structure-subtypep (si:*structure-definition #1#)
+                                       (get ',type 'si:structure-definition)))))
       (t
        (unless no-warn
          (warn "type specifier ‚¶‚á‚È‚¢‚Ý‚½‚¢: ~S" typespec))
