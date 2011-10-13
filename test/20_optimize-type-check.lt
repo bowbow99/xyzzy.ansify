@@ -17,6 +17,32 @@
 
 (remove-all-tests :test.ansify.optimize-type-check)
 
+;;;; test examples and utilities
+
+(deftype even-fixnum ()
+  `(and fixnum (satisfies evenp)))
+
+(deftype odd-fixnum ()
+  `(and fixnum (satisfies oddp)))
+
+(deftype zero ()
+  `(and number (satisfies zerop)))
+
+(deftype proper-list ()
+  `(and list (satisfies ansify::proper-list-p)))
+
+(defstruct foo a b)
+
+(defstruct (bar (:type vector)) a b)
+
+(defun valid-bar-p (x)
+  (and (vectorp x)
+       (integerp (bar-a x))
+       (stringp (bar-b x))))
+
+(deftype bar ()
+  `(and vector (satisfies valid-bar-p)))
+
 (defparameter *example-objects*
   `(t
     nil
@@ -30,6 +56,9 @@
     "string" #(1 2 3)
     ,(car (ed:buffer-list)) ,(ed:selected-buffer) ,(ed:selected-window)
     ,(ed:compile-regexp "") ,(ed:compile-regexp "[a-z]+" t)
+    ,(make-foo :a 1 :b "hi")
+    ,(make-bar :a 1 :b "hi")
+    ,(make-bar :a "hi" :b 2)
     ))
 
 (defmacro assert-same (typespec)
@@ -1062,6 +1091,28 @@
 ;; structure-class
 ;; structure-object
 ;; method
+
+
+;;;; derived typespecs
+
+(define-test derived-typespec
+  (assert-same even-fixnum)
+  (assert-optimize X even-fixnum (and (si:*fixnump X) (evenp X)))
+  (assert-same odd-fixnum)
+  (assert-optimize X odd-fixnum (and (si:*fixnump X) (oddp X)))
+  (assert-same zero)
+  (assert-optimize X zero (and (numberp X) (zerop X)))
+  (assert-same proper-list)
+  (assert-optimize X proper-list (and (listp X) (ansify::proper-list-p X))))
+
+(define-test structure-types
+  (assert-same foo)
+  (assert-optimize X foo (and (si:*structurep X)
+                              (eql (si:*structure-definition X)
+                                   (get 'foo 'si::structure-definition))))
+  (assert-same bar)
+  (assert-optimize X bar (and (vectorp X)
+                              (valid-bar-p X))))
 
 
 ;;; test/20_optimize-type-check.lt ends here.
