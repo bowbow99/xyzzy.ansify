@@ -1108,8 +1108,8 @@
 (define-test structure-types
   (assert-same foo)
   (assert-optimize X foo (and (si:*structurep X)
-                              (eql (si:*structure-definition X)
-                                   (get 'foo 'si::structure-definition))))
+                              (si:*structure-subtypep (si:*structure-definition X)
+                                                      (get 'foo 'si::structure-definition))))
   (assert-same bar)
   (assert-optimize X bar (and (vectorp X)
                               (valid-bar-p X))))
