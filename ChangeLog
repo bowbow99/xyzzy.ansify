@@ -1,6 +1,11 @@
 20xx-xx-xx  TODO
 	* setf-values
 
+2011-10-13  bowbow99  <bowbow99@gmail.com>
+
+	* `ansify::optimize-type-check` が `deftype` より `defstruct` で
+	定義した型を優先してたバグを修正。
+
 2011-10-12  bowbow99  <bowbow99@gmail.com>
 
 	* 不正な型指定子でエラー投げるように
