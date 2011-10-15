@@ -19,8 +19,8 @@
   (shadowing-export '(#:symbol-macrolet
                       )))
 
-;;;;
-;;;; * utilities
+
+;;;; utilities
 
 (defun sm.merge-env (env type local-defs)
   "Return an environment object which contains everything in ENV plus
@@ -35,8 +35,8 @@
                (find (car sym/expansion) shadowed))
     sym/expansions))
 
-;;;;
-;;;; * Expand Forms
+
+;;;; Expand Forms
 
 (defun sm.expand-form (form sym/expansions &optional env)
   (setq form (macroexpand form env))
@@ -253,6 +253,8 @@
             (cadr form))
        ,@(sm.expand-body (cddr form) sym/expansions new-env))))
 
+
+;;;; Macro symbol-macrolet
 
 (defmacro symbol-macrolet (sym/expansions &body forms &environment env)
   (multiple-value-bind (decl forms)
