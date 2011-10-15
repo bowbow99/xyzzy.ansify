@@ -18,16 +18,20 @@
 (in-package :ansify)
 
 (eval-when (:execute :compile-toplevel :load-toplevel)
+
   (shadowing-export '(#:typecase
                       #:etypecase
                       #:ctypecase
                       #:case
                       #:ecase
                       #:ccase
-                      )))
+                      ))
 
-(export '(*case-warn-on-t/otherwise-in-middle*
-          ))
+  (export-from :ansify.ext
+               '(#:*case-warn-on-t/otherwise-in-middle*
+                 ))
+
+  ) ; end of `eval-when`
 
 ;;; Indentation settings
 #+xyzzy
@@ -80,7 +84,7 @@ They should be `(t)` and `(otherwise)` respectively.")
 
 ;;;; typecase family
 
-;;; Macro `typecase`
+;;;;; Macro `typecase`
 
 (defun expand-typecase-clause (var clauses)
   (if (null clauses) nil
@@ -96,7 +100,7 @@ They should be `(t)` and `(otherwise)` respectively.")
   `(let ((#1=#:key-object ,keyform))
      (cond ,@(expand-typecase-clause '#1# clauses))))
 
-;;; Macro `etypecase`
+;;;;; Macro `etypecase`
 
 (defun expand-etypecase (keyform clauses)
   (let ((types nil))
@@ -110,7 +114,7 @@ They should be `(t)` and `(otherwise)` respectively.")
 (defmacro etypecase (keyform &rest clauses)
   (expand-etypecase keyform clauses))
 
-;;; Macro `ctypecase`
+;;;;; Macro `ctypecase`
 
 (defun expand-ctypecase (place clauses)
   (let ((types nil))
@@ -132,6 +136,8 @@ They should be `(t)` and `(otherwise)` respectively.")
 
 ;;;; case family
 
+;;;;; Macro `case`
+
 (defun expand-case-clauses (var clauses)
   (with-ca/dr (keys body) (car clauses)
     (cond ((member keys '(otherwise t))
@@ -150,7 +156,7 @@ They should be `(t)` and `(otherwise)` respectively.")
   `(let ((#1=#:key ,key-form))
      ,(expand-case-clauses '#1# clauses)))
 
-;;; Macro `ecase`
+;;;;; Macro `ecase`
 
 (defun expand-ecase-clauses (var clauses &optional all-keys)
   (cond ((null clauses)
@@ -167,7 +173,7 @@ They should be `(t)` and `(otherwise)` respectively.")
   `(let ((#1=#:key ,key-form))
      ,(expand-ecase-clauses '#1# clauses)))
 
-;;; Macro `ccase`
+;;;;; Macro `ccase`
 
 (defun expand-ccase (key-place clauses)
   `(prog (#1=#:key-value)
