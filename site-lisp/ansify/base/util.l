@@ -17,6 +17,7 @@
 (export '(;; list utilities
           single?
           proper-list-p
+          flatten
           ;; symbols
           mksym
           ;; binding macros
@@ -43,6 +44,14 @@
                  ((null (cdr fast)) (return t))
                  ((atom (cdr fast)) (return nil))
                  ((eql fast slow) (return nil)))))))
+
+(defun flatten (tree)
+  (labels ((rec (x acc)
+             (cond ((null x) acc)
+                   ((atom x) (cons x acc))
+                   (t
+                    (rec (car x) (rec (cdr x) acc))))))
+    (rec tree nil)))
 
 
 ;;;; symbols
