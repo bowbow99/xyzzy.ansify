@@ -5,11 +5,12 @@
 ;;; Author:    bowbow99  <bowbow99@gmail.com>
 ;;; License:   MIT (See COPYING.mit)
 ;;;
+;;; This file is part of xyzzy extension "ansify".
 
 ;;; Code:
 
-;;;;
-;;;; * Package Definitions
+
+;;;; Package Definitions
 
 (defpackage :ansify
   (:use :lisp))
@@ -17,8 +18,8 @@
 (in-package :ansify)
 
 
-;;;;
-;;;; * Shadowing Export
+
+;;;; Shadowing Export
 
 (defvar *shadowing-exported-symbols* nil)
 
