@@ -249,7 +249,7 @@
         ;; (VAR DEFAULT SP-VAR)
         (progn
           (%ASSERT-LAMBDA-LIST (variablep key/var))
-          (values (%keyword key/var) key/var default sp-var))
+          (values (mkkwd key/var) key/var default sp-var))
         ;; ((KEYSYM VAR/PATTERN) DEFAULT SP-VAR)
         (let ((key (first key/var))
               (var (second key/var)))
