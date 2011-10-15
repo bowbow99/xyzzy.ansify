@@ -1,4 +1,4 @@
-;;; -*- mode: lisp; package: ansify -*-
+;;; -*- mode: lisp; package: ansify.util -*-
 ;;;
 ;;; ansify/base/util.l
 ;;;
@@ -11,7 +11,7 @@
 (eval-when (:execute :compile-toplevel :load-toplevel)
   (require "ansify/base/package"))
 
-(in-package :ansify)
+(in-package :ansify.util)
 
 ;;;;
 ;;;; * List Utilities

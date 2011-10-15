@@ -12,11 +12,15 @@
 
 ;;;; Package Definitions
 
-(defpackage :ansify
+(defpackage :ansify.util
   (:use :lisp))
 
-(in-package :ansify)
+(defpackage :ansify.ext)
 
+(defpackage :ansify
+  (:use :lisp :ansify.util :ansify.ext))
+
+(in-package :ansify)
 
 
 ;;;; Shadowing Export
