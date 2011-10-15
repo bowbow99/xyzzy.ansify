@@ -14,7 +14,11 @@
 
 (in-package :ansify.util)
 
-(export '(;; list utilities
+(export '(;; misc
+          set-indent
+          import-from
+          export-from
+          ;; list utilities
           single?
           proper-list-p
           flatten
@@ -24,6 +28,36 @@
           with-ca/dr
           with-places
           ))
+
+
+;;;; misc
+
+(defun set-indent (operator indent)
+  (setf (get operator 'ed::lisp-indent-hook) indent))
+
+(defun import-from (package names)
+  "Import symbols named NAMES from PACKAGE.
+Symbols to be imported must be exported from PACKAGE."
+  (import (mapcar (lambda (name)
+                    (multiple-value-bind (symbol class)
+                        (find-symbol (string name) package)
+                      (case class
+                        (:external symbol)
+                        ((:internal :inherited)
+                         (error "import-from - `~S` is not an external symbol in package ~S"
+                                symbol package))
+                        (t
+                         (error "import-from - `~A` not found in package ~S"
+                                name package)))))
+                name)))
+
+(defun export-from (package names)
+  "Export symbols named NAMES from PACKAGE.
+Symbols to be exported are interned into PACKAGE first."
+  (export (mapcar (lambda (name)
+                    (intern (string name) package))
+                names)
+          package))
 
 
 ;;;; List Utilities
@@ -67,6 +101,7 @@
      (let ((,car-var (car #1#))
            (,cdr-var (cdr #1#)))
        ,@body)))
+(set-indent 'with-ca/dr 2)
 
 (defmacro with-places ((&rest places) object &body body)
   `(let ((#1=#:object ,object))
@@ -76,10 +111,7 @@
                          `(,place (,place #1#))))
                places))
        ,@body)))
-
-(setf (get 'with-ca/dr 'ed:lisp-indent-hook) 2
-      (get 'with-places 'ed:lisp-indent-hook) 2
-      )
+(set-indent 'with-places 2)
 
 
 (provide "ansify/base/util")
