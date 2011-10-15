@@ -18,14 +18,19 @@
 (in-package :ansify)
 
 (eval-when (:execute :compile-toplevel :load-toplevel)
+
   (shadowing-export '(#:typep
                       #:upgraded-complex-part-type
-                      )))
+                      ))
 
-(export '(*warn-on-undefined-typespec*
-          *invalid-typespec-treatment*
-          ))
+  (export-from :ansify.ext
+               '(#:*warn-on-undefined-typespec*
+                 #:*invalid-typespec-treatment*
+                 #:canonicalize-typespec
+                 #:optimize-type-check
+                 ))
 
+  ) ; end of `eval-when`
 
 ;;;; User Configuration
 
