@@ -1,6 +1,17 @@
 20xx-xx-xx  TODO
 	* setf-values
 
+2011-10-15  bowbow99  <bowbow99@gmail.com>
+
+	* パッケージ "ansify.ext" を追加
+	ANSI で定義されてるもの以外を export するためのパッケージ。今のと
+	ころ設定用変数と関数いくつか
+
+	* パッケージ "ansify" から標準のシンボルを export
+	普通に `ansify:etypecase` 等で触れるように。
+	これに伴って `ansify::install` で "ansify" を use-package するのを
+	やめた。
+
 2011-10-13  bowbow99  <bowbow99@gmail.com>
 
 	* `ansify::optimize-type-check` が `deftype` より `defstruct` で
