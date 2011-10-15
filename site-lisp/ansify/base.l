@@ -5,6 +5,7 @@
 ;;; Author:    bowbow99  <bowbow99@gmail.com>
 ;;; License:   MIT (See COPYING.mit)
 ;;;
+;;; This file is part of xyzzy extension "ansify".
 
 ;;; Code:
 
@@ -13,10 +14,6 @@
   (require "ansify/base/util")
   (require "ansify/base/anaph")
   )
-
-(in-package :ansify)
-
-(use-package :ansify.anaph)
 
 (provide "ansify/base")
 ;;; ansify/base.l ends here.
