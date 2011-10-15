@@ -5,6 +5,7 @@
 ;;; Author:    bowbow99  <bowbow99@gmail.com>
 ;;; License:   MIT (See COPYING.mit)
 ;;;
+;;; This file is part of xyzzy extension "ansify".
 
 ;;; Code:
 
@@ -13,8 +14,8 @@
 
 (in-package :ansify.util)
 
-;;;;
-;;;; * List Utilities
+
+;;;; List Utilities
 
 (defun single? (object)
   "Return true if OBJECT is a list with one element."
@@ -39,8 +40,8 @@
 (defun mksym (fmt &rest args)
   (intern (apply #'format nil fmt args)))
 
-;;;;
-;;;; * Binding Macros
+
+;;;; Binding Macros
 
 (defmacro with-ca/dr ((car-var cdr-var) cons &body body)
   `(let ((#1=#:cons ,cons))
@@ -60,6 +61,7 @@
 (setf (get 'with-ca/dr 'ed:lisp-indent-hook) 2
       (get 'with-places 'ed:lisp-indent-hook) 2
       )
+
 
 (provide "ansify/base/util")
 ;;; ansify/base/util.l ends here.
