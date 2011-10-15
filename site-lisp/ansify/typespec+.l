@@ -118,10 +118,10 @@ Signal an error of `lisp:bad-type-specifier` if TYPESPEC is invalid."
          (values typespec))
         ((consp typespec)
          (unless (symbolp (car typespec))
-           (!!invalid-type-specifier typespec))
+           (error 'bad-type-specifier :datum typespec))
          (values (car typespec) (cdr typespec)))
         (t
-         (!!invalid-type-specifier typespec))))
+         (error 'bad-type-specifier :datum typespec))))
 
 
 ;;;; Function typep
