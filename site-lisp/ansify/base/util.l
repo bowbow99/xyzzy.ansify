@@ -14,6 +14,16 @@
 
 (in-package :ansify.util)
 
+(export '(;; list utilities
+          single?
+          proper-list-p
+          ;; symbols
+          mksym
+          ;; binding macros
+          with-ca/dr
+          with-places
+          ))
+
 
 ;;;; List Utilities
 
