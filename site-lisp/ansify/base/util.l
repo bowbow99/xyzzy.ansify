@@ -24,6 +24,7 @@
           flatten
           ;; symbols
           mksym
+          mkkwd
           ;; binding macros
           with-ca/dr
           with-places
@@ -92,6 +93,9 @@ Symbols to be exported are interned into PACKAGE first."
 
 (defun mksym (fmt &rest args)
   (intern (apply #'format nil fmt args)))
+
+(defun mkkwd (name)
+  (intern (string name) :keyword))
 
 
 ;;;; Binding Macros

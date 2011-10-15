@@ -46,7 +46,6 @@
 ;; http://www.lispworks.com/documentation/HyperSpec/Body/m_pr_unr.htm
 (defmacro print-unreadable-object ((object stream &key type identity)
                                    &body body)
-  ;; FIXME: print-unreadable-object  - signal `print-not-readable` if `*print-readably* is true
   (let (($object (gensym "$object-"))
         ($stream (gensym "$stream-"))
         ($type   (gensym "$type-"))
