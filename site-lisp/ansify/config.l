@@ -58,6 +58,14 @@ otherwise 節てのは節のキーが `t` や `otherwise` になっている節。ANSI を
 case 式の途中であっても otherwise 節があればそこで分岐は終了し、以降の節
 は無視される。")
 
+
+;;;; for function.l
+
+(export '(*warn-on-redefine-function*
+          ))
+
+(defvar *warn-on-redefine-function* nil
+  "*関数やマクロを再定義したら警告するかどうか。")
 
 (provide "ansify/config")
 ;;; ansify/config.l ends here.

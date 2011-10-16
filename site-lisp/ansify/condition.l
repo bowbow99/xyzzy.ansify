@@ -93,6 +93,12 @@ Note that you need to define CONDITION and `simple-CONDITION` first."
   (:report (lambda (x stream)
              (format stream "case ®‚Ì“r’†‚É otherwise ß‚ª‚ ‚è‚Ü‚·"))))
 
+(define-condition redefining-function (warning) (name type)
+  (:report (lambda (x stream)
+             (format stream "~[ŠÖ”~;ƒ}ƒNƒ~] `~S` ‚ğÄ’è‹`‚µ‚Ä‚¢‚Ü‚·"
+                   (position (redefining-function-type x) '(function macro))
+                   (redefining-function-name x)))))
+
 
 (provide "ansify/condition")
 ;;; ansify/condition.l ends here.
