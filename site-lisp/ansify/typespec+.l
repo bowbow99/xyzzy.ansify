@@ -25,9 +25,7 @@
                       ))
 
   (export-from :ansify.ext
-               '(#:*warn-on-undefined-typespec*
-                 #:*invalid-typespec-treatment*
-                 #:canonicalize-typespec
+               '(#:canonicalize-typespec
                  #:optimize-type-check
                  ))
 
