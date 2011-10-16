@@ -29,10 +29,6 @@
                       #:ccase
                       ))
 
-  (export-from :ansify.ext
-               '(#:*case-warn-on-t/otherwise-in-middle*
-                 ))
-
   ) ; end of `eval-when`
 
 ;;; Indentation settings
@@ -76,10 +72,8 @@
       (progn ,@(cdr clause)))))
 
 (defun !!otherwise-in-middle ()
-  (case *signal-on-otherwise-in-middle*
-    (nil)
-    (:warn  (warn "case ®‚Ì“r’†‚É otherwise ß‚ª‚ ‚è‚Ü‚·i‚»‚êˆÈ~‚Ìß‚Í–³‹‚³‚ê‚Ü‚·j"))
-    (:error (error 'otherwise-in-middle))))
+  (when *warn-on-otherwise-in-middle*
+    (warn 'otherwise-in-middle)))
 
 ;;;; typecase family
 

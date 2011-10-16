@@ -79,12 +79,17 @@ Note that you need to define CONDITION and `simple-CONDITION` first."
 
 ;;;; ansify specific
 
-(define-condition undefined-type-specifier (bad-type-specifier) ()
+(define-condition undefined-type-specifier (warning) (datum)
   (:report (lambda (x stream)
              (format stream "未定義の型指定子です: ~S"
                    (undefined-type-specifier-datum x)))))
 
-(define-condition otherwise-in-middle (program-error) ()
+(define-condition invalid-type-specifier (warning) (datum)
+  (:report (lambda (x stream)
+             (format stream "細かいことを言えば型指定子 `~S` は不正です"
+                   (invalid-type-specifier-datum x)))))
+
+(define-condition otherwise-in-middle (warning) ()
   (:report (lambda (x stream)
              (format stream "case 式の途中に otherwise 節があります"))))
 
