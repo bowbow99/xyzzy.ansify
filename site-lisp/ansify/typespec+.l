@@ -96,16 +96,12 @@
 (defconstant +compound-only-typespecs+ '(and mod satisfies eql not values member or))
 
 (defun !!invalid-type-specifier (typespec)
-  (case *signal-on-invalid-typespec*
-    ((nil) nil)
-    (:warn (warn "その型指定子は不正ですよ: ~S" typespec))
-    (t     (error 'bad-type-specifier :datum typespec))))
+  (when *warn-on-invalid-typespec*
+    (warn 'invalid-type-specifier :datum typespec)))
 
 (defun !!undefined-type-specifier (typespec)
-  (case *signal-on-undefined-typespec*
-    ((nil) nil)
-    (:warn (warn "その型指定子は定義されてない: ~S" typespec))
-    (t     (error 'undefined-type-specifier :datum typespec))))
+  (when *warn-on-undefined-typespec*
+    (warn 'undefined-type-specifier :datum typespec)))
 
 (defun split-typespec (typespec)
   "Return a symbol naming the type, and subsidiary info for compound typespec from TYPESPEC.
