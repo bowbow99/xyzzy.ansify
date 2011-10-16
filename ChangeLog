@@ -1,6 +1,10 @@
 20xx-xx-xx  TODO
 	* setf-values
 
+2011-10-16  bowbow99  <bowbow99@gmail.com>
+
+	* 設定用変数を別ファイルに分離
+
 2011-10-15  bowbow99  <bowbow99@gmail.com>
 
 	* パッケージ "ansify.ext" を追加
