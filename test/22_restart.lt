@@ -38,10 +38,21 @@
 ;;;;
 ;;;; * Utilities
 
+;; Copied from '23_typep-on-derived-type.lt'
+(defun expand-list-element-check (element-type)
+  (let ((name (intern (format nil "(list-of ~S)" element-type))))
+    (setf (symbol-function name)
+          (coerce `(lambda (list)
+                     (dolist (x list t)
+                       (unless ,(ansify.ext:optimize-type-check 'x element-type)
+                         (return nil))))
+                  'function))
+    name))
+
 (deftype list-of (element-type)
   `(and list
-        (satisfies (lambda (x)
-                     (every (ansify::typepred ,element-type) x)))))
+        (satisfies ansify.util:proper-list-p)
+        (satisfies ,(expand-list-element-check element-type))))
 
 (define-condition example-error (error)
   (foo bar baz)

@@ -9,8 +9,8 @@
 
 ;;; Code:
 
-;;;;
-;;;; * Package
+
+;;;; Package
 
 (eval-when (:execute :compile-toplevel :load-toplevel)
   (require "ansify/base"))
@@ -43,14 +43,16 @@
                       #:store-value
                       ;; as a typespec
                       #:restart
-                      ;; misc
-                      read-value
                       ))
+
+  (export-from :ansify.ext
+               '(#:read-value
+                 ))
 
   ) ; end of `eval-when`
 
-;;;;
-;;;; * Restart Object
+
+;;;; Restart Object
 
 (eval-when (:load-toplevel :compile-toplevel :execute)
   (defun print-restart (restart stream #:what?)
@@ -72,9 +74,9 @@
 (defparameter *condition/restart-association* nil
   "List of condition and associated restarts.")
 
+
+;;;; Macro restart-bind
 
-;;;;
-;;;; * Macro restart-bind
 (defmacro restart-bind ((&rest restarts) &body body)
   "Evaluate the BODY in a dynamic environment where RESTARTS are in effect."
   `(let ((*active-restarts*
@@ -89,8 +91,8 @@
 (setf (get 'restart-bind 'ed:lisp-indent-hook) 1
       (get 'restart-bind 'ed::lisp-indent-flet) t)
 
-;;;;
-;;;; * Macro with-condition-restarts
+
+;;;; Macro with-condition-restarts
 
 (defmacro with-condition-restarts (condition restarts &body body)
   "Evaluate BODY with associating RESTARTS with CONDITION."
@@ -101,12 +103,10 @@
                    (remove #1# *condition/restart-association*
                            :key #'car)))))
      ,@body))
-#+xyzzy
-(setf (get 'with-condition-restarts 'ed:lisp-indent-hook) 2)
+#+xyzzy (set-indent 'with-condition-restarts 2)
 
-
-;;;;
-;;;; * Macro restart-case
+
+;;;; Macro restart-case
 
 (eval-when (:load-toplevel :compile-toplevel :execute)
 
@@ -155,9 +155,7 @@
              body (cddr body)))
      (setf options (nreverse options))
      ,@body))
-
-#+xyzzy
-(setf (get 'rs.with-tag/clause 'ed:lisp-indent-hook) 'defun)
+#+xyzzy (set-indent 'rs.with-tag/clause 'defun)
 
 (defun rs.make-condition (datum args default)
   (case (type-of datum)
@@ -225,8 +223,7 @@
                          `(,tag (return-from #1#
                                   (apply #'(lambda ,args ,@body) #2#)))))
                tags/clauses))))))
-#+xyzzy
-(setf (get 'restart-case 'ed:lisp-indent-hook) 1)
+#+xyzzy (set-indent 'restart-case 1)
 
 (defmacro with-simple-restart ((name fmt-control &rest fmt-arguments)
                                &body forms)
@@ -237,9 +234,10 @@
       :report (lambda (stream)
                 (format stream ,fmt-control ,@fmt-arguments))
       (values nil t))))
+#+xyzzy (set-indent 'with-simple-restart 1)
 
-;;;;
-;;;; * Functions Use Active Restarts
+
+;;;; Functions Use Active Restarts
 
 (defun restart-applicable-p (restart condition)
   "Return true if restart is visible according to condition."
@@ -249,7 +247,7 @@
        (restart-is-not-associated-at-all ()
          `(notany (lambda (association)
                     (member restart (cdr association)))
-            *condition/restart-association*)))
+                *condition/restart-association*)))
     (and
      ;; check if its visible according to :test-function
      ;; NOTE: If test-function calls `compute-restarts` or `find-restarts`,
@@ -268,7 +266,7 @@
   "Return a list of restarts which are currently active and applicable."
   (remove-if-not #'(lambda (restart)
                      (restart-applicable-p restart condition))
-    *active-restarts*))
+        *active-restarts*))
 
 (defun find-restart (identifier &optional condition)
   "Return a particular restart from current dynamic environment."
@@ -277,7 +275,7 @@
     (find-if (lambda (restart)
                (and (eql (restart-name restart) identifier)
                     (restart-applicable-p restart condition)))
-      *active-restarts*))
+          *active-restarts*))
    ((restart-p identifier)
     (when (and (member identifier *active-restarts*)
                (restart-applicable-p identifier condition))
@@ -290,8 +288,7 @@
              (format stream "Could not find active restart ~S~@[ for condition ~S~]"
                (restart-not-found-designator condition)
                (restart-not-found-condition condition)))))
-#+xyzzy
-(setf (get 'restart-not-found 'ed::lisp-indent-handler) t)
+#+xyzzy (setf (get 'restart-not-found 'ed::lisp-indent-handler) t)
 
 (defun invoke-restart (identifier &rest arguments)
   "Call the function associated with RESTART with ARGUMENTS."
@@ -309,8 +306,8 @@
            (let ((it (restart-interactive-function restart)))
              (when it (funcall it))))))
 
-
-;;; - Interface Functions for Standard Restart
+
+;;;; Interface Functions for Standard Restart
 
 (defun abort (&optional condition)
   (let ((r (find-restart 'abort condition)))
@@ -335,9 +332,8 @@
   (let ((r (find-restart 'store-value condition)))
     (when r (invoke-restart r new-value))))
 
-
-;;;;
-;;;; * Signaling Condition with Restarts
+
+;;;; Signaling Condition with Restarts
 
 (defun rs.ensure-warning-designator (datum args)
   "Ensure DATUM and ARGS denotes a warning. If not, signal a `type-error`."
@@ -364,7 +360,6 @@
        ;; other
        (t (TYPE-ERROR datum (or warning warning-type string)))))))
 
-
 (defun warn (datum &rest args)
   (let ((warning (rs.make-condition datum args 'simple-warning)))
     (rs.ensure-warning-designator datum args)
@@ -388,9 +383,8 @@
         :report (lambda (stream)
                   (apply #'format stream report-control args))))))
 
-
-;;;;
-;;;; * Function read-value
+
+;;;; Function read-value
 
 (defun read-value (prompt &optional predicate)
   (labels ((again (msg &rest args)

@@ -10,13 +10,14 @@
 ;;; Code:
 
 (eval-when (:execute :compile-toplevel :load-toplevel)
-  (require "ansify/base"))
+  (require "ansify/base")
+  (require "ansify/condition"))
 
 (in-package :ansify)
 
 (eval-when (:execute :compile-toplevel :load-toplevel)
-  (shadowing-export '(#:print-unreadable-object
-                      )))
+  (shadowing-export '(#:print-unreadable-object #:constantly #:type-of
+                      #:the #:nth-value #:special-operator-p)))
 
 
 ;; NOTE: Used in expansion of `destructuring-bind`
@@ -35,6 +36,14 @@
     (error 'invalid-keyword-list :datum keyword-list))
   keyword-list)
 
+;; http://www.lispworks.com/documentation/HyperSpec/Body/f_tp_of.htm
+(defun type-of (object)
+  ;; NOTE: type-of  - original one return just `structure`
+  (if (si:*structurep object)
+    (si:*structure-definition-name (si:*structure-definition object))
+    (lisp:type-of object)))
+
+;; http://www.lispworks.com/documentation/HyperSpec/Body/m_pr_unr.htm
 (defmacro print-unreadable-object ((object stream &key type identity)
                                    &body body)
   (let (($object (gensym "$object-"))
@@ -45,14 +54,11 @@
            (,$stream ,stream)
            (,$type   ,type)
            (,$identity ,identity))
+       (when *print-readably*
+         (error 'print-not-readable :object ,$object))
        (princ "#<" ,$stream)
        (when ,$type
-         (let ((,$type (type-of ,$object)))
-           (prin1 (cond ((eql ,$type 'lisp:structure)
-                         (si:*structure-definition-name
-                          (si:*structure-definition ,$object)))
-                        (t ,$type))
-                  ,$stream))
+         (prin1 (type-of ,$object) ,$stream)
          ,(when (or body identity) `(princ #\SPC ,$stream)))
        ,@body
        (when ,$identity
@@ -62,6 +68,23 @@
        nil)))
 
 (setf (get 'print-unreadable-object 'ed:lisp-indent-hook) 1)
+
+;; http://www.lispworks.com/documentation/HyperSpec/Body/m_nth_va.htm
+(defmacro nth-value (n form)
+  "Return Nth value of multiple values FORM returned."
+  `(car (nthcdr ,n (multiple-value-list ,form))))
+
+;; http://www.lispworks.com/documentation/HyperSpec/Body/s_the.htm
+(defmacro the (value-type form)
+  "Specify the type of values returned by FORM."
+  form)
+
+(si:*fset 'special-operator-p #'special-form-p)
+
+;; http://www.lispworks.com/documentation/HyperSpec/Body/f_cons_1.htm
+(defun constantly (value)
+  "Return a function which always return VALUE."
+  (lambda (&rest #:args) value))
 
 (provide "ansify/misc")
 ;;; ansify/misc.l ends here.

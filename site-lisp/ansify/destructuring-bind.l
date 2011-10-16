@@ -20,8 +20,8 @@
                       #:&allow-other-keys
                       )))
 
-;;;;
-;;;; * Utilities
+
+;;;; utilities
 
 (defun variablep (x)
   (and (symbolp x) (not (constantp x))))
@@ -48,14 +48,12 @@
        (error 'too-many-arguments :datum #1#))
      #1#))
 
-(defparameter *state/parser-alist*
-  '((&required . gen-&required-binding)
-    (&optional . gen-&optional-binding)
-    (&rest     . gen-&rest-binding)
-    (&body     . gen-&rest-binding)
-    (&key      . gen-&key-binding)
-    (&aux      . gen-&aux-binding)
-    ))
+(defmacro %ASSERT-LAMBDA-LIST (&rest tests)
+  `(unless (and ,@tests)
+     (error 'invalid-lambda-list :datum *lambda-list*)))
+
+
+;;;; dynamic variables
 
 (defparameter *lambda-list* nil)
 
@@ -72,9 +70,17 @@
 (defparameter *known-keywords* nil)
 (defparameter *allow-other-keys-p* nil)
 
-(defmacro %ASSERT-LAMBDA-LIST (&rest tests)
-  `(unless (and ,@tests)
-     (error 'invalid-lambda-list :datum *lambda-list*)))
+
+;;;; parsing lambda-list
+
+(defparameter *state/parser-alist*
+  '((&required . gen-&required-binding)
+    (&optional . gen-&optional-binding)
+    (&rest     . gen-&rest-binding)
+    (&body     . gen-&rest-binding)
+    (&key      . gen-&key-binding)
+    (&aux      . gen-&aux-binding)
+    ))
 
 (defun parse-lambda-list (lambda-list form)
   (declare (type list lambda-list))
@@ -137,6 +143,8 @@
                          *rest-form-placeholder* forms))
       (values vars forms))))
 
+;;;;; &whole
+
 ;; NOTE: this one has bit different interface than other parse-*.
 ;; - 1st arg: takes entire LAMBDA-LIST rather than one PARAMETER in issue
 ;; - 4th value: returns (possibly modified) LAMBDA-LIST
@@ -156,6 +164,7 @@
               *whole-form* form)
         (values vars forms (first vars) lambda-list)))))
 
+;;;;; required
 
 (defun gen-&required-binding (param form)
   (multiple-value-bind (vars forms)
@@ -168,7 +177,8 @@
     (incf *max-length*)
     (values vars forms `(cdr ,form))))
 
-;;; * &optional
+;;;;; &optional
+
 (defun parse-&optional-parameter (param)
   (cond ((consp param)
          (let ((var     (first param))
@@ -198,7 +208,8 @@
                 (list* sp-form forms)
                 `(cdr ,form))))))
 
-;;; * &rest
+;;;;; &rest
+
 (defun %setup-rest-var/form (var form)
   (setf *max-length* nil
         *rest-var*   var
@@ -218,16 +229,14 @@
             (cons *rest-form-placeholder* (cdr forms))
             *rest-var*)))
 
-;;; * &key
-(defun %keyword (name)
-  (intern (string name) :keyword))
+;;;;; &key
 
 (defun parse-&key-parameter (param)
   (if (atom param)
     ;; atomic form: VAR
     (progn
       (%ASSERT-LAMBDA-LIST (variablep param))
-      (values (%keyword param) param nil (gensym "keyarg-supplied-p-")))
+      (values (mkkwd param) param nil (gensym "keyarg-supplied-p-")))
     ;; compound form
     (let ((key/var (first param))
           (default (second param))
@@ -240,7 +249,7 @@
         ;; (VAR DEFAULT SP-VAR)
         (progn
           (%ASSERT-LAMBDA-LIST (variablep key/var))
-          (values (%keyword key/var) key/var default sp-var))
+          (values (mkkwd key/var) key/var default sp-var))
         ;; ((KEYSYM VAR/PATTERN) DEFAULT SP-VAR)
         (let ((key (first key/var))
               (var (second key/var)))
@@ -276,6 +285,8 @@
                   (append *forms forms)
                   *rest-var*))))))
 
+;;;;; &aux
+
 (defun gen-&aux-binding (param form)
   (if (atom param)
     (progn
@@ -286,14 +297,17 @@
                            (variablep first))
       (values (list first) (list second)))))
 
+
+;;;; Macro destructuring-bind
+
 (defmacro destructuring-bind (lambda-list expr &body body)
   (multiple-value-bind (vars values)
       (let ((*lambda-list* lambda-list))
         (parse-lambda-list lambda-list expr))
     `(let* (,@(mapcar #'list vars values))
        ,@body)))
-#+xyzzy
-(setf (get 'destructuring-bind 'ed:lisp-indent-hook) 2)
+(set-indent 'destructuring-bind 2)
+
 
 (provide "ansify/destructuring-bind")
 ;;; ansify/destructuring-bind.l ends here.

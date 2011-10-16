@@ -17,6 +17,32 @@
 
 (remove-all-tests :test.ansify.optimize-type-check)
 
+;;;; test examples and utilities
+
+(deftype even-fixnum ()
+  `(and fixnum (satisfies evenp)))
+
+(deftype odd-fixnum ()
+  `(and fixnum (satisfies oddp)))
+
+(deftype zero ()
+  `(and number (satisfies zerop)))
+
+(deftype proper-list ()
+  `(and list (satisfies ansify::proper-list-p)))
+
+(defstruct foo a b)
+
+(defstruct (bar (:type vector)) a b)
+
+(defun valid-bar-p (x)
+  (and (vectorp x)
+       (integerp (bar-a x))
+       (stringp (bar-b x))))
+
+(deftype bar ()
+  `(and vector (satisfies valid-bar-p)))
+
 (defparameter *example-objects*
   `(t
     nil
@@ -30,6 +56,9 @@
     "string" #(1 2 3)
     ,(car (ed:buffer-list)) ,(ed:selected-buffer) ,(ed:selected-window)
     ,(ed:compile-regexp "") ,(ed:compile-regexp "[a-z]+" t)
+    ,(make-foo :a 1 :b "hi")
+    ,(make-bar :a 1 :b "hi")
+    ,(make-bar :a "hi" :b 2)
     ))
 
 (defmacro assert-same (typespec)
@@ -38,7 +67,6 @@
          (typep #1# ',typespec)
          ,(ansify::optimize-type-check '#1# typespec)
        #1# ',typespec)))
-
 
 (defmacro assert-optimize (object-form typespec optimized)
   `(assert-equality #'form-equal
@@ -993,8 +1021,7 @@
   (assert-optimize (foo x y z) (eql t) (eql (foo x y z) 't))
   (assert-optimize (foo x y z) (eql nil) (eql (foo x y z) 'nil))
   (assert-optimize (foo x y z) (eql 0) (eql (foo x y z) '0))
-  (assert-optimize (foo x y z) (eql foo) (eql (foo x y z) 'foo))
-  )
+  (assert-optimize (foo x y z) (eql foo) (eql (foo x y z) 'foo)))
 
 ;; member  OBJECT
 (define-test member
@@ -1025,8 +1052,7 @@
   ;; optimization for expression
   (assert-optimize (foo x y z) (satisfies atom) (atom (foo x y z)))
   (assert-optimize (foo x y z) (satisfies identity) (identity (foo x y z)))
-  (assert-optimize (foo x y z) (satisfies oddp) (oddp (foo x y z)))
-  )
+  (assert-optimize (foo x y z) (satisfies oddp) (oddp (foo x y z))))
 
 ;;; NOTE: `values` is only for declarations, not allowed in `typep`
 ;; values
@@ -1045,6 +1071,28 @@
 ;; structure-class
 ;; structure-object
 ;; method
+
+
+;;;; derived typespecs
+
+(define-test derived-typespec
+  (assert-same even-fixnum)
+  (assert-optimize X even-fixnum (and (si:*fixnump X) (evenp X)))
+  (assert-same odd-fixnum)
+  (assert-optimize X odd-fixnum (and (si:*fixnump X) (oddp X)))
+  (assert-same zero)
+  (assert-optimize X zero (and (numberp X) (zerop X)))
+  (assert-same proper-list)
+  (assert-optimize X proper-list (and (listp X) (ansify::proper-list-p X))))
+
+(define-test structure-types
+  (assert-same foo)
+  (assert-optimize X foo (and (si:*structurep X)
+                              (si:*structure-subtypep (si:*structure-definition X)
+                                                      (get 'foo 'si::structure-definition))))
+  (assert-same bar)
+  (assert-optimize X bar (and (vectorp X)
+                              (valid-bar-p X))))
 
 
 ;;; test/20_optimize-type-check.lt ends here.

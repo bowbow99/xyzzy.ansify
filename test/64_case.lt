@@ -46,15 +46,16 @@
     (assert-eql 2 (case-abc 'b))
     (assert-eql 3 (case-abc 'c))
     (assert-eql 0 (case-abc 'd)))
-  ;; with quasi-otherwise clause in middle
+  ;; with otherwise clause in middle
+  ;; NOTE: behaviour is changed to be compatible as `lisp:case`
   (labels ((case-abc (x)
              (case x (a 1) (b 2) (c 3) (t 0) (d 4))))
     (assert-eql 1 (case-abc 'a))
     (assert-eql 2 (case-abc 'b))
     (assert-eql 3 (case-abc 'c))
-    (assert-eql 4 (case-abc 'd))
-    (assert-eql nil (case-abc 'e)))
-  ;; properly designato t and otherwise
+    (assert-eql 0 (case-abc 'd))
+    (assert-eql 0 (case-abc 'e)))
+  ;; properly designate t and otherwise
   (labels ((case-abc (x)
              (case x (a 1) (b 2) ((t) 'true) ((otherwise) 'other) (c 3))))
     (assert-eql 1 (case-abc 'a))

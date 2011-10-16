@@ -21,8 +21,8 @@
                       #:check-type
                       )))
 
-;;;;
-;;;; * Assertions
+
+;;;; Assertions
 
 (defmacro assert (test-form &optional places (datum t datum-supplied-p) &rest args)
   "Ensure TEST-FORM evaluates to non-nil."
@@ -69,6 +69,7 @@
                                    (typepred ,typespec))))
              (setf ,place new-value)
              (go #1#)))))))
+
 
 (provide "ansify/assertion")
 ;;; ansify/assertion.l ends here.

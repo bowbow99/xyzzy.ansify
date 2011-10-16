@@ -7,22 +7,29 @@
 ;;;
 ;;; This file is part of xyzzy extension "ansify".
 
+;; NOTE: This file is autoloaded by default
+
 ;;; Code:
 
 (eval-when (:execute :compile-toplevel :load-toplevel)
   (require "ansify/base")
-  (require "ansify/typespec+"))
+  (require "ansify/typespec+")
+  (require "ansify/config")
+  (require "ansify/condition"))
 
 (in-package :ansify)
 
 (eval-when (:execute :compile-toplevel :load-toplevel)
+
   (shadowing-export '(#:typecase
                       #:etypecase
                       #:ctypecase
                       #:case
                       #:ecase
                       #:ccase
-                      )))
+                      ))
+
+  ) ; end of `eval-when`
 
 ;;; Indentation settings
 #+xyzzy
@@ -35,6 +42,7 @@
         ecase
         ccase))
 
+
 ;;;; helper functions
 
 (defun make-type-error-form (datum expected)
@@ -63,9 +71,13 @@
     `(,(optimize-type-check var type)
       (progn ,@(cdr clause)))))
 
+(defun !!otherwise-in-middle ()
+  (when *warn-on-otherwise-in-middle*
+    (warn 'otherwise-in-middle)))
+
 ;;;; typecase family
 
-;;; Macro `typecase`
+;;;;; Macro `typecase`
 
 (defun expand-typecase-clause (var clauses)
   (if (null clauses) nil
@@ -81,7 +93,7 @@
   `(let ((#1=#:key-object ,keyform))
      (cond ,@(expand-typecase-clause '#1# clauses))))
 
-;;; Macro `etypecase`
+;;;;; Macro `etypecase`
 
 (defun expand-etypecase (keyform clauses)
   (let ((types nil))
@@ -95,7 +107,7 @@
 (defmacro etypecase (keyform &rest clauses)
   (expand-etypecase keyform clauses))
 
-;;; Macro `ctypecase`
+;;;;; Macro `ctypecase`
 
 (defun expand-ctypecase (place clauses)
   (let ((types nil))
@@ -114,37 +126,28 @@
 (defmacro ctypecase (place &rest clauses)
   (expand-ctypecase place clauses))
 
-
+
 ;;;; case family
 
-(defvar *case-warn-on-t/otherwise-in-middle* nil
-  "*If non-nil, macro `case` signal a waring when `t` or `otherwise`
-found at middle of clauses.
-They should be `(t)` and `(otherwise)` respectively.")
+;;;;; Macro `case`
 
 (defun expand-case-clauses (var clauses)
-  (labels ((otherwise-key-p (x)
-             (member x '(otherwise t))))
-    (with-ca/dr (keys body) (car clauses)
-      (cond
-       ;; last clauses (might be otherwise-clause)
-       ((null (cdr clauses))
-        (cond ((otherwise-key-p keys) `(progn ,@body))
-              (t `(if ,(make-case-test-form keys var)
-                    (progn ,@body)))))
-       ;; non-last clause (cannot be a otherwise-clause)
-       (t (when (and (otherwise-key-p keys)
-                     *case-warn-on-t/otherwise-in-middle*)
-            (warn "case - ç≈å„Ç∂Ç·Ç»Ç¢ clause Ç™ ~S Ç…Ç»Ç¡Ç∆ÇÈÇÊ" keys))
-          `(if ,(make-case-test-form keys var)
-             (progn ,@body)
-             ,(expand-case-clauses var (cdr clauses))))))))
+  (with-ca/dr (keys body) (car clauses)
+    (cond ((member keys '(otherwise t))
+           (unless (null (cdr clauses))
+             (!!otherwise-in-middle))
+           `(progn ,@body))
+          (t
+           `(if ,(make-case-test-form keys var)
+              (progn ,@body)
+              ,(when (cdr clauses)
+                 (expand-case-clauses var (cdr clauses))))))))
 
 (defmacro case (key-form &rest clauses)
   `(let ((#1=#:key ,key-form))
      ,(expand-case-clauses '#1# clauses)))
 
-;;; Macro `ecase`
+;;;;; Macro `ecase`
 
 (defun expand-ecase-clauses (var clauses &optional all-keys)
   (cond ((null clauses)
@@ -161,7 +164,7 @@ They should be `(t)` and `(otherwise)` respectively.")
   `(let ((#1=#:key ,key-form))
      ,(expand-ecase-clauses '#1# clauses)))
 
-;;; Macro `ccase`
+;;;;; Macro `ccase`
 
 (defun expand-ccase (key-place clauses)
   `(prog (#1=#:key-value)

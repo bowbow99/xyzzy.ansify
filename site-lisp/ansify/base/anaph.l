@@ -1,4 +1,4 @@
-;;; -*- mode: lisp; package: ansify.anaph -*-
+;;; -*- mode: lisp; package: ansify.util -*-
 ;;;
 ;;; ansify/base/anaph.l
 ;;;
@@ -9,10 +9,10 @@
 
 ;;; Code:
 
-(defpackage :ansify.anaph
-  (:use :lisp))
+(eval-when (:execute :compile-toplevel :load-toplevel)
+  (require "ansify/base/package"))
 
-(in-package :ansify.anaph)
+(in-package :ansify.util)
 
 (eval-when (:execute :compile-toplevel :load-toplevel)
   (export '(aif
@@ -22,21 +22,12 @@
             aand
             )))
 
-(defun flatten (tree)
-  (labels ((rec (x acc)
-             (cond ((null x) acc)
-                   ((atom x) (cons x acc))
-                   (t
-                    (rec (car x) (rec (cdr x) acc))))))
-    (rec tree nil)))
-
 (defun find-it-symbol (form)
   (or (find-if (lambda (x)
                  (and (symbolp x)
                       (string-equal "it" (symbol-name x))))
         (flatten form))
       'it))
-
 
 (defmacro aif (test then-form &optional else-form)
   (let ((it (find-it-symbol then-form)))
