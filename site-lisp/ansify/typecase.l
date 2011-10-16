@@ -13,7 +13,9 @@
 
 (eval-when (:execute :compile-toplevel :load-toplevel)
   (require "ansify/base")
-  (require "ansify/typespec+"))
+  (require "ansify/typespec+")
+  (require "ansify/config")
+  (require "ansify/condition"))
 
 (in-package :ansify)
 
@@ -45,14 +47,6 @@
         ccase))
 
 
-;;;; Configuration
-
-(defvar *case-warn-on-t/otherwise-in-middle* nil
-  "*If non-nil, macro `case` signal a waring when `t` or `otherwise`
-found at middle of clauses.
-They should be `(t)` and `(otherwise)` respectively.")
-
-
 ;;;; helper functions
 
 (defun make-type-error-form (datum expected)
@@ -81,6 +75,11 @@ They should be `(t)` and `(otherwise)` respectively.")
     `(,(optimize-type-check var type)
       (progn ,@(cdr clause)))))
 
+(defun !!otherwise-in-middle ()
+  (case *signal-on-otherwise-in-middle*
+    (nil)
+    (:warn  (warn "case 式の途中に otherwise 節があります（それ以降の節は無視されます）"))
+    (:error (error 'otherwise-in-middle))))
 
 ;;;; typecase family
 
@@ -141,10 +140,8 @@ They should be `(t)` and `(otherwise)` respectively.")
 (defun expand-case-clauses (var clauses)
   (with-ca/dr (keys body) (car clauses)
     (cond ((member keys '(otherwise t))
-           (unless (or (null (cdr clauses))
-                       (not *case-warn-on-t/otherwise-in-middle*))
-             (warn "最後じゃない clause が ~S になってる（残りは無視されます）"
-                   keys))
+           (unless (null (cdr clauses))
+             (!!otherwise-in-middle))
            `(progn ,@body))
           (t
            `(if ,(make-case-test-form keys var)

@@ -13,7 +13,8 @@
   (require "cmu_loop"))
 
 (eval-when (:execute :compile-toplevel :load-toplevel)
-  (require "ansify/base"))
+  (require "ansify/base")
+  (require "ansify/config"))
 
 (in-package :ansify)
 
@@ -31,28 +32,6 @@
                  ))
 
   ) ; end of `eval-when`
-
-;;;; User Configuration
-
-(defvar *warn-on-undefined-typespec* nil
-  "If non-nil, warn when undefined typespec used on `typep` or `optimize-type-check.")
-
-(defvar *invalid-typespec-treatment* :error
-  "Treatment of invalid typespec.
-
-Currently, followings are considered invalid typespec:
-- not a symbol nor a list
-- a list but its car is not a symbol
-- compound-only typespec (e.g. `and`) in atomic form
-- `satisfies` with non-symbol as PREDICATE
-
-Possible value is:
-nil    - `typep` returns nil. `optimize-type-check` produces `typep`
-         form with no modification to TYPESPEC, which returns nil when
-         evaluated.
-:warn  - same as above, but signal a warning.
-:error - (or any value other than listed above) signal an error of type
-         `lisp:bad-type-specifier`.")
 
 
 ;;;; Fixes
@@ -119,10 +98,16 @@ nil    - `typep` returns nil. `optimize-type-check` produces `typep`
 (defconstant +compound-only-typespecs+ '(and mod satisfies eql not values member or))
 
 (defun !!invalid-type-specifier (typespec)
-  (case *invalid-typespec-treatment*
+  (case *signal-on-invalid-typespec*
     ((nil) nil)
     (:warn (warn "その型指定子は不正ですよ: ~S" typespec))
     (t     (error 'bad-type-specifier :datum typespec))))
+
+(defun !!undefined-type-specifier (typespec)
+  (case *signal-on-undefined-typespec*
+    ((nil) nil)
+    (:warn (warn "その型指定子は定義されてない: ~S" typespec))
+    (t     (error 'undefined-type-specifier :datum typespec))))
 
 (defun split-typespec (typespec)
   "Return a symbol naming the type, and subsidiary info for compound typespec from TYPESPEC.
@@ -133,10 +118,10 @@ Signal an error of `lisp:bad-type-specifier` if TYPESPEC is invalid."
          (values typespec))
         ((consp typespec)
          (unless (symbolp (car typespec))
-           (!!invalid-type-specifier typespec))
+           (error 'bad-type-specifier :datum typespec))
          (values (car typespec) (cdr typespec)))
         (t
-         (!!invalid-type-specifier typespec))))
+         (error 'bad-type-specifier :datum typespec))))
 
 
 ;;;; Function typep
@@ -286,8 +271,7 @@ as argument for another typespec."
        (and (si:*structurep object)
             (si:*structure-subtypep (si:*structure-definition object) it)))
       (t
-       (when *warn-on-undefined-typespec*
-         (warn "type specifier じゃないみたい: ~S" typespec))
+       (!!undefined-type-specifier typespec)
        nil))))
 
 
@@ -457,7 +441,6 @@ as argument for another typespec."
 ;;;;; Function optimize-typep
 
 (defun optimize-type-check (object-form typespec
-                            &optional (no-warn (null *warn-on-undefined-typespec*))
                             &aux (*this-typespec* (or *this-typespec* typespec)))
   (multiple-value-bind (type args) (split-typespec typespec)
     (acond
@@ -475,8 +458,7 @@ as argument for another typespec."
                (si:*structure-subtypep (si:*structure-definition #1#)
                                        (get ',type 'si:structure-definition)))))
       (t
-       (unless no-warn
-         (warn "type specifier じゃないみたい: ~S" typespec))
+       (!!undefined-type-specifier typespec)
        `(typep ,object-form ',typespec)))))
 
 

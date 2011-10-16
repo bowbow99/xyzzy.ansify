@@ -76,6 +76,18 @@ Note that you need to define CONDITION and `simple-CONDITION` first."
              (format stream "読み込み可能な形式で出力できません: ~S"
                    (print-not-readable-object x)))))
 
+
+;;;; ansify specific
+
+(define-condition undefined-type-specifier (bad-type-specifier) ()
+  (:report (lambda (x stream)
+             (format stream "未定義の型指定子です: ~S"
+                   (undefined-type-specifier-datum x)))))
+
+(define-condition otherwise-in-middle (program-error) ()
+  (:report (lambda (x stream)
+             (format stream "case 式の途中に otherwise 節があります"))))
+
 
 (provide "ansify/condition")
 ;;; ansify/condition.l ends here.
