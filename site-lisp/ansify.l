@@ -18,6 +18,7 @@
 
 (defconstant +version+ "0.01.00+")
 
+(require "ansify/config")
 (require "ansify/autoload-defs")
 (require "ansify/setf")
 (require "ansify/typespec+")
