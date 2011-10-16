@@ -55,6 +55,27 @@
 
 デフォルトは :error です。")
 
+
+;;;; for typecase.l
+
+(export '(*signal-on-otherwise-in-middle*
+          ))
+
+(defvar *signal-on-otherwise-in-middle* :warn
+  "*case 式の途中にデフォルト節があった場合にエラーや警告を投げるかどうか。
+
+デフォルト節てのは節のキーが `t` や `otherwise` になっている節。
+ANSI を厳密に解釈すると途中に置いてはいけない（置いた場合は
+
+設定できる値:
+  nil    -- 途中であってもその節をデフォルト節として扱い、それ以降の節は
+            無視される。
+            ※xyzzy 標準の `lisp:case` と同じ
+  :warn  -- 警告（warning）を投げる。
+            xyzzy 本体の設定次第でダイアログが出たりするが、処理はそのま
+            ま実行されて最終的には nil の場合と同じ結果になる。
+  :error -- エラー（otherwise-in-middle）を投げる。")
+
 
 (provide "ansify/config")
 ;;; ansify/config.l ends here.

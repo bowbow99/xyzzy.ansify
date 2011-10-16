@@ -84,6 +84,10 @@ Note that you need to define CONDITION and `simple-CONDITION` first."
              (format stream "–¢’è‹`‚ÌŒ^w’èq‚Å‚·: ~S"
                    (undefined-type-specifier-datum x)))))
 
+(define-condition otherwise-in-middle (program-error) ()
+  (:report (lambda (x stream)
+             (format stream "case ®‚Ì“r’†‚É otherwise ß‚ª‚ ‚è‚Ü‚·"))))
+
 
 (provide "ansify/condition")
 ;;; ansify/condition.l ends here.
