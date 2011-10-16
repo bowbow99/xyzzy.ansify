@@ -16,7 +16,6 @@
     - `define-setf-expander`
 - バグ修正（主に typespec 周り）
 
-
 2011-09-30  Ver. 0.01.01
 ========================
 - バージョン変数 `ansify::+version+` を追加
