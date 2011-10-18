@@ -7,6 +7,21 @@
 ;;;
 ;;; This file is part of xyzzy extension "ansify".
 
+;; Conformance Note
+;; ================
+;; Adopting Proposal FUNCTION-NAME:MEDIUM except followings:
+;; - Special form FUNCTION doesn't accept compound form of function
+;;   name. I have no idea how I can implement it.
+;; - Macro SETF's rule of expansion is not changed. Instead, setf
+;;   expander is defined when definining setf function for reader with
+;;   DEFUN.
+;;   It is required to define setf function at compile-time to expand
+;;   corresponding SETF forms correctly.
+;; - 
+
+;; Ref: [CLHS: Issue FUNCTION-NAME:LARGE][1]
+;;   [1]: http://www.lispworks.com/documentation/HyperSpec/Issues/iss174_w.htm
+
 ;;; Code:
 
 (eval-when (:execute :compile-toplevel :load-toplevel)
@@ -58,18 +73,18 @@
 ;; http://www.lispworks.com/documentation/HyperSpec/Body/f_fdefin.htm
 
 (lisp:defun fdefinition (function-name)
-  (symbol-function (canonicalize-typespec function-name)))
+  (symbol-function (canonicalize-function-name function-name)))
 
 (defsetf fdefinition (function-name) (new-definition)
   (let ((name (canonicalize-function-name function-name)))
     (when (special-form-p name)
       (error 'simple-program-error
              :format-string "スペシャルオペレータの fdefinition は変更できません: ~S"
-             :format-arguments (list name))))
-  `(if (or (functionp ,new-definition)
-           (si:*builtin-function-p ,new-definition))
-     (setf (symbol-function ,name) ,new-definition)
-     (error 'type-error :datum ,new-definition :expected-type 'function)))
+             :format-arguments (list name)))
+    `(if (or (functionp ,new-definition)
+             (si:*builtin-function-p ,new-definition))
+       (setf (symbol-function ,name) ,new-definition)
+       (error 'type-error :datum ,new-definition :expected-type 'function))))
 
 
 (provide "ansify/function")
