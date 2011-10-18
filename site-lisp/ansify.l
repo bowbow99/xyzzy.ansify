@@ -20,6 +20,7 @@
 
 (require "ansify/config")
 (require "ansify/autoload-defs")
+(require "ansify/function")
 (require "ansify/setf")
 (require "ansify/typespec+")
 (require "ansify/restart")
