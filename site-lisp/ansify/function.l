@@ -35,7 +35,9 @@
 (eval-when (:execute :compile-toplevel :load-toplevel)
   (shadowing-export '(defun
                       fdefinition
-                      function-lambda-expression
+                      ;function-lambda-expression
+                      fboundp
+                      fmakunbound
                       )))
 
 (lisp:defun get-setf-function-symbol (name)
@@ -85,6 +87,14 @@
              (si:*builtin-function-p ,new-definition))
        (setf (symbol-function ,name) ,new-definition)
        (error 'type-error :datum ,new-definition :expected-type 'function))))
+
+(lisp:defun fboundp (function-name)
+  (lisp:fboundp (canonicalize-function-name function-name)))
+
+(lisp:defun fmakunbound (function-name)
+  ;; FIXME: fmakunbound  - on setf-function
+  ;; maybe should also undefine setf-expander for FUNCTION-NAME.
+  (lisp:fmakunbound (canonicalize-function-name function-name)))
 
 
 (provide "ansify/function")
