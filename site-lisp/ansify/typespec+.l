@@ -55,6 +55,18 @@
 (remprop 'real 'si::type-predicate)
 (si::defpred-number real realp)
 
+;; NOTE: Typespec `cons` must accept CAR-TYPE and CDR-TYPE, but not implemented
+;; so in xyzzy.
+(remprop 'cons 'si::type-predicate)
+(si::defpred cons (object r)
+  (and (consp object)
+       (or (null r)
+           (eql (first r) '*)
+           (typep (car object) (first r)))
+       (or (null (cdr r))
+           (eql (second r) '*)
+           (typep (cdr object) (second r)))))
+
 
 ;;;; Utilities
 
