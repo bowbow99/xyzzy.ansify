@@ -257,7 +257,6 @@
   (assert-optimize X number (numberp X))
   (assert-optimize (foo x y z) number (numberp (foo x y z))))
 
-;;; NOTE: xyzzy doesn't support LOWER/UPPER range on real (just ignored)
 ;; real  [LOWER [UPPER]]
 (define-test real
   (assert-same real)

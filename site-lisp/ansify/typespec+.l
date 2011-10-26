@@ -48,6 +48,13 @@
 (eval-when (:execute :compile-toplevel :load-toplevel)
   (remprop 'eql 'si::deftype-definition))
 
+;; NOTE: Typespec `real` must accept LOWER-LIMIT and UPPER-LIMIT just like
+;; other number types, but not implemented so in xyzzy.
+;; ref: https://gist.github.com/1305573
+;; ref: https://github.com/bowbow99/xyzzy.ansify/issues/19
+(remprop 'real 'si::type-predicate)
+(si::defpred-number real realp)
+
 
 ;;;; Utilities
 
@@ -360,6 +367,7 @@ as argument for another typespec."
          (*and (list* `(,',predicate #1#)
                       (expand-number-range-check '#1# low high)))))))
 
+(defopt-number real realp)
 (defopt-number integer integerp)
 (defopt-number float floatp)
 (defopt-number rational rationalp)
