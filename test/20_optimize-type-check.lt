@@ -114,8 +114,12 @@
 ;; NOTE: Compound form of `cons` is not supported in xyzzy
 (define-test cons
   (assert-same cons)
+  (assert-same (cons symbol))
+  (assert-same (cons symbol *))
   (assert-optimize X cons (consp X))
-  (assert-optimize (foo x y z) cons (consp (foo x y z))))
+  (assert-optimize (foo x y z) cons (consp (foo x y z)))
+  (assert-optimize X (cons symbol integer)
+    (and (consp X) (symbolp (car X)) (integerp (cdr X)))))
 
 ;; symbol
 (define-test symbol

@@ -317,6 +317,13 @@ as argument for another typespec."
 (define-typep-optimizer eql (actual expected)
   `(eql ,actual ',expected))
 
+;; cons
+(define-typep-optimizer cons (object &optional (car-type '*) (cdr-type '*))
+  (*let `(#1=#:object ,object)
+    (*and `((consp #1#)
+            ,(if (eql car-type '*) t (optimize-type-check '(car #1#) car-type))
+            ,(if (eql cdr-type '*) t (optimize-type-check '(cdr #1#) cdr-type))))))
+
 ;; not
 (define-typep-optimizer not (object typespec)
   (*let `(#1=#:object ,object)
