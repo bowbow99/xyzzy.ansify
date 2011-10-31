@@ -7,20 +7,55 @@
 ;;;
 ;;; This file is part of xyzzy extension "ansify".
 
+;;; References:
+;;
+;; [CLHS: Issue FUNCTION-NAME Writeup][1]
+;;   [1]: http://www.lispworks.com/documentation/HyperSpec/Issues/iss174_w.htm
+
+;;; Commentary
+;;
+;; Issue FUNCTION-NAME highlight
+;; =============================
+;;
+;; FUNCTION-NAME:SMALL
+;; -------------------
+;; - Introduce new concept "function name", which is a symbol or a list
+;;   `(setf READER)`
+;; - Add function `fdefinition` and `setf` of it
+;; - Function `fboundp`, `fmakunbound`, and special operator `function`
+;; - Macro `setf` expansion rule: expands into a call to setf function
+;;
+;; FUNCTION-NAME:MEDIUM
+;; --------------------
+;; - Macro `defun`
+;;
+;; FUNCTION-NAME:LARGE
+;; -------------------
+;; 1. Function `compile`
+;; 2. Function `disassemble`
+;; 3. Declaration `ftype`, `inline`, and `notinline`
+;; 4. Special form `flet` and `labels`
+;; 5. Macro `trace` and `untrace`
+;; 6. Function `ed`
+;; 7. Syntax for function call
+;; 8. Macro `defmacro`, `macrolet`, and `macro-function` (removed)
+;; 9. Add optional environment argument to Function `fdefinition`, `fboundp`,
+;;    `fmakunbound`, and setf for `fdefinition` (removed)
+;; 10. Macro `setf` expansion rule: support local setf functions
+;; 11. (documentation thing)
+
 ;; Conformance Note
 ;; ================
-;; Adopting Proposal FUNCTION-NAME:MEDIUM except followings:
-;; - Special form FUNCTION doesn't accept compound form of function
-;;   name. I have no idea how I can implement it.
-;; - Macro SETF's rule of expansion is not changed. Instead, setf
-;;   expander is defined when definining setf function for reader with
-;;   DEFUN.
-;;   It is required to define setf function at compile-time to expand
-;;   corresponding SETF forms correctly.
-;; - 
-
-;; Ref: [CLHS: Issue FUNCTION-NAME:LARGE][1]
-;;   [1]: http://www.lispworks.com/documentation/HyperSpec/Issues/iss174_w.htm
+;; Currently, Proposal FUNCTION-NAME:MEDIUM is implemented with following
+;; exceptions:
+;; - Special form `function`: doesn't accept list form of function-name.
+;; - Macro `setf` expansion rule: expands into call for setf function only
+;;   when corresponding setf function is defined.
+;;   The reason for this is that original implementation of `setf` doesn't
+;;   expand such a way, and I left it untouched. Instead defining setf
+;;   function via `defun` also defines setf expander for READER, so it is
+;;   required to define setf functions at compile-time to compile corresponding
+;;   setf forms correctly.
 
 ;;; Code:
 
