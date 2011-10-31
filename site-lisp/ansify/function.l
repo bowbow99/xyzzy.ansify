@@ -40,11 +40,14 @@
                       fmakunbound
                       )))
 
+(lisp:defun setf-function-name-p (x)
+  (and (consp x)
+       (eql (first x) 'setf)
+       (symbol (second name))
+       (null (cddr x))))
+
 (lisp:defun get-setf-function-symbol (name)
-  (unless (and (consp name)
-               (eql (first name) 'setf)
-               (symbolp (second name))
-               (null (cddr name)))
+  (unless (setf-function-name-p name)
     (error "ïsê≥Ç»ä÷êîñºÇ≈Ç∑: ~S" name))
   (let ((accessor (second name)))
     (intern (format nil "(setf ~A)" accessor)
@@ -92,9 +95,13 @@
   (lisp:fboundp (canonicalize-function-name function-name)))
 
 (lisp:defun fmakunbound (function-name)
-  ;; FIXME: fmakunbound  - on setf-function
-  ;; maybe should also undefine setf-expander for FUNCTION-NAME.
-  (lisp:fmakunbound (canonicalize-function-name function-name)))
+  (cond ((setf-function-name-p function-name)
+         (let ((name (canonicalize-function-name function-name)))
+           (lisp:fmakunbound name)
+           (remprop (second function-name) 'lisp::setf-lambda)
+           function-name))
+        ((symbolp function-name)
+         (lisp:fmakunbound function-name))))
 
 
 (provide "ansify/function")
