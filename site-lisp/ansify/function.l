@@ -101,7 +101,10 @@
            (remprop (second function-name) 'lisp::setf-lambda)
            function-name))
         ((symbolp function-name)
-         (lisp:fmakunbound function-name))))
+         (lisp:fmakunbound function-name))
+        (t
+         (error 'type-error :datum function-name
+                :expected-type '(or symbol (cons (eql setf) (cons symbol nil)))))))
 
 
 (provide "ansify/function")
