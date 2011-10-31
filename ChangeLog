@@ -1,12 +1,32 @@
 20xx-xx-xx  TODO
 	* setf-values
 
+2011-10-31  bowbow99  <bowbow99@gmail.com>
+
+	* setf function 周りのテスト書いた
+	- ちらほら見つかったバグを修正
+	- 微妙にリファクタリング
+
 2011-10-27  bowbow99  <bowbow99@gmail.com>
 
 	* 型指定子 `real` と `cons` を引き通付きで使えない問題への fix を
 	追加。
 	※グローバルな変更による本体側のバグ修正なども、問題無さそうなら
 	ansify でやる事にした。
+
+2011-10-24  bowbow99  <bowbow99@gmail.com>
+
+	* setf function のサポート拡大
+	- `ansify:fboundp`
+	- `ansify:fmakunbound`
+
+2011-10-18  bowbow99  <bowbow99@gmail.com>
+
+	* setf function	（関数名として `(setf READER)` という形式のリスト）
+	を使えるように
+	とりあえず以下2つだけ
+	- `ansify:defun`
+	- `ansify:fdefinition`
 
 2011-10-16  bowbow99  <bowbow99@gmail.com>
 

@@ -1,0 +1,44 @@
+;;; -*- mode: lisp; package: test.ansify.setf-function -*-
+;;;
+;;; test/31_setf-function.lt
+;;;
+
+
+;;; Code:
+
+(require "lisp-unit")
+(require "ansify/function")
+
+(defpackage :test.ansify.setf-function
+  (:use :lisp :lisp-unit))
+
+(in-package :test.ansify.setf-function)
+
+;(ansify::install)
+;#|
+(mapc (lambda (name) (shadowing-import (find-symbol (string name) :ansify)))
+      '(#:defun
+        ))
+;|#
+
+(remove-all-tests :test.ansify.setf-function)
+
+
+;;;; example data
+
+(defvar *table* (make-hash-table))
+
+(defun data (key)
+  (gethash key *table*))
+
+(defun (setf data) (data key)
+  (setf (gethash key *table*) data))
+
+(define-test setf-function
+  (let ((*table* (make-hash-table)))
+    (assert-eql :foo (setf (data 0) :foo))
+    (assert-eql :foo (data 0))
+    (assert-eql :foo (gethash 0 *table*))))
+
+
+;;; test/31_setf-function.lt ends here.
