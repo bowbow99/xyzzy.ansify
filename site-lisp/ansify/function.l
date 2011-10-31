@@ -43,7 +43,7 @@
 (lisp:defun setf-function-name-p (x)
   (and (consp x)
        (eql (first x) 'setf)
-       (symbol (second name))
+       (symbolp (second x))
        (null (cddr x))))
 
 (lisp:defun get-setf-function-symbol (name)
