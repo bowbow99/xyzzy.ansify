@@ -81,15 +81,12 @@
   (symbol-function (canonicalize-function-name function-name)))
 
 (defsetf fdefinition (function-name) (new-definition)
-  (let ((name (canonicalize-function-name function-name)))
-    (when (special-form-p name)
-      (error 'simple-program-error
-             :format-string "スペシャルオペレータの fdefinition は変更できません: ~S"
-             :format-arguments (list name)))
-    `(if (or (functionp ,new-definition)
-             (si:*builtin-function-p ,new-definition))
-       (setf (symbol-function ,name) ,new-definition)
-       (error 'type-error :datum ,new-definition :expected-type 'function))))
+  (let (($name (gensym "name-")))
+    `(let ((,$name (canonicalize-function-name ,function-name)))
+       (if (or (functionp ,new-definition)
+               (si:*builtin-function-p ,new-definition))
+         (setf (symbol-function ,$name) ,new-definition)
+         (error 'type-error :datum ,new-definition :expected-type 'function)))))
 
 (lisp:defun fboundp (function-name)
   (lisp:fboundp (canonicalize-function-name function-name)))
