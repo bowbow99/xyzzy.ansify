@@ -1,6 +1,13 @@
 20xx-xx-xx  TODO
 	* setf-values
 
+2011-10-27  bowbow99  <bowbow99@gmail.com>
+
+	* 型指定子 `real` と `cons` を引き通付きで使えない問題への fix を
+	追加。
+	※グローバルな変更による本体側のバグ修正なども、問題無さそうなら
+	ansify でやる事にした。
+
 2011-10-16  bowbow99  <bowbow99@gmail.com>
 
 	* 設定用変数を別ファイルに分離
