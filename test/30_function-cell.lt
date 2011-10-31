@@ -1,0 +1,77 @@
+;;; -*- mode: lisp; package: test.ansify.function-cell -*-
+;;;
+;;; test/30_function-cell.lt
+;;;
+
+
+;;; Code:
+
+(require "lisp-unit")
+(require "ansify/function")
+
+(defpackage :test.ansify.function-cell
+  (:use :lisp :lisp-unit))
+
+(in-package :test.ansify.function-cell)
+
+;(ansify::install)
+;#|
+(mapc (lambda (name) (shadowing-import (find-symbol (string name) :ansify)))
+      '(#:defun
+        #:fdefinition
+        #:fboundp
+        #:fmakunbound
+        ))
+;|#
+
+(remove-all-tests :test.ansify.function-cell)
+
+
+;;;; example data
+
+(defun foo (x) (+ x 3))
+(defun bar (y) (* y 3))
+
+(defconstant +foo-definition+ #'foo)
+(defconstant +bar-definition+ #'bar)
+
+(defvar *table* (make-hash-table))
+
+(defun datum (key) (gethash key *table*))
+(defun (setf datum) (value key) (setf (gethash key *table*) value))
+
+
+;;;; Function fdefinition
+
+(define-test fdefinition-read-symbol
+  (assert-eql (symbol-function 'foo) (fdefinition 'foo))
+  (assert-eql (symbol-function 'bar) (fdefinition 'bar)))
+
+(define-test fdefinition-write-symbol
+  (unwind-protect
+      (labels ((foo (x)))
+        (setf (fdefinition 'foo) (fdefinition 'bar))
+        (assert-eql (fdefinition 'foo) (fdefinition 'bar)))
+    (setf (symbol-function 'foo) +foo-definition+
+          (symbol-function 'bar) +bar-definition+)))
+
+(define-test fdefinition-read-setf-name
+  (let ((setf-function-symbol (ansify::get-setf-function-symbol '(setf datum))))
+    (assert-eql
+        (symbol-function setf-function-symbol)
+        (fdefinition '(setf datum))
+      setf-function-symbol)))
+
+(define-test fdefinition-write-setf-name
+  (let ((alt-setf-fn-called-p nil))
+    (labels ((alt-setf-fn (&rest args)
+               (setf alt-setf-fn-called-p t)
+               '#:alt-return))
+      (si:*set-function-name #'alt-setf-fn 'alt-setf-fn)
+      (assert-eql #'alt-setf-fn (setf (fdefinition '(setf datum)) #'alt-setf-fn))
+      (progn
+        (setf (datum 3) "hi")
+        (assert-true alt-setf-fn-called-p)))))
+
+
+;;; test/30_function-cell.lt ends here.
