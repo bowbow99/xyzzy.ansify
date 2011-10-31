@@ -17,7 +17,7 @@
 
 (eval-when (:execute :compile-toplevel :load-toplevel)
   (shadowing-export '(#:print-unreadable-object #:constantly #:type-of
-                      #:the #:nth-value #:special-operator-p)))
+                      #:the #:nth-value #:special-operator-p #:sleep)))
 
 
 ;; NOTE: Used in expansion of `destructuring-bind`
@@ -85,6 +85,9 @@
 (defun constantly (value)
   "Return a function which always return VALUE."
   (lambda (&rest #:args) value))
+
+;; http://www.lispworks.com/documentation/HyperSpec/Body/f_sleep.htm
+(si:*fset 'sleep #'ed:sleep-for)
 
 (provide "ansify/misc")
 ;;; ansify/misc.l ends here.

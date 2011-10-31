@@ -1,6 +1,10 @@
 20xx-xx-xx  TODO
 	* setf-values
 
+2011-11-01  bowbow99  <bowbow99@gmail.com>
+
+	* `sleep` を追加
+
 2011-10-31  bowbow99  <bowbow99@gmail.com>
 
 	* setf function 周りのテスト書いた
