@@ -48,6 +48,25 @@
 (eval-when (:execute :compile-toplevel :load-toplevel)
   (remprop 'eql 'si::deftype-definition))
 
+;; NOTE: Typespec `real` must accept LOWER-LIMIT and UPPER-LIMIT just like
+;; other number types, but not implemented so in xyzzy.
+;; ref: https://gist.github.com/1305573
+;; ref: https://github.com/bowbow99/xyzzy.ansify/issues/19
+(remprop 'real 'si::type-predicate)
+(si::defpred-number real realp)
+
+;; NOTE: Typespec `cons` must accept CAR-TYPE and CDR-TYPE, but not implemented
+;; so in xyzzy.
+(remprop 'cons 'si::type-predicate)
+(si::defpred cons (object r)
+  (and (consp object)
+       (or (null r)
+           (eql (first r) '*)
+           (typep (car object) (first r)))
+       (or (null (cdr r))
+           (eql (second r) '*)
+           (typep (cdr object) (second r)))))
+
 
 ;;;; Utilities
 
@@ -298,6 +317,13 @@ as argument for another typespec."
 (define-typep-optimizer eql (actual expected)
   `(eql ,actual ',expected))
 
+;; cons
+(define-typep-optimizer cons (object &optional (car-type '*) (cdr-type '*))
+  (*let `(#1=#:object ,object)
+    (*and `((consp #1#)
+            ,(if (eql car-type '*) t (optimize-type-check '(car #1#) car-type))
+            ,(if (eql cdr-type '*) t (optimize-type-check '(cdr #1#) cdr-type))))))
+
 ;; not
 (define-typep-optimizer not (object typespec)
   (*let `(#1=#:object ,object)
@@ -360,6 +386,7 @@ as argument for another typespec."
          (*and (list* `(,',predicate #1#)
                       (expand-number-range-check '#1# low high)))))))
 
+(defopt-number real realp)
 (defopt-number integer integerp)
 (defopt-number float floatp)
 (defopt-number rational rationalp)

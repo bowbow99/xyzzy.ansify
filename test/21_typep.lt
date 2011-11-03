@@ -128,7 +128,11 @@
 
 ;; cons
 (define-test cons
-  (assert-typep cons list-integer list-symbol list-string))
+  (assert-typep cons list-integer list-symbol list-string)
+  (assert-typep (cons symbol) list-symbol)
+  (assert-typep (cons symbol *) list-symbol)
+  (assert-typep (cons symbol (cons symbol *)) list-symbol)
+  (assert-typep (cons (or symbol string)) list-symbol list-string))
 
 ;; random-state
 (define-test random-state
@@ -320,9 +324,11 @@
   (assert-typep real 1/10 1 10 100 1000 single-float most-positive-fixnum most-negative-fixnum
     most-positive-fixnum+1 most-negative-fixnum-1 double-float)
   ;; lower-limit
-  ;(assert-typep (real 3) 10 100 1000 float)
+  (assert-typep (real 3) 10 100 1000 float most-positive-fixnum most-positive-fixnum+1
+    single-float double-float)
   ;; upper-limit
-  ;(assert-typep (real * 20) 1 10 float)
+  (assert-typep (real * 20) 1 10 float most-negative-fixnum most-negative-fixnum-1
+    1/10 single-float)
   )
 
 ;; rational [lower-limit [upper-limit]]

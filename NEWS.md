@@ -1,34 +1,50 @@
-2011-09-30  Ver. 0.02.00
+2011-11-04  Ver. 0.03.00
 ========================
-- ƒpƒbƒP[ƒWü‚è‚ğ’²®
-  ANSI •W€‚ÌƒVƒ“ƒ{ƒ‹‚Í "ansify" ‚©‚ç export ‚µ‚ÄA‚»‚êˆÈŠO‚Å xyzzy/ansify
-  “Á—L‚Ì‹@”\‚È‚Ç‚Í "ansify.ext" ‚©‚ç export ‚·‚é‚æ‚¤‚É
-  ‚¿‚á‚ñ‚Æ export ‚·‚é‚æ‚¤‚É‚µ‚½‚Ì‚Å `ansify:etypecase` ‚Æ‚©‘‚¯‚é‚æ‚¤‚É‚È‚Á‚½
-- ×X‚µ‚½ƒIƒyƒŒ[ƒ^‚ğ’Ç‰Á
-  - `type-of`istructure ‚É‘Î‚µ‚Ä `lisp:structure` ‚Å‚Í‚È‚­\‘¢‘Ì–¼‚ğ•Ô‚·j
+- ä¸€éƒ¨ã®å‹æŒ‡å®šå­ã‚’ã‚°ãƒ­ãƒ¼ãƒãƒ«ã«ä¿®æ­£
+  - `eql` -- ä¸è¦ãª deftype ã«ã‚ˆã‚‹å®šç¾©ã‚’å‰Šé™¤ï¼ˆå®Ÿã¯å‰ã®ãƒãƒ¼ã‚¸ãƒ§ãƒ³ã§ã‚„ã£ã¦ãŸï¼‰
+  - `real`, `cons` -- ãƒªã‚¹ãƒˆã§ã®æŒ‡å®šã«ã§ããªã‹ã£ãŸã®ã‚’ä¿®æ­£
+  ã“ã®ä¿®æ­£ã¯ lisp ãƒ‘ãƒƒã‚±ãƒ¼ã‚¸ã®æ–¹ã‚’ç›´æ¥ä¿®æ­£ã—ã¦ã‚‹ã®ã§ã‚°ãƒ­ãƒ¼ãƒãƒ«ã«å½±éŸ¿ã™ã‚‹ã‘ã©
+  æ­£ã—ãæ›¸ã‹ã‚ŒãŸãƒ—ãƒ­ã‚°ãƒ©ãƒ ã§ã¯å•é¡Œã¯èµ·ããªã„ã¯ãšã€‚
+- setf function ã‚µãƒãƒ¼ãƒˆ
+  `(setf READER)` ã¨ã„ã†å½¢å¼ã®é–¢æ•°åã‚’ä½¿ãˆã‚‹ã‚ˆã†ã«ã—ãŸã€‚
+  - `defun`
+  - `fdefinition`
+  - `fboundp`
+  - `fmakunbound`
+- ç´°ã€…ã—ãŸã‚ªãƒšãƒ¬ãƒ¼ã‚¿ã‚’è¿½åŠ 
+  - `sleep`
+
+2011-10-16  Ver. 0.02.00
+========================
+- ãƒ‘ãƒƒã‚±ãƒ¼ã‚¸å‘¨ã‚Šã‚’èª¿æ•´
+  ANSI æ¨™æº–ã®ã‚·ãƒ³ãƒœãƒ«ã¯ "ansify" ã‹ã‚‰ export ã—ã¦ã€ãã‚Œä»¥å¤–ã§ xyzzy/ansify
+  ç‰¹æœ‰ã®æ©Ÿèƒ½ãªã©ã¯ "ansify.ext" ã‹ã‚‰ export ã™ã‚‹ã‚ˆã†ã«
+  ã¡ã‚ƒã‚“ã¨ export ã™ã‚‹ã‚ˆã†ã«ã—ãŸã®ã§ `ansify:etypecase` ã¨ã‹æ›¸ã‘ã‚‹ã‚ˆã†ã«ãªã£ãŸ
+- ç´°ã€…ã—ãŸã‚ªãƒšãƒ¬ãƒ¼ã‚¿ã‚’è¿½åŠ 
+  - `type-of`ï¼ˆstructure ã«å¯¾ã—ã¦ `lisp:structure` ã§ã¯ãªãæ§‹é€ ä½“åã‚’è¿”ã™ï¼‰
   - `constantly`
   - `the`
   - `nth-value`
   - `upgraded-complex-part-type`
-  - ’P‚É–¼‘O‚ª•Ï‚í‚Á‚½‚à‚Ì
+  - å˜ã«åå‰ãŒå¤‰ã‚ã£ãŸã‚‚ã®
     - `special-operator-p`
     - `get-setf-expansion`
     - `define-setf-expander`
-- ƒoƒOC³iå‚É typespec ü‚èj
+- ãƒã‚°ä¿®æ­£ï¼ˆä¸»ã« typespec å‘¨ã‚Šï¼‰
 
-2011-09-30  Ver. 0.01.01
+2011-10-05  Ver. 0.01.01
 ========================
-- ƒo[ƒWƒ‡ƒ“•Ï” `ansify::+version+` ‚ğ’Ç‰Á
-- ƒoƒO2‚ÂC³ithx to @miyamukoj
+- ãƒãƒ¼ã‚¸ãƒ§ãƒ³å¤‰æ•° `ansify::+version+` ã‚’è¿½åŠ 
+- ãƒã‚°2ã¤ä¿®æ­£ï¼ˆthx to @miyamukoï¼‰
 
 2011-09-30  Ver. 0.01.00
 ========================
-- ‰ƒŠƒŠ[ƒX
-- ƒoƒ‰ƒoƒ‰‚Éì‚Á‚Ä‚½ Common Lisp ‚È‚à‚Ì‚ğW‚ß‚½
+- åˆãƒªãƒªãƒ¼ã‚¹
+- ãƒãƒ©ãƒãƒ©ã«ä½œã£ã¦ãŸ Common Lisp ãªã‚‚ã®ã‚’é›†ã‚ãŸ
   - [symbol-macrolet](https://github.com/bowbow99/xyzzy.symbol-macrolet)
   - [condition-restart](https://github.com/bowbow99/xyzzy.condition-restart)
   - [destructuring-bind](https://github.com/bowbow99/xyzzy.destructuring-bind)
   - [typespec+](https://github.com/bowbow99/xyzzy.typespec-plus)
   - [typecase](https://github.com/bowbow99/xyzzy.typecase)
-- case, ecase, ccase ‚ğÀ‘•
-- print-unreadable-object ‚ğÀ‘•
+- case, ecase, ccase ã‚’å®Ÿè£…
+- print-unreadable-object ã‚’å®Ÿè£…

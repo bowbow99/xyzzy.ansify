@@ -1,6 +1,49 @@
 20xx-xx-xx  TODO
 	* setf-values
 
+2011-11-03  bowbow99  <bowbow99@gmail.com>
+
+	* `(setf (fdefinition '(setf READER)) ...)` しても READER への
+	setf が展開できないままだったのを修正。
+
+	* `&allow-other-keys` を定数にしてたので普通に lambda-list 内に
+	現れるとエラーになっていた問題に対処。
+	単に定数ではなくした。
+	通常はキーワード･パラメータの1つとして扱われる＆xyzzy は元から
+	指定されていないキーワードも受け付ける（＝&allow-other-keys 相当）
+	なので、&allow-other-keys が指定された場合の挙動としては問題ない。
+
+2011-11-01  bowbow99  <bowbow99@gmail.com>
+
+	* `sleep` を追加
+
+2011-10-31  bowbow99  <bowbow99@gmail.com>
+
+	* setf function 周りのテスト書いた
+	- ちらほら見つかったバグを修正
+	- 微妙にリファクタリング
+
+2011-10-27  bowbow99  <bowbow99@gmail.com>
+
+	* 型指定子 `real` と `cons` を引き通付きで使えない問題への fix を
+	追加。
+	※グローバルな変更による本体側のバグ修正なども、問題無さそうなら
+	ansify でやる事にした。
+
+2011-10-24  bowbow99  <bowbow99@gmail.com>
+
+	* setf function のサポート拡大
+	- `ansify:fboundp`
+	- `ansify:fmakunbound`
+
+2011-10-18  bowbow99  <bowbow99@gmail.com>
+
+	* setf function	（関数名として `(setf READER)` という形式のリスト）
+	を使えるように
+	とりあえず以下2つだけ
+	- `ansify:defun`
+	- `ansify:fdefinition`
+
 2011-10-16  bowbow99  <bowbow99@gmail.com>
 
 	* 設定用変数を別ファイルに分離
