@@ -29,10 +29,6 @@
 (defmacro !invalid-lambda-list ()
   `(error 'invalid-lambda-list :datum *lambda-list*))
 
-
-(defconstant &allow-other-keys '&allow-other-keys)
-(defconstant &required '&required)
-
 (defconstant +destructuring-lambda-list-keywords+
   '(&environment &whole &required &optional &body &rest &key &allow-other-keys &aux))
 

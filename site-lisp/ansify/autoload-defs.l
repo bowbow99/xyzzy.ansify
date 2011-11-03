@@ -30,7 +30,6 @@
 (setf (get 'destructuring-bind 'ed:lisp-indent-hook) 2)
 
 (shadowing-export '(&allow-other-keys))
-(defconstant &allow-other-keys '&allow-other-keys)
 
 ;; assertion.l
 (%autoload assert "assertion" nil t)
