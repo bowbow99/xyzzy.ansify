@@ -116,12 +116,26 @@
   (symbol-function (canonicalize-function-name function-name)))
 
 (defsetf fdefinition (function-name) (new-definition)
-  (let (($name (gensym "name-")))
-    `(let ((,$name (canonicalize-function-name ,function-name)))
-       (if (or (functionp ,new-definition)
-               (si:*builtin-function-p ,new-definition))
-         (setf (symbol-function ,$name) ,new-definition)
-         (error 'type-error :datum ,new-definition :expected-type 'function)))))
+  (let (($name (gensym "$name-"))
+        ($reader (gensym "$reader-")))
+    `(progn
+       (unless (functionp ,new-definition)
+         (error 'type-error :datum ,new-definition :expected-type 'function))
+       (cond ((setf-function-name-p ,function-name)
+              (let ((,$name (canonicalize-function-name ,function-name))
+                    (,$reader (second ,function-name)))
+                (progn
+                  ;; Store setf-expander for READER
+                  ;; This is mostly an expansion of `defsetf`
+                  (si:*putprop ,$reader
+                               `((&rest #1=#:args) (#2=#:new-value)
+                                 `(,',,$name ,#2# ,@#1#))
+                               'lisp::setf-lambda)
+                  (remprop ,$reader 'lisp::setf-method)
+                  (remprop ,$reader 'lisp::setf-update))
+                (setf (symbol-function ,$name) ,new-definition)))
+             (t
+              (setf (symbol-function ,function-name) ,new-definition))))))
 
 (lisp:defun fboundp (function-name)
   (lisp:fboundp (canonicalize-function-name function-name)))
