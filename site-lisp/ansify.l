@@ -3,7 +3,7 @@
 ;;; ansify.l --- ANSI Common Lisp Ç…Ç†Ç¡Çƒ xyzzy Ç…Ç»Ç¢Ç‡ÇÃãlÇﬂçáÇÌÇπ
 ;;;
 ;;; Author:     bowbow99  <bowbow99@gmail.com>
-;;; Version:    0.02.00
+;;; Version:    0.03.00
 ;;; Category:   Lisp Libraries
 ;;; License:    MIT (see COPYING.mit)
 ;;; Commentary: (see README.md)
@@ -16,7 +16,7 @@
 
 (in-package :ansify)
 
-(defconstant +version+ "0.02.00")
+(defconstant +version+ "0.03.00")
 
 (require "ansify/config")
 (require "ansify/autoload-defs")
