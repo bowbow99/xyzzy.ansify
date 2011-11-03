@@ -1,6 +1,18 @@
 20xx-xx-xx  TODO
 	* setf-values
 
+2011-11-03  bowbow99  <bowbow99@gmail.com>
+
+	* `(setf (fdefinition '(setf READER)) ...)` しても READER への
+	setf が展開できないままだったのを修正。
+
+	* `&allow-other-keys` を定数にしてたので普通に lambda-list 内に
+	現れるとエラーになっていた問題に対処。
+	単に定数ではなくした。
+	通常はキーワード･パラメータの1つとして扱われる＆xyzzy は元から
+	指定されていないキーワードも受け付ける（＝&allow-other-keys 相当）
+	なので、&allow-other-keys が指定された場合の挙動としては問題ない。
+
 2011-11-01  bowbow99  <bowbow99@gmail.com>
 
 	* `sleep` を追加
