@@ -63,7 +63,6 @@
   (require "ansify/base")
   (require "ansify/config")
   (require "ansify/condition")
-  (require "ansify/autoload-defs")
   (require "ansify/restart"))
 
 (in-package :ansify)
@@ -99,26 +98,17 @@
                `(when (and (fboundp ',sym)
                            *warn-on-redefine-function*)
                   (warn 'redefining-function :name ',name :type 'function))))
-      (let ((lambda-list
-              ;; NOTE: xyzzy doesn't recognize `&allow-other-keys` as one
-              ;; of lambda-list-keyword. So it tries to use it as normal
-              ;; parameter and signals an error, since it is defined as
-              ;; constant in ansify. To deal with this, simply remove it
-              ;; from LAMBDA-LIST.
-              ;; Note that xyzzy allows unspecified keys without explicitly
-              ;; allowed by `&allow-other-keys` or alike.
-              (remove &allow-other-keys lambda-list)))
-        (cond ((symbolp name)
+      (cond ((symbolp name)
+             `(progn
+                ,(warn-redefinition name name)
+                (lisp:defun ,name ,lambda-list ,@body)))
+            ((consp name)
+             (let ((sym (get-setf-function-symbol name)))
                `(progn
-                  ,(warn-redefinition name name)
-                  (lisp:defun ,name ,lambda-list ,@body)))
-              ((consp name)
-               (let ((sym (get-setf-function-symbol name)))
-                 `(progn
-                    ,(warn-redefinition sym name)
-                    (lisp:defun ,sym ,lambda-list ,@body)
-                    (defsetf ,(second name) ,(cdr lambda-list) (,(car lambda-list))
-                      (list ',sym ,@lambda-list))))))))))
+                  ,(warn-redefinition sym name)
+                  (lisp:defun ,sym ,lambda-list ,@body)
+                  (defsetf ,(second name) ,(cdr lambda-list) (,(car lambda-list))
+                    (list ',sym ,@lambda-list)))))))))
 
 ;; http://www.lispworks.com/documentation/HyperSpec/Body/f_fdefin.htm
 
