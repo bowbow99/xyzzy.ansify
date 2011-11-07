@@ -117,6 +117,20 @@ Symbols to be exported are interned into PACKAGE first."
        ,@body)))
 (set-indent 'with-places 2)
 
+
+;;;; development/debugging
+
+(export '(@debug
+          ))
+
+(defmacro @debug (datum &rest args)
+  (cond ((stringp datum)
+         `(format t ,datum ,@args))
+        (t
+         `(format t "~&~:{* ~S => ~S~%~}"
+                (list ,@(mapcar (lambda (form)
+                                  `(list ',form ,form))
+                              (cons datum args)))))))
 
 (provide "ansify/base/util")
 ;;; ansify/base/util.l ends here.
