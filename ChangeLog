@@ -1,5 +1,10 @@
-20xx-xx-xx  TODO
-	* setf-values
+2012-01-04  bowbow99  <bowbow99@gmail.com>
+
+	* あけましておめでとう。
+
+	* `ansify:defun` に lisp-mode 用のインデント情報が設定されてなか
+	ったのを修正（thx to @miyamuko）
+
 
 2011-11-03  bowbow99  <bowbow99@gmail.com>
 
