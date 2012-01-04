@@ -5,6 +5,8 @@
 	* `ansify:defun` に lisp-mode 用のインデント情報が設定されてなか
 	ったのを修正（thx to @miyamuko）
 
+	* `ansify:symbol-macrolet` で、`multiple-value-setq` の多値式に
+	含まれる symbol-macros が展開されてなかったのを修正。
 
 2011-11-03  bowbow99  <bowbow99@gmail.com>
 
