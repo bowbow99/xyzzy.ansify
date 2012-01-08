@@ -18,6 +18,14 @@
 	いるシンボルは全て optimizer を使うようになっているので、誰か
 	が si::defpred しない限り影響は無い。
 
+	* compiler パッケージの定義だけしておいた。
+	コンパイル関係の関数は autoload 指定されていて lisp/compile.l 
+	は読み込まれていないので、通常の環境では compiler パッケージが
+	存在してない。
+	compiler::optimize-form を使って何かしようとしても、存在しない
+	パッケージのシンボルは指定できないので、lisp/compile.l を丸ごと
+	読み込むハメになってしまう。のでパッケージだけ作っておく。
+
 2012-01-04  bowbow99  <bowbow99@gmail.com>
 
 	* あけましておめでとう。
