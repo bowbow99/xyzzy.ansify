@@ -2,11 +2,21 @@
 
 	* cmu_loop の拡張 loop 使うのをやめた
 
-	* ダンプすると optimize-type-check が壊れていたのを修正。
+	* ダンプすると optimize-type-check が壊れていたのを修正。(thx
+	to @miyamuko)
 	hash-table がイメージに含まれてると gethash できなくなるバグを
 	踏んでたので、alist で保存するように。
 	※本体側のバグは nanri-master で修正済み
 	- https://github.com/southly/xyzzy.src/blob/nanri-master/ChangeLog.txt#L483
+
+	* optimize-type-check で si::type-specifier-list プロパティの
+	関数（si::defpred で定義されたもの）を使わないようにした。
+	(thx to @miyamuko)
+	展開形が関数オブジェクトを含む式になってコンパイル済みファイル
+	を読み込めなくなるので。
+	※デフォルトで si::type-specifier-list プロパティが設定されて
+	いるシンボルは全て optimizer を使うようになっているので、誰か
+	が si::defpred しない限り影響は無い。
 
 2012-01-04  bowbow99  <bowbow99@gmail.com>
 

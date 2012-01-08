@@ -473,8 +473,6 @@ as argument for another typespec."
        (apply it object-form args))
       ((get type 'si::type-predicate)
        `(,it ,object-form))
-      ((get type 'si::type-specifier-list)
-       `(,it ,object-form '(,@args)))
       ((get type 'si::deftype-definition)
        (optimize-type-check object-form (si:canonicalize-type typespec)))
       ((get type 'si:structure-definition)
