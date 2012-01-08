@@ -9,9 +9,6 @@
 
 ;;; Code:
 
-(eval-when (:compile-toplevel :execute)
-  (require "cmu_loop"))
-
 (eval-when (:execute :compile-toplevel :load-toplevel)
   (require "ansify/base")
   (require "ansify/config"))
@@ -417,10 +414,12 @@ as argument for another typespec."
   (cond ((eql dimension-spec '*) nil)
         ((atom dimension-spec) `((= (array-rank ,object) ,dimension-spec)))
         (t `((= (array-rank ,object) ,(length dimension-spec))
-             ,@(loop for n in dimension-spec
-                     for i = 0 then (1+ i)
-                 collect (if (eql n '*) t
-                           `(= (array-dimension ,object ,i) ,n)))))))
+             ,@(let ((forms '()) (i 0))
+                 (dolist (n dimension-spec)
+                   (unless (eql n '*)
+                     (push `(= (array-dimension ,object ,i) ,n) forms))
+                   (incf i))
+                 (nreverse forms))))))
 
 (defun expand-vector-size-check (object size)
   (if (eql size '*) t
