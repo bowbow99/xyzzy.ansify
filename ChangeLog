@@ -2,6 +2,12 @@
 
 	* cmu_loop の拡張 loop 使うのをやめた
 
+	* ダンプすると optimize-type-check が壊れていたのを修正。
+	hash-table がイメージに含まれてると gethash できなくなるバグを
+	踏んでたので、alist で保存するように。
+	※本体側のバグは nanri-master で修正済み
+	- https://github.com/southly/xyzzy.src/blob/nanri-master/ChangeLog.txt#L483
+
 2012-01-04  bowbow99  <bowbow99@gmail.com>
 
 	* あけましておめでとう。
