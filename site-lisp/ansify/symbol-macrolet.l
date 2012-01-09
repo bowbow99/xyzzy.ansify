@@ -125,7 +125,7 @@
     (let ((temp-vars (apply #'append (first expansions)))
           (val-forms (apply #'append (second expansions))))
       `(multiple-value-bind (,@(mapcar #'car (third expansions)))
-           ,new-values-form
+           ,(sm.expand-form new-values-form sym/expansions env)
          (let* (,@(mapcar #'list temp-vars val-forms))
            ,@(fourth expansions)
            ,(caar (third expansions)))))))

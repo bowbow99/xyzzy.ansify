@@ -109,6 +109,7 @@
                   (lisp:defun ,sym ,lambda-list ,@body)
                   (defsetf ,(second name) ,(cdr lambda-list) (,(car lambda-list))
                     (list ',sym ,@lambda-list)))))))))
+(set-indent 'defun 'defun)
 
 ;; http://www.lispworks.com/documentation/HyperSpec/Body/f_fdefin.htm
 

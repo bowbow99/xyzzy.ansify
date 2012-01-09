@@ -9,9 +9,6 @@
 
 ;;; Code:
 
-(eval-when (:compile-toplevel :execute)
-  (require "cmu_loop"))
-
 (eval-when (:execute :compile-toplevel :load-toplevel)
   (require "ansify/base")
   (require "ansify/config"))
@@ -290,11 +287,16 @@ as argument for another typespec."
 
 ;;;; Optimize `typep` form
 
-(defparameter *typep-optimizer-table* (make-hash-table))
+(defparameter *typep-optimizer-alist* nil)
 
-(defmacro define-typep-optimizer (name (&rest args) &body body)
-  `(setf (gethash ',name *typep-optimizer-table*)
-         (lambda (,@args) (block ,name ,@body))))
+(defmacro define-typep-optimizer (key (&rest args) &body body)
+  `(setf *typep-optimizer-alist*
+         (acons ',key (lambda (,@args) (block ,key ,@body))
+                (delete ',key *typep-optimizer-alist* :key #'car))))
+
+(defun find-typep-optimizer (key)
+  (cdr (assoc key *typep-optimizer-alist*)))
+
 
 ;;; typespecs defined via `defpred` in lisp/typespec.l has their predicate
 ;;; function, but can be transformed into more straightforward form.
@@ -417,10 +419,12 @@ as argument for another typespec."
   (cond ((eql dimension-spec '*) nil)
         ((atom dimension-spec) `((= (array-rank ,object) ,dimension-spec)))
         (t `((= (array-rank ,object) ,(length dimension-spec))
-             ,@(loop for n in dimension-spec
-                     for i = 0 then (1+ i)
-                 collect (if (eql n '*) t
-                           `(= (array-dimension ,object ,i) ,n)))))))
+             ,@(let ((forms '()) (i 0))
+                 (dolist (n dimension-spec)
+                   (unless (eql n '*)
+                     (push `(= (array-dimension ,object ,i) ,n) forms))
+                   (incf i))
+                 (nreverse forms))))))
 
 (defun expand-vector-size-check (object size)
   (if (eql size '*) t
@@ -465,12 +469,10 @@ as argument for another typespec."
                             &aux (*this-typespec* (or *this-typespec* typespec)))
   (multiple-value-bind (type args) (split-typespec typespec)
     (acond
-      ((gethash type *typep-optimizer-table*)
+      ((find-typep-optimizer type)
        (apply it object-form args))
       ((get type 'si::type-predicate)
        `(,it ,object-form))
-      ((get type 'si::type-specifier-list)
-       `(,it ,object-form '(,@args)))
       ((get type 'si::deftype-definition)
        (optimize-type-check object-form (si:canonicalize-type typespec)))
       ((get type 'si:structure-definition)

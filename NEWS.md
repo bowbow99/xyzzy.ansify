@@ -1,3 +1,15 @@
+2012-01-09  Ver. 0.03.01
+========================
+- cmu_loop 使うのをやめた
+- パッケージ "compiler" のパッケージ定義だけ同梱
+  compile.l を丸ごと読み込まずに `compiler::optimize-form` を使えるように
+- バグ修正など
+  - ansify をダンプイメージに含めると `optimize-type-check` を利用したマクロ
+    （`typecase` など）が壊れてた; thx to @miyamuko
+  - `ansify:defun` のインデント情報が無かった
+  - `ansify:symbol-macrolet` で `multiple-value-setq` の多値式に symbol macro
+    を置くと展開されてなかった; thx to @miyamuko
+
 2011-11-04  Ver. 0.03.00
 ========================
 - 一部の型指定子をグローバルに修正
