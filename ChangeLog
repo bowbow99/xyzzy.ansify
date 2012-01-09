@@ -1,5 +1,9 @@
 2012-01-08  bowbow99  <bowbow99@gmail.com>
 
+	* Version 0.03.01 リリース
+
+2012-01-08  bowbow99  <bowbow99@gmail.com>
+
 	* cmu_loop の拡張 loop 使うのをやめた
 
 	* ダンプすると optimize-type-check が壊れていたのを修正。(thx
