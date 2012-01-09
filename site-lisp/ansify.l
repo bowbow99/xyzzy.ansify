@@ -24,7 +24,7 @@
 (require "ansify/setf")
 (require "ansify/typespec+")
 (require "ansify/restart")
-(require "ansify/compile")
+(require "ansify/compiler-package")
 (require "ansify/misc")
 
 (provide "ansify")
