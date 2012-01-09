@@ -1,6 +1,6 @@
 ;;; -*- mode: lisp; package: ansify -*-
 ;;;
-;;; ansify/compile.l
+;;; ansify/compiler-package.l
 ;;;
 ;;; Author:    bowbow99  <bowbow99@gmail.com>
 ;;; License:   MIT (See COPYING.mit)
@@ -17,5 +17,5 @@
   (:internal-size 200)
   (:external-size 10))
 
-(provide "ansify/compile")
-;;; ansify/compile.l ends here.
+(provide "ansify/compiler-package")
+;;; ansify/compiler-package.l ends here.
