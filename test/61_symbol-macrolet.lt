@@ -270,4 +270,20 @@
       (symbol-macrolet ((test (+ x y)))
         (multiple-value-bind (x y) (values 1 2) test test))))
 
+(define-test multiple-value-setq
+  ;; m-v-setq to symbol-macro
+  (let ((list '(a b c)))
+    (symbol-macrolet ((1st (first list))
+                      (2nd (second list))
+                      (3rd (third list)))
+      (multiple-value-setq (1st 2nd 3rd) (values 1 2 3))
+      (assert-equal '(1 2 3) list)))
+  ;; Issue 24: symbol-macro in multiple value form
+  (let ((list '(a b c)))
+    (symbol-macrolet ((1st (first list))
+                      (2nd (second list))
+                      (3rd (third list)))
+      (multiple-value-setq (1st 2nd 3rd) (values 2nd 3rd 1st))
+      (assert-equal '(b c a) list))))
+
 ;;; test/61_symbol-macrolet.lt ends here.

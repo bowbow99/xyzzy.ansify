@@ -1,5 +1,44 @@
-20xx-xx-xx  TODO
-	* setf-values
+2012-01-08  bowbow99  <bowbow99@gmail.com>
+
+	* Version 0.03.01 リリース
+
+2012-01-08  bowbow99  <bowbow99@gmail.com>
+
+	* cmu_loop の拡張 loop 使うのをやめた
+
+	* ダンプすると optimize-type-check が壊れていたのを修正。(thx
+	to @miyamuko)
+	hash-table がイメージに含まれてると gethash できなくなるバグを
+	踏んでたので、alist で保存するように。
+	※本体側のバグは nanri-master で修正済み
+	- https://github.com/southly/xyzzy.src/blob/nanri-master/ChangeLog.txt#L483
+
+	* optimize-type-check で si::type-specifier-list プロパティの
+	関数（si::defpred で定義されたもの）を使わないようにした。
+	(thx to @miyamuko)
+	展開形が関数オブジェクトを含む式になってコンパイル済みファイル
+	を読み込めなくなるので。
+	※デフォルトで si::type-specifier-list プロパティが設定されて
+	いるシンボルは全て optimizer を使うようになっているので、誰か
+	が si::defpred しない限り影響は無い。
+
+	* compiler パッケージの定義だけしておいた。
+	コンパイル関係の関数は autoload 指定されていて lisp/compile.l 
+	は読み込まれていないので、通常の環境では compiler パッケージが
+	存在してない。
+	compiler::optimize-form を使って何かしようとしても、存在しない
+	パッケージのシンボルは指定できないので、lisp/compile.l を丸ごと
+	読み込むハメになってしまう。のでパッケージだけ作っておく。
+
+2012-01-04  bowbow99  <bowbow99@gmail.com>
+
+	* あけましておめでとう。
+
+	* `ansify:defun` に lisp-mode 用のインデント情報が設定されてなか
+	ったのを修正（thx to @miyamuko）
+
+	* `ansify:symbol-macrolet` で、`multiple-value-setq` の多値式に
+	含まれる symbol-macros が展開されてなかったのを修正。
 
 2011-11-03  bowbow99  <bowbow99@gmail.com>
 
