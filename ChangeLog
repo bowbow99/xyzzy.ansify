@@ -1,3 +1,8 @@
+2012-02-16  bowbow99  <bowbow99@gmail.com>
+
+	* リファレンスを生成できないのがバレたので xy-reference から
+	見える所へ引っ越し（thx to @miyamuko)
+
 2012-01-08  bowbow99  <bowbow99@gmail.com>
 
 	* Version 0.03.01 リリース
