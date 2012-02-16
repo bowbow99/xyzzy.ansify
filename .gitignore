@@ -3,4 +3,5 @@
 XTAGS
 *.ssn
 .wiki/
+tmp/*
 
