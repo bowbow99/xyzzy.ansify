@@ -28,6 +28,11 @@
           ;; binding macros
           with-ca/dr
           with-places
+          ;; stream
+          canonicalize-output-stream
+          canonicalize-input-stream
+          ;; structure
+          print-structure-readably
           ))
 
 
@@ -131,6 +136,36 @@ Symbols to be exported are interned into PACKAGE first."
                 (list ,@(mapcar (lambda (form)
                                   `(list ',form ,form))
                               (cons datum args)))))))
+
+
+;;;; stream
+
+(defun %canonicalize-stream (designator standard)
+  (cond ((eq designator nil) standard)
+        ((eq designator t)   *terminal-io*)
+        ((streamp designator) designator)
+        (t (error 'type-error :datum designator :expected-type '(or stream (member t nil))))))
+
+(defun canonicalize-output-stream (designator)
+  (%canonicalize-stream designator *standard-output*))
+
+(defun canonicalize-input-stream (designator)
+  (%canonicalize-stream designator *standard-input*))
+
+
+;;;; structure
+
+(defun print-structure-readably (object stream &optional depth)
+  (let ((def (si:*structure-definition object)))
+    (format (canonicalize-output-stream stream) "#S(~S~:{ ~S ~S~})"
+          (si:*structure-definition-name def)
+          (let ((nslots (si:*structure-definition-nslots def))
+                (name-and-values '()))
+            (do ((i 0 (1+ i)))
+                ((>= i nslots) (nreverse name-and-values))
+              (push (list (si:*structure-definition-slot-description def i)
+                          (si:*index-slot-value object i))
+                    name-and-values))))))
 
 (provide "ansify/base/util")
 ;;; ansify/base/util.l ends here.
