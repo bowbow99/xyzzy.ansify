@@ -56,9 +56,14 @@
 
 (eval-when (:load-toplevel :compile-toplevel :execute)
   (defun print-restart (restart stream #:what?)
-    (format stream "#<restart: ~A>"
-      (or (restart-name restart)
-          "(anonymous)"))))
+    (labels ((name ()
+               (or (restart-name restart)
+                   "(anonymous)")))
+      (cond (*print-readably* (print-structure-readably restart stream))
+            (*print-escape*   (format stream "#<restart: ~A>" (name)))
+            (t (aif (restart-report-function restart)
+                 (funcall it stream)
+                 (princ (name) stream)))))))
 
 (defstruct (restart
             (:print-function print-restart))
