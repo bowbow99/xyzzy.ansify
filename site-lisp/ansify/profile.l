@@ -12,9 +12,7 @@
 (eval-when (:execute :compile-toplevel :load-toplevel)
   (require "ansify/base")
   (require "ansify/restart")
-  (require "ansify/misc")
-  (require "foreign")
-  (require "wip/winapi"))
+  (require "ansify/misc"))
 
 (in-package :ansify)
 
@@ -46,55 +44,23 @@
 
 ;;;;; performance-counter
 
-(in-package :winapi)
-
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (c:define-c-struct LARGE_INTEGER
-    (DWORD LowPart)
-    (INT HighPart)))
-
-;(unless (fboundp 'QueryPerformanceCounter)
-;  (c:define-dll-entry BOOL QueryPerformanceCounter ((LARGE_INTEGER *))
-;    "kernel32"))
-
-(unless (fboundp 'QueryPerformanceFrequency)
-  (c:define-dll-entry BOOL QueryPerformanceFrequency ((LARGE_INTEGER *))
-    "kernel32"))
-
-(in-package :ansify.profile)
-
-(defvar *use-performance-counter* t)
-
-(defparameter *performance-counter-frequency* nil)
-
-(defun init-performance-counter-frequency ()
-  (let ((freq (winapi::make-LARGE_INTEGER)))
-    (if (zerop (winapi::QueryPerformanceFrequency freq))
-      (progn
-        (setf *use-performance-counter* nil)
-        (error "Performance Counter not available."))
-      (setf *performance-counter-frequency*
-            (+ (* (winapi::LARGE_INTEGER-HighPart freq) #xFFFFFFFF)
-               (winapi::LARGE_INTEGER-LowPart freq))))))
-
-(init-performance-counter-frequency)
-
 (defun pc-elapsed (start end &optional (unit :msec))
   (* (- end start)
-     (/ *performance-counter-frequency*)
+     (/ si:*performance-counter-frequency*)
      (case unit
        (:sec 1)
        (:msec 1000)
        (:usec 1000000))))
 
-(setf (symbol-function 'pc-tick) #'si:performance-counter)
 
-(setf (symbol-function 'tick) #'pc-tick
+(setf (symbol-function 'tick) #'si:performance-counter
       (symbol-function 'elapsed) #'pc-elapsed)
 
 ;; TODO: implemente me, plz.
 (defun toggle-performance-counter-enabled-p (&optional (flag nil sv))
   )
+
+
 
 
 ;;;; Macro time
