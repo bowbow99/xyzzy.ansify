@@ -96,6 +96,16 @@
 (defun toggle-performance-counter-enabled-p (&optional (flag nil sv))
   )
 
+
+;;;; Macro time
+;;
+;; http://www.lispworks.com/documentation/lw51/CLHS/Body/m_time.htm
+
+(defmacro time (form)
+  `(let ((#1=#:start (tick)))
+     (multiple-value-prog1
+         ,form
+       (format t "~&Elapsed: ~,6F msec~%" (elapsed #1# (tick))))))
 
 
 ;;;; Profile specified functions
