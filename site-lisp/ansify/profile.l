@@ -227,8 +227,8 @@
 
 (defun profile-report ()
   (let ((data (analyze-profile-data)))
-    (format t "~8@A ~8@A ~8@A  ~A~%" :#call :total :per-call "function name")
-    (format t "~:{~8@A ~8,6F ~8,6F  ~S~%~}" data)))
+    (format t "~7@A ~9@A ~9@A  ~A~%" :#call :total :per-call "function name")
+    (format t "~:{~7@A ~9,6F ~9,6F  ~S~%~}" data)))
 
 
 
