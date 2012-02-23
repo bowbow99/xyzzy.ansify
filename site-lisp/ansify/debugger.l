@@ -56,14 +56,6 @@
 予定です。
 取得できない場合は nil を返す事ができます。")
 
-(defparameter *find-toplevel-abort-function* nil
-  "デバッガから処理を中止するのに使う abort 再起動を取得する関数を指定します。
-関数はデバッガを起動したコンディションを受け取り、トップレベルの abort 再起動
-か nil を返さなければなりません。
-nil を返すと quit を投げて処理を中止しようとします。
-abort 再起動を返すと、デバッガを起動したコンディションを引数に起動して処理を
-中止しようとします。")
-
 (defparameter *default-debugger* nil
   "デバッガを起動する関数を指定します。")
 
@@ -180,27 +172,17 @@ This is being a list to allow enter debugger recursively.")
                   ,(when more `(define-key-bindings ,@more)))))
     (define-key-bindings
      #\r invoke-restart-by-index
-     #\a invoke-toplevel-abort
-     #\q invoke-toplevel-abort
+     #\a invoke-abort
+     #\q invoke-abort
      #\c invoke-continue)))
 
 ;;;;; commands
 
-(defun find-toplevel-abort ()
-  (with-debug-session
-    (funcall (or *find-toplevel-abort-function*
-                 (lambda (condition)
-                   (declare (ignore condition))
-                   (find 'abort ssn-restarts :from-end t :key 'restart-name)))
-             ssn-condition)))
-
-(defun invoke-toplevel-abort ()
-  "abort 再起動を起動して処理を中止し、トップレベルまで戻ります。"
+(defun invoke-abort ()
+  "実行を中止してトップレベルまで戻ります。"
   (interactive)
   (with-debug-session
-    (aif (find-toplevel-abort)
-      (invoke-restart it ssn-condition)
-      (quit))))
+   (abort ssn-condition)))
 
 (defun invoke-restart-by-index (n)
   "N番目の再起動を起動します。"
