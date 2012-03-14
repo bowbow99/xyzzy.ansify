@@ -43,12 +43,14 @@
   )
 
 ;(in-package 'closette :use '(lisp))
-(defpackage :closette
+(defpackage :ansify.closette
   (:use :lisp)
+  (:nicknames :closette)
   (:import-from :ansify
     #:typecase
     #:fdefinition
-    #:print-unreadable-object)
+    #:print-unreadable-object
+    #:ecase)
   (:shadowing-import-from :ansify
     #:defun
     #:fboundp
