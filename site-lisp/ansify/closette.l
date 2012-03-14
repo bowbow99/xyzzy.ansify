@@ -1656,3 +1656,5 @@
 (format t "~%Closette is a Knights of the Lambda Calculus production.")
 
 (values)) ;end progn
+
+;;; ansify/closette.l ends here.
