@@ -1648,7 +1648,9 @@
                  (slot-value object sn))))
   (values))
 (defmethod describe-object ((object t) stream)
-  (lisp:describe object)
+  ;; FIXME: `describe` is missing
+  ;(lisp:describe object)
+  (princ object)
   (values))
 
 (format t "~%Closette is a Knights of the Lambda Calculus production.")
