@@ -1659,4 +1659,12 @@
 
 (values)) ;end progn
 
+#+xyzzy
+(mapc (lambda (x)
+        (ansify.util:set-indent (first x) (second x)))
+      '((defclass t)
+        (defgeneric t)
+        (defmethod t)
+        ))
+
 ;;; ansify/closette.l ends here.
