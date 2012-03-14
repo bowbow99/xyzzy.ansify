@@ -39,6 +39,7 @@
   (require "ansify/typecase")
   (require "ansify/function")
   (require "ansify/misc") ; print-unreadable-object
+  (require "ansify/struct")
   )
 
 ;(in-package 'closette :use '(lisp))
@@ -51,7 +52,8 @@
   (:shadowing-import-from :ansify
     #:defun
     #:fboundp
-    #:fmakunbound))
+    #:fmakunbound
+    #:defstruct))
 
 (in-package :closette)
 
