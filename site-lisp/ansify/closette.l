@@ -1277,18 +1277,18 @@
   (let ((form (method-body method))
         (lambda-list (method-lambda-list method)))
     (compile-in-lexical-environment (method-environment method)
-                                    `(lambda (args next-emfun)
-                                       (flet ((call-next-method (&rest cnm-args)
-                                                (if (null next-emfun)
-                                                  (error "No next method for the~@
+      `(lambda (args next-emfun)
+         (flet ((call-next-method (&rest cnm-args)
+                  (if (null next-emfun)
+                    (error "No next method for the~@
                               generic function ~S."
-                                                         (method-generic-function ',method))
-                                                  (funcall next-emfun (or cnm-args args))))
-                                              (next-method-p ()
-                                                (not (null next-emfun))))
-                                         (apply #'(lambda ,(kludge-arglist lambda-list)
-                                                    ,form)
-                                                args))))))
+                           (method-generic-function ',method))
+                    (funcall next-emfun (or cnm-args args))))
+                (next-method-p ()
+                  (not (null next-emfun))))
+           (apply #'(lambda ,(kludge-arglist lambda-list)
+                      ,form)
+                  args))))))
 
 ;;; N.B. The function kludge-arglist is used to pave over the differences
 ;;; between argument keyword compatibility for regular functions versus
@@ -1646,6 +1646,7 @@
       '((defclass t)
         (defgeneric t)
         (defmethod t)
+        (compile-in-lexical-environment 1)
         ))
 
 ;;; ansify/closette.l ends here.
