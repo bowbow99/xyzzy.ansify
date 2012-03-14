@@ -139,10 +139,15 @@
 ;;; Utilities 
 ;;;
 
+(defmacro defun* (name lambda-list &body body)
+  `(eval-when (:execute :compile-toplevel :load-toplevel)
+     (defun ,name ,lambda-list ,@body)))
+
 ;;; push-on-end is like push except it uses the other end:
 
-(defmacro push-on-end (value location)
-  `(setf ,location (nconc ,location (list ,value))))
+(eval-when (:execute :compile-toplevel :load-toplevel)
+  (defmacro push-on-end (value location)
+    `(setf ,location (nconc ,location (list ,value)))))
 
 ;;; (setf getf*) is like (setf getf) except that it always changes the list,
 ;;;              which must be non-nil.
@@ -160,7 +165,7 @@
 
 ;;; mapappend is like mapcar except that the results are appended together:
  
-(defun mapappend (fun &rest args)
+(defun* mapappend (fun &rest args)
   (if (some #'null args)
       ()
       (append (apply fun (mapcar #'car args))
@@ -400,58 +405,58 @@
        ,(canonicalize-direct-slots direct-slots)
      ,@(canonicalize-defclass-options options)))
 
-(defun canonicalize-direct-slots (direct-slots)
-   `(list ,@(mapcar #'canonicalize-direct-slot direct-slots)))
+(defun* canonicalize-direct-slots (direct-slots)
+  `(list ,@(mapcar #'canonicalize-direct-slot direct-slots)))
 
-(defun canonicalize-direct-slot (spec)
+(defun* canonicalize-direct-slot (spec)
   (if (symbolp spec)
-      `(list :name ',spec)
-      (let ((name (car spec))
-            (initfunction nil)
-            (initform nil)
-            (initargs ())
-            (readers ())
-            (writers ())
-            (other-options ()))
-        (do ((olist (cdr spec) (cddr olist)))
-            ((null olist))
-          (case (car olist)
-            (:initform
-             (setq initfunction
-                   `(function (lambda () ,(cadr olist))))
-             (setq initform `',(cadr olist)))
-            (:initarg 
-             (push-on-end (cadr olist) initargs))
-            (:reader 
-             (push-on-end (cadr olist) readers))
-            (:writer 
-             (push-on-end (cadr olist) writers))
-            (:accessor
-             (push-on-end (cadr olist) readers)
-             (push-on-end `(setf ,(cadr olist)) writers))
-            (otherwise 
-             (push-on-end `',(car olist) other-options)
-             (push-on-end `',(cadr olist) other-options))))
-        `(list
-           :name ',name
-           ,@(when initfunction
-               `(:initform ,initform
-                 :initfunction ,initfunction))
-           ,@(when initargs `(:initargs ',initargs))
-           ,@(when readers `(:readers ',readers))
-           ,@(when writers `(:writers ',writers))
-           ,@other-options))))
+    `(list :name ',spec)
+    (let ((name (car spec))
+          (initfunction nil)
+          (initform nil)
+          (initargs ())
+          (readers ())
+          (writers ())
+          (other-options ()))
+      (do ((olist (cdr spec) (cddr olist)))
+          ((null olist))
+        (case (car olist)
+          (:initform
+           (setq initfunction
+                 `(function (lambda () ,(cadr olist))))
+           (setq initform `',(cadr olist)))
+          (:initarg
+           (push-on-end (cadr olist) initargs))
+          (:reader
+           (push-on-end (cadr olist) readers))
+          (:writer
+           (push-on-end (cadr olist) writers))
+          (:accessor
+           (push-on-end (cadr olist) readers)
+           (push-on-end `(setf ,(cadr olist)) writers))
+          (otherwise
+           (push-on-end `',(car olist) other-options)
+           (push-on-end `',(cadr olist) other-options))))
+      `(list
+        :name ',name
+        ,@(when initfunction
+            `(:initform ,initform
+              :initfunction ,initfunction))
+        ,@(when initargs `(:initargs ',initargs))
+        ,@(when readers `(:readers ',readers))
+        ,@(when writers `(:writers ',writers))
+        ,@other-options))))
 
-(defun canonicalize-direct-superclasses (direct-superclasses)
+(defun* canonicalize-direct-superclasses (direct-superclasses)
   `(list ,@(mapcar #'canonicalize-direct-superclass direct-superclasses)))
 
-(defun canonicalize-direct-superclass (class-name)
+(defun* canonicalize-direct-superclass (class-name)
   `(find-class ',class-name))
 
-(defun canonicalize-defclass-options (options)
+(defun* canonicalize-defclass-options (options)
   (mapappend #'canonicalize-defclass-option options))
 
-(defun canonicalize-defclass-option (option)
+(defun* canonicalize-defclass-option (option)
   (case (car option)
     (:metaclass
       (list ':metaclass
@@ -469,21 +474,21 @@
 
 ;;; find-class
 
-(let ((class-table (make-hash-table :test #'eq)))
+(defvar *class-table* (make-hash-table :test #'eq))
 
-  (defun find-class (symbol &optional (errorp t))
-    (let ((class (gethash symbol class-table nil)))
-      (if (and (null class) errorp)
-          (error "No class named ~S." symbol)
-          class)))
+(defun find-class (symbol &optional (errorp t))
+  (let ((class (gethash symbol *class-table* nil)))
+    (if (and (null class) errorp)
+      (error "No class named ~S." symbol)
+      class)))
 
-  (defun (setf find-class) (new-value symbol)
-    (setf (gethash symbol class-table) new-value))
+(defun (setf find-class) (new-value symbol)
+  (setf (gethash symbol *class-table*) new-value))
 
-  (defun forget-all-classes ()
-    (clrhash class-table)
-    (values))
- ) ;end let class-table
+(defun forget-all-classes ()
+  (clrhash *class-table*)
+  (values))
+
 
 ;;; Ensure class
 
@@ -847,15 +852,20 @@
 ;;; defgeneric
 
 (defmacro defgeneric (function-name lambda-list &rest options)
-  `(ensure-generic-function
-     ',function-name 
-     :lambda-list ',lambda-list
-     ,@(canonicalize-defgeneric-options options)))
+  `(progn
+     ,(when (and (consp function-name) (eql (car function-name) 'setf))
+        `(defsetf ,(second function-name) (&rest #1=#:args) (#2=#:new-value)
+           `(apply ',',(ansify::get-setf-function-symbol function-name)
+                   (cons #2# #1#))))
+     (ensure-generic-function
+      ',function-name
+      :lambda-list ',lambda-list
+      ,@(canonicalize-defgeneric-options options))))
 
-(defun canonicalize-defgeneric-options (options)
+(defun* canonicalize-defgeneric-options (options)
   (mapappend #'canonicalize-defgeneric-option options))
 
-(defun canonicalize-defgeneric-option (option)
+(defun* canonicalize-defgeneric-option (option)
   (case (car option)
     (:generic-function-class
       (list ':generic-function-class
@@ -869,21 +879,21 @@
 ;;; artifact of the fact that our generic function metaobjects can't legally
 ;;; be stored a symbol's function value. 
 
-(let ((generic-function-table (make-hash-table :test #'equal)))
+(defvar *generic-function-table* (make-hash-table :test #'equal))
 
-  (defun find-generic-function (symbol &optional (errorp t))
-    (let ((gf (gethash symbol generic-function-table nil)))
-       (if (and (null gf) errorp)
-           (error "No generic function named ~S." symbol)
-           gf)))
+(defun find-generic-function (symbol &optional (errorp t))
+  (let ((gf (gethash symbol *generic-function-table* nil)))
+    (if (and (null gf) errorp)
+      (error "No generic function named ~S." symbol)
+      gf)))
 
-  (defun (setf find-generic-function) (new-value symbol)
-    (setf (gethash symbol generic-function-table) new-value))
+(defun (setf find-generic-function) (new-value symbol)
+  (setf (gethash symbol *generic-function-table*) new-value))
 
-  (defun forget-all-generic-functions ()
-    (clrhash generic-function-table)
-    (values))
- ) ;end let generic-function-table
+(defun forget-all-generic-functions ()
+  (clrhash *generic-function-table*)
+  (values))
+
 
 ;;; ensure-generic-function
 
@@ -951,13 +961,13 @@
        :body ',body
        :environment (top-level-environment))))
 
-(defun canonicalize-specializers (specializers)
+(defun* canonicalize-specializers (specializers)
   `(list ,@(mapcar #'canonicalize-specializer specializers)))
 
-(defun canonicalize-specializer (specializer)
+(defun* canonicalize-specializer (specializer)
   `(find-class ',specializer))
 
-(defun parse-defmethod (args)
+(defun* parse-defmethod (args)
   (let ((fn-spec (car args))
         (qualifiers ())
         (specialized-lambda-list nil)
@@ -995,7 +1005,7 @@
             (generic-function-lambda-list gf))))
     (getf plist ':required-args)))
 
-(defun extract-lambda-list (specialized-lambda-list)
+(defun* extract-lambda-list (specialized-lambda-list)
   (let* ((plist (analyze-lambda-list specialized-lambda-list))
          (requireds (getf plist ':required-names))
          (rv (getf plist ':rest-var))
@@ -1010,11 +1020,11 @@
       ,@(if opts `(&optional ,@opts) ())
       ,@(if auxs `(&aux ,@auxs) ()))))
 
-(defun extract-specializers (specialized-lambda-list)
+(defun* extract-specializers (specialized-lambda-list)
   (let ((plist (analyze-lambda-list specialized-lambda-list)))
     (getf plist ':specializers)))
 
-(defun analyze-lambda-list (lambda-list)
+(defun* analyze-lambda-list (lambda-list)
   (labels ((make-keyword (symbol)
               (intern (symbol-name symbol)
                       (find-package 'keyword)))
@@ -1341,6 +1351,7 @@
 ;;;
 
 (progn  ; Extends to end-of-file (to avoid printing intermediate results).
+;(defun bootstrap ()
 (format t "Beginning to bootstrap Closette...")
 (forget-all-classes)
 (forget-all-generic-functions)
