@@ -42,7 +42,6 @@
   (require "ansify/struct")
   )
 
-;(in-package 'closette :use '(lisp))
 (defpackage :ansify.closette
   (:use :lisp)
   (:nicknames :closette)
@@ -58,35 +57,6 @@
     #:defstruct))
 
 (in-package :closette)
-
-;;; When running in a Common Lisp that doesn't yet support function names like
-;;; (setf foo), you should first load the file newcl.lisp.  This next little
-;;; bit imports stuff from there as needed.
-
-;#-Genera
-;(import '(newcl:print-unreadable-object))
-;
-;#-Genera
-;(shadowing-import '(newcl:defun newcl:fboundp newcl:fmakunbound
-;                    newcl:fdefinition))
-;
-;#-Genera
-;(export '(newcl:defun newcl:fboundp newcl:fmakunbound newcl:fdefinition))
-;
-;#+Genera
-;(shadowing-import '(future-common-lisp:setf
-;                    future-common-lisp:fboundp
-;                    future-common-lisp:fmakunbound
-;                    future-common-lisp:fdefinition
-;                    future-common-lisp:print-unreadable-object))
-;
-;#+Genera
-;(export '(future-common-lisp:setf
-;          future-common-lisp:fboundp
-;          future-common-lisp:fmakunbound
-;          future-common-lisp:fdefinition
-;          future-common-lisp:print-unreadable-object))
-;
 
 (defvar exports
   '(defclass defgeneric defmethod
