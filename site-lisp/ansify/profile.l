@@ -18,6 +18,8 @@
 
 (eval-when (:execute :compile-toplevel :load-toplevel)
   (shadowing-export '(time
+                      trace
+                      untrace
                       )))
 
 (in-package :ansify.ext)
@@ -197,6 +199,19 @@
     (format t "~:{~7@A ~9,6F ~9,6F  ~S~%~}" data)))
 
 
+
+;;;; Macro trace, untrace
+;;
+;; http://www.lispworks.com/documentation/lw50/CLHS/Body/m_tracec.htm
+
+
+(defun trace-1 (function-name)
+  )
+
+
+(defmacro trace (names))
+
+(defmacro untrace (names))
 
 
 (provide "ansify/profile")
