@@ -825,8 +825,8 @@
   `(progn
      ,(when (and (consp function-name) (eql (car function-name) 'setf))
         `(defsetf ,(second function-name) (&rest #1=#:args) (#2=#:new-value)
-           `(apply ',',(ansify::get-setf-function-symbol function-name)
-                   (cons #2# #1#))))
+           `(,',(ansify::get-setf-function-symbol function-name)
+             ,#2# ,@#1#)))
      (ensure-generic-function
       ',function-name
       :lambda-list ',lambda-list
