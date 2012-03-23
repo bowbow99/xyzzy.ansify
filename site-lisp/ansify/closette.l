@@ -1,4 +1,12 @@
-;;;-*-Mode:LISP; Package: (CLOSETTE :USE LISP); Base:10; Syntax:Common-lisp -*-
+;;; -*- mode: lisp; package: ansify.closette -*-
+;;;
+;;; ansify/closette.l
+;;;
+;;; Author:    bowbow99  <bowbow99@gmail.com>
+;;; License:   MIT (See COPYING.mit)
+;;;
+;;; This file is part of xyzzy extension "ansify".
+
 ;;;
 ;;; Closette Version 1.0 (February 10, 1991)
 ;;;
