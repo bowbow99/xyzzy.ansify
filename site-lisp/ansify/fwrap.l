@@ -21,14 +21,17 @@
 
 (eval-when (:execute :compile-toplevel :load-toplevel)
   (export '(fwrap funwrap define-fwrapper
+            call-next-function
             list-fwrappers function-fwrapped-p)))
 
 (defpackage :ansify.fwrap
   (:use :lisp)
   (:import-from :ansify.util
-    #:set-indent)
+    #:set-indent #:define-table #:named-lambda
+    #:with-gensyms)
   (:import-from :ansify.ext
     #:fwrap #:funwrap #:define-fwrapper
+    #:call-next-function
     #:list-fwrappers #:function-fwrapped-p))
 
 (in-package :ansify.fwrap)
@@ -36,79 +39,62 @@
 
 ;;;; fwrapper
 
-(defstruct fwrapper
-  name
-  lambda-list
-  body)
-
-(defparameter *fwrappers* nil)
-
-(defun save-fwrapper (fwrapper)
-  (let ((others (remove (fwrapper-name fwrapper) *fwrappers*
-                        :key #'fwrapper-name :test #'equal)))
-    (setf *fwrappers* (cons fwrapper others))))
-
-(defun find-fwrapper (name)
-  (find name *fwrappers* :key #'fwrapper-name :test #'equal))
+(define-table fwrapper)
 
 (defmacro define-fwrapper (name lambda-list &body body)
-  `(save-fwrapper (make-fwrapper :name ',name
-                                 :lambda-list ',lambda-list
-                                 :body ',body)))
+  "fwrapper を定義します。
+fwrapper は対象となる関数が呼び出された時に、元の関数の代わりに呼び出される
+関数のようなものです。通常は fwrapper 内から元の関数を呼び出すので、動作と
+しては元の関数を\"包む\"ような形になります。"
+  (with-gensyms ($next-fn $args $args*)
+    `(progn
+       (store-fwrapper
+        ',name
+        (named-lambda (fwrapper* ,name) (,$next-fn)
+          (named-lambda (fwrapper ,name) (&rest ,$args)
+            (labels ((call-next-function (&rest ,$args*)
+                       (apply ,$next-fn (or ,$args* ,$args))))
+              ;; TODO: arguments access via symbol-macrolet
+              (block ,name ,@body)))))
+       ',name)))
 (set-indent 'define-fwrapper 'defun)
 
+(defmacro with-fwrapper-properties (name-var &body body)
+  `(macrolet ((primary-function () `(get ,',name-var 'primary-function))
+              (active-fwrappers () `(get ,',name-var 'active-fwrappers)))
+     ,@body))
 
+(defun finalize-fwrapped-function (name)
+  (with-fwrapper-properties name
+    (setf (symbol-function name)
+          (reduce #'funcall (mapcar #'cdr (active-fwrappers))
+                  :from-end t
+                  :initial-value (primary-function)))
+    name))
 
+(defun fwrap (name fwrapper &optional indicator)
+  ;; TODO: setf function support
+  (with-fwrapper-properties name
+    (unless (primary-function)
+      (setf (primary-function) (symbol-function name)))
+    (setf (active-fwrappers)
+          (acons indicator (find-fwrapper fwrapper)
+                 (active-fwrappers)))
+    (finalize-fwrapped-function name)))
 
-#| reference: encap.l
-
-(defun encapsulate (symbol type body)
-  (let ((new-dholder (gensym))
-        (new-pholder (gensym))
-        (old-def (symbol-function symbol)))
-    (setf (symbol-function 'encap-type) type
-          (get new-pholder 'encap-type) type
-          (get new-pholder 'encap-next) new-dholder)
-    (encap-set-pholder new-dholder (encap-get-pholder symbol))
-    (encap-set-pholder symbol new-pholder)
-    (unless (consp (car body))
-      (setq body (list body)))
-    (setf (symbol-function symbol)
-          (lambda (&rest argument-list
-                   &aux (basic-definition ,#'(lambda (&rest args)
-                                               (apply (symbol-function new-dholder) args))))
-            ,@body))
-    symbol))
-
-(defun encap-type (dholder)
-  (get (encap-get-pholder dholder) 'encap-type))
-
-(defun encap-next (dholder)
-  (get (encap-get-pholder dholder) 'encap-next))
-
-(defun encap-get-pholder (dholder)
-  (gethash dholder *encap-hash-table*))
-
-(defun encap-set-pholder (dholder pholder)
-  (setf (gethash dholder *encap-hash-table*) pholder))
-
-(defun unencapsulate (symbol type)
-  (do ((dholder symbol (encap-next dholder)))
-      ((null (encap-get-pholder dholder)) nil)
-    (if (eq type (encap-type dholder))
-      (let ((next-dholder (encap-next dholder)))
-        (setf (symbol-function dholder)
-              (symbol-function next-dholder))
-        (encap-set-pholder dholder (encap-get-pholder next-dholder))
-        (remhash next-dholder *encap-hash-table*)
-        (return-from unencapsulate t)))))
-
-(defun encapsulated-p (symbol type)
-  (do ((dholder symbol (encap-next dholder)))
-      ((null (encap-get-pholder dholder)) nil)
-    (if (eq type (encap-type dholder))
-      (return-from encapsulated-p t))))
-|#
+(defun funwrap (name &optional indicator)
+  (with-fwrapper-properties name
+    (cond (indicator
+           (setf (active-fwrappers)
+                 (remove indicator (active-fwrappers) :key #'car))
+           (finalize-fwrapped-function name))
+          (t
+           (when (active-fwrappers)
+             (remprop name 'active-fwrappers))
+           (when (primary-function)
+             (setf (symbol-function name) (primary-function))
+             (remprop name 'primary-function))
+           name))))
 
 (provide "ansify/fwrap")
 ;;; ansify/fwrap.l ends here.
