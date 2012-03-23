@@ -34,6 +34,8 @@
           canonicalize-input-stream
           ;; structure
           print-structure-readably
+          ;; function
+          named-lambda
           ;; other
           define-table
           ))
@@ -176,6 +178,14 @@ Symbols to be exported are interned into PACKAGE first."
               (push (list (si:*structure-definition-slot-description def i)
                           (si:*index-slot-value object i))
                     name-and-values))))))
+
+
+;;;; function
+
+(defmacro named-lambda (name lambda-list &body body)
+  `(si:*set-function-name
+    (lambda ,lambda-list ,@body)
+    ',name))
 
 
 ;;;; table or namespace
