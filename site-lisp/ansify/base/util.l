@@ -25,6 +25,7 @@
           ;; symbols
           mksym
           mkkwd
+          with-gensyms
           ;; binding macros
           with-ca/dr
           with-places
@@ -103,6 +104,13 @@ Symbols to be exported are interned into PACKAGE first."
 
 (defun mkkwd (name)
   (intern (string name) :keyword))
+
+(defmacro with-gensyms ((&rest names) &body body)
+  `(let (,@(mapcar (lambda (name)
+                     `(,name (gensym ,(format nil "~A-" name))))
+                   names))
+     ,@body))
+
 
 
 ;;;; Binding Macros
