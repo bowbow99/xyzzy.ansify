@@ -7,6 +7,11 @@
 ;;;
 ;;; This file is part of xyzzy extension "ansify".
 
+;;; References:
+;;;
+;;; * Allegro CL Fwrapping and Advice
+;;;   [1]: http://www.franz.com/support/documentation/current/doc/fwrappers-and-advice.htm
+
 ;;; Code:
 
 (eval-when (:execute :compile-toplevel :load-toplevel)
