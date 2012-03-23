@@ -33,6 +33,8 @@
           canonicalize-input-stream
           ;; structure
           print-structure-readably
+          ;; other
+          define-table
           ))
 
 
@@ -166,6 +168,25 @@ Symbols to be exported are interned into PACKAGE first."
               (push (list (si:*structure-definition-slot-description def i)
                           (si:*index-slot-value object i))
                     name-and-values))))))
+
+
+;;;; table or namespace
+
+(defmacro define-table (name &key (test ''eql))
+  "Define a globally accessible table NAME.
+You can use this table to store any lisp objects with associate to keys
+via function `store-<NAME>`, and retrieve it via function `find-<NAME>`."
+  (let* ((table-var  (make-symbol (format nil "(table ~S)" name)))
+         (package    (symbol-package name))
+         (find-name  (intern (format nil "find-~A" name) package))
+         (store-name (intern (format nil "store-~A" name) package)))
+    `(progn
+       (defvar ,table-var (make-hash-table :test ,test))
+       (defun ,find-name (#1=#:key)
+         (gethash #1# ,table-var))
+       (defun ,store-name (#1# #2=#:value)
+         (setf (gethash #1# ,table-var) #2#))
+       (values ',find-name ',store-name))))
 
 (provide "ansify/base/util")
 ;;; ansify/base/util.l ends here.
