@@ -1,4 +1,4 @@
-;;; -*- mode: lisp; package: ansify -*-
+;;; -*- mode: lisp; package: ansify.fwrap -*-
 ;;;
 ;;; ansify/fwrap.l
 ;;;
