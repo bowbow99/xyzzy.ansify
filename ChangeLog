@@ -1,3 +1,10 @@
+2012-03-29  bowbow99  <bowbow99@gmail.com>
+
+	* リファレンスのタグに typo があったのを修正（thx to @youz)
+	* typespec 周辺の人たちが "ansify" パッケージから "ansify.ext"
+	パッケージへ引っ越したのに、リファレンスに反映されてなかった
+	のを修正
+
 2012-02-16  bowbow99  <bowbow99@gmail.com>
 
 	* リファレンスを生成できないのがバレたので xy-reference から
