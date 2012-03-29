@@ -77,6 +77,7 @@ fwrapper ‚Í‘ÎÛ‚Æ‚È‚éŠÖ”‚ªŒÄ‚Ño‚³‚ê‚½‚ÉAŒ³‚ÌŠÖ”‚Ì‘ã‚í‚è‚ÉŒÄ‚Ño‚³‚ê‚é
   (with-fwrapper-properties name
     (unless (primary-function)
       (setf (primary-function) (symbol-function name)))
+    ;; FIXME: specify existing indicator to overwrite it
     (setf (active-fwrappers)
           (acons indicator (find-fwrapper fwrapper)
                  (active-fwrappers)))
