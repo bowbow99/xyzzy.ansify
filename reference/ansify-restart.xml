@@ -163,7 +163,7 @@ PLACE の値が TYPESPEC の型であれば、check-type 式は nil を返して
 
 使用例:
   ;;; シグナラ側
-  (defun my-concat (&rest strings)
+  (defun my-concat (&amp;rest strings)
     (labels ((ensure-string (x)
                (if (typep x 'string)
                  x
