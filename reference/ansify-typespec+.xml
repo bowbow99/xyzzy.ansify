@@ -46,10 +46,10 @@
 </chapter>
 
 <chapter>
-<title>ansify.ext::typepred</title>
+<title>ansify::typepred</title>
 <type>Macro</type>
 <arguments>typepred  TYPESPEC</arguments>
-<package>ansify.ext</package>
+<package>ansify</package>
 <description>
 受け取ったオブジェクトが TYPESPEC を満たすか判別する関数を返します。
 
@@ -64,9 +64,9 @@
   ;; == (lambda (#1=#:object) (or (stringp #1#) (symbolp #1#)))
   =&gt; #&lt;lexical-closure: (anonymous)&gt;
   
-  (remove-if-not (ansify::typepred (or function
-                                       (and symbol (satisfies fboundp))))
-    (list 'list 'symbol (lambda (x) x) (typepred fixnum)))
+  (remove-if-not (ansify:typepred (or function
+                                      (and symbol (satisfies fboundp))))
+    (list 'list 'symbol (lambda (x) x) (ansify::typepred fixnum)))
   =&gt; (list #&lt;lexical-closure: (anonymous)&gt; #&lt;function: *fixnump&gt;)
 
 </description>
