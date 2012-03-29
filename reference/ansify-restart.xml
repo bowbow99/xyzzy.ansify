@@ -505,8 +505,8 @@ ARGS は再起動の概要とエラー指定の両方に使われます。エラ
 <chapter>
 <title>restart-name</title>
 <type>Function</type>
-<pcakage>lisp</package>
-<arguments>restart-name RESTART</title>
+<package>lisp</package>
+<arguments>restart-name RESTART</arguments>
 <description>
 再起動の名前を返します。
 
