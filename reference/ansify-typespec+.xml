@@ -32,12 +32,12 @@
 
 
 <chapter>
-<title>ansify::*warn-on-undefined-typespec*</title>
+<title>ansify.ext:*warn-on-undefined-typespec*</title>
 <type>Variable</type>
-<package>ansify</package>
+<package>ansify.ext</package>
 <description>
-`ansify::typep` や `ansify::optimize-type-check` で未定義の型指定子が与えられた
-場合に警告するかを設定します。
+`ansify::typep` や `ansify.ext::optimize-type-check` で未定義の型指定子
+が与えられた場合に警告するかを設定します。
 </description>
 <seealso>typep</seealso>
 <link></link>
@@ -49,7 +49,7 @@
 <title>ansify::typepred</title>
 <type>Macro</type>
 <arguments>typepred  TYPESPEC</arguments>
-<package>ansify+</package>
+<package>ansify</package>
 <description>
 受け取ったオブジェクトが TYPESPEC を満たすか判別する関数を返します。
 
@@ -64,9 +64,9 @@
   ;; == (lambda (#1=#:object) (or (stringp #1#) (symbolp #1#)))
   =&gt; #&lt;lexical-closure: (anonymous)&gt;
   
-  (remove-if-not (ansify::typepred (or function
-                                       (and symbol (satisfies fboundp))))
-    (list 'list 'symbol (lambda (x) x) (typepred fixnum)))
+  (remove-if-not (ansify:typepred (or function
+                                      (and symbol (satisfies fboundp))))
+    (list 'list 'symbol (lambda (x) x) (ansify::typepred fixnum)))
   =&gt; (list #&lt;lexical-closure: (anonymous)&gt; #&lt;function: *fixnump&gt;)
 
 </description>
@@ -76,10 +76,10 @@
 </chapter>
 
 <chapter>
-<title>ansify::optimize-type-check</title>
+<title>ansify.ext:optimize-type-check</title>
 <type>Function</type>
 <arguments>optimize-type-check OBJECT-FORM TYPESPEC</arguments>
-<package>ansify</package>
+<package>ansify.ext</package>
 <description>
 OBJECT-FORM の値が TYPESPEC の型かどうか判断する式を作って返します。
 
