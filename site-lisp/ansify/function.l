@@ -136,6 +136,8 @@
 
 
 ;;;; fwrapper
+;;
+;; FIXME: documnetation of fwrapper
 
 (eval-when (:execute :compile-toplevel :load-toplevel)
   (lisp:defun print-fwrapper (fw out depth)
@@ -181,7 +183,7 @@
 
 
 (defmacro define-fwrapper (name fw-lambda-list &body body)
-  ;; FIXME: define-fwrapper docstring
+  ;; FIXME: define-fwrapper docstring missing
   (multiple-value-bind (body decls doc intr)
       (parse-body body)
     `(%store-fwrapper
@@ -234,11 +236,17 @@
                       (list `(lambda (#:next-fns ,@(copy-list (first primary)))
                                ,@(second primary))))))
         (setf (second closure) `(&rest initial-args
+                                 ;; NOTE: Keep track of function-info of fwrapped/primary function
+                                 ;; We're replacing where function-info table living, and
+                                 ;; loosing access to it means the fwrapped function doesn't
+                                 ;; have primary-function backup and unable to funwrap anymore.
                                  &aux (,+fn-info-marker+ ,(%fn-info-table fn)))
               (cddr closure)   `((let ((*this-function* ,fn))
                                    (apply ,(first next-function-list)
                                           (list ,@(rest next-function-list))
-                                          initial-args))))))))
+                                          initial-args))))
+        ;; FIXME: compile the fwrapped function?
+        ))))
 
 
 (lisp:defun fwrap (function fwrapper &optional (indicator (gensym "fwrap-")))
@@ -260,6 +268,7 @@
 (defparameter *trace-depth* nil)
 
 (define-fwrapper trace (&rest args)
+  ;; FIXME: Printing to *standard-output* (should be *trace-output* according to ANSI)
   (let ((*trace-depth* (1+ (or *trace-depth* -1))))
     (format t "~&~V,0Ttrace> (~S ~{~S~^ ~})~%"
             *trace-depth*
@@ -279,6 +288,7 @@
 (defmacro trace (&rest function-names)
   `(if ',function-names
      (mapc (lambda (name)
+             ;; FIXME: Extract "check that X is a function-name" bits
              (unless (or (symbolp name)
                          (setf-function-name-p name))
                (error 'type-error
