@@ -22,6 +22,10 @@
         #:fboundp
         #:fmakunbound
         ))
+
+(mapc (lambda (name) (shadowing-import (find-symbol (string name) :ansify.ext)))
+      '(#:fwrap #:define-fwrapper #:funwrap #:call-next-function
+        ))
 ;|#
 
 (remove-all-tests :test.ansify.function-cell)
@@ -136,5 +140,41 @@
             (assert-error 'error (setf (hoge 3) "fuga"))))
       (setf (symbol-function 'hoge) hoge-def))))
 
+
+;;;; fwrapper
+
+(define-test fwrapper
+  (define-fwrapper just-call-next-function ()
+    (call-next-function))
+  (define-fwrapper return-nil ()
+    nil)
+  (define-fwrapper additional-value-foo ()
+    (list (call-next-function) "foo"))
+  (progn
+    (let ((fn (lambda () 3)))
+      (fwrap fn 'return-nil 'test)
+      (assert-eql nil (funcall fn))
+      (funwrap fn 'test)
+      (assert-eql 3 (funcall fn))))
+  (progn
+    (let ((fn (lambda () 3)))
+      (fwrap fn 'just-call-next-function 'test)
+      (assert-eql 3 (funcall fn))
+      (funwrap fn 'test)
+      (assert-eql 3 (funcall fn))))
+  (progn
+    (let ((fn (lambda () 3)))
+      (fwrap fn 'additional-value-foo 'test)
+      (assert-equal '(3 "foo") (funcall fn))
+      (funwrap fn 'test)
+      (assert-eql 3 (funcall fn))))
+  (progn ;; nesting
+    (let ((fn (lambda () "hello")))
+      (fwrap fn 'additional-value-foo 'inner)
+      (fwrap fn 'additional-value-foo 'outer)
+      (assert-equal '(("hello" "foo") "foo") (funcall fn))
+      (funwrap fn 'inner)
+      (assert-equal '("hello" "foo") (funcall fn)))
+    ))
 
 ;;; test/30_function-cell.lt ends here.
