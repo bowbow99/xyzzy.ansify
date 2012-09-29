@@ -1,3 +1,18 @@
+2012-09-30  bowbow99  <bowbow99@gmail.com>
+
+	* ansify.ext:function-info を追加
+	関数オブジェクトのにキー/値を保存しておける。
+
+	* ansify.ext:fwrapper のプロトタイプ
+	関数オブジェクトの `si:closure-body` を破壊的に変更するなどと
+	いう暴挙に。
+	Allegro CL の Fwrapping and Advice を参考にしたので似てるけど、
+	微妙に違う。
+	- http://www.franz.com/support/documentation/current/doc/fwrappers-and-advice.htm
+
+	* trace のプロトタイプ
+	fwrapper 使用。
+
 2012-03-29  bowbow99  <bowbow99@gmail.com>
 
 	* リファレンスのタグに typo があったのを修正（thx to @youz)
