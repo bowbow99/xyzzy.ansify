@@ -107,6 +107,16 @@
               table)))))
 
 (lisp:defun function-info (function key)
+  "関数 FUNCTION に保存されたデータを取得します。
+データを保存するのには setf を使います。
+
+使用例:
+  ;; 保存する
+  (setf (function-name #'some-fn 'some-key) \"some data\")
+
+  ;; 取得する
+  (function-info #'some-fn 'some-key)
+  => \"some data\""
   (let ((table (%fn-info-table function)))
     (when (hash-table-p table)
       (gethash key table))))
@@ -160,7 +170,8 @@
                       :key #'fwrapper-name))))
 
 (lisp:defun find-fwrapper (name)
-  "NAME という名前の fwrapper を返します。"
+  "NAME という名前の fwrapper を探して返します。
+見つからなければエラーになります。"
   (cond ((symbolp name)
           (or (find name *fwrapper-list* :key #'fwrapper-name)
               (error "Undefined fwrapper: ~S" name)))
@@ -183,7 +194,44 @@
 
 
 (defmacro define-fwrapper (name fw-lambda-list &body body)
-  ;; FIXME: define-fwrapper docstring missing
+  "関数をラップして処理を追加する fwrapper を定義します。
+
+引数:
+  NAME           : fwrapper の名前となるシンボル
+  FW-LAMBDA-LIST : ラムダリスト（関数と同じ）
+  BODY           : 関数をラップする処理本体
+
+fwrapper で関数をラップすると、その関数が呼び出されたときに元の関数の処理
+の代わりに fwrapper の BODY が実行されるようになります。
+fwrapper の BODY では、関数 call-next-function を呼び出すことで元の関数の
+処理を実行する事ができます。その際に call-next-function へ引数を渡すと、
+元の関数には渡した引数が与えられます。引数なしで call-next-function を呼び
+出した場合は、fwrapper が受け取った引数全てが与えられます。
+
+ひとつの関数を複数の fwrapper でラップすることもできます。その場合後からラ
+ップした方が最初に実行され、call-next-function を呼び出すと次の fwrap され
+た関数が実行されるようになります。
+
+使用例:
+  ;; 対象の関数
+  (defun add (x y) (+ x y))
+
+  ;; fwrapper を定義
+  (define-fwrapper string-as-integer (&rest args)
+    (handler-case
+        ;; とりあえず引数全てそのまま渡してみて
+        (call-next-function)
+      (type-error ()
+        ;; ダメだったら parse-integer して渡す
+        (apply #'call-next-function
+               (mapcar #'parse-integer args)))))
+
+  ;; 元の関数に fwrapper を適用
+  (fwrap #'add 'string-as-integer)
+
+  ;; 文字列で呼び出す
+  (add \"3\" \"8\")
+  => 11"
   (multiple-value-bind (body decls doc intr)
       (parse-body body)
     `(%store-fwrapper
@@ -197,9 +245,16 @@
 ;; NOTE: fwrappers are applied to a function first. then it is executed
 ;; later when the fwrapped function is called.
 
-(defparameter *this-function* nil)
+(defparameter *this-function* nil
+  "fwrapper の本体を実行中、ラップされている関数を持っています。")
 
 (lisp:defun call-next-function (&rest next-args)
+  "fwrapper の中から、ラップされた元の関数を呼び出します。
+
+引数が与えられると、与えられた引数を元の関数へ渡します。引数が与えられ
+なかった場合は、fwrapper の呼び出しに与えられた引数をそのまま元の関数
+へ渡します。"
+  ;; NOTE: Actual call-next-function is defined for each fwrapper locally.
   (error "call-next-function called out of fwrapper."))
 
 (lisp:defun %ensure-primary-function-backup (fn)
@@ -250,6 +305,19 @@
 
 
 (lisp:defun fwrap (function fwrapper &optional (indicator (gensym "fwrap-")))
+  "関数 FUNCTION を FWRAPPER でラップします。
+
+引数:
+  FUNCTION  : ラップされる関数（シンボルでも関数でも）
+  FWRAPPER  : fwrapper の名前（シンボル）
+  INDICATOR : インジケータ（何でもあり。普通はシンボル。省略可）
+
+関数 FUNCTION を FWRAPPER でラップすると、その関数が呼び出された際に
+本来の処理の代わりに FWRAPPER が実行されるようになります。
+詳細は define-fwrapper の方を参照。
+
+INDICATOR を指定しておくと、同じ INDICATOR を指定して別の fwrapper で
+ラップしたり、ラップを外したりできます。"
   ;; FIXME: check the args
   (%ensure-primary-function-backup function)
   (setf (getf (function-info function 'active-fwrappers) indicator) (find-fwrapper fwrapper))
@@ -257,6 +325,14 @@
   function)
 
 (lisp:defun funwrap (function &optional indicator)
+  "関数 FUNCTION をラップしている fwrapper をはがします。
+
+引数:
+  FUNCTION  : fwrap されている関数
+  INDICATOR : インジケータ
+
+INDICATOR が指定されればその INDICATOR を指定してラップした fwrapper を、
+指定されなければ全ての fwrapper をはがします。"
   (if indicator
     (remf (function-info function 'active-fwrappers) indicator)
     (setf (function-info function 'active-fwrappers) nil))
