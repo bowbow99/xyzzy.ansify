@@ -43,6 +43,27 @@
 (defun (setf datum) (value key) (setf (gethash key *table*) value))
 
 
+;;;; Accessor ansify.ext:function-info
+
+(define-test ext-function-info
+  (progn
+    ;; on empty lambda-list
+    (let ((FN (eval (read-from-string "(lambda () 3)"))))
+      ;; NOTE: The accessor modifies the function object destructively, which
+      ;; in turn, modifies test code and makes first test (for nil) fail if
+      ;; you write above lambda expr normally. So using `read-from-string`.
+      (assert-eql nil   (ansify.ext:function-info FN 'key))
+      (assert-eql #\LFD (setf (ansify.ext:function-info FN 'key) #\LFD))
+      (assert-eql #\LFD (ansify.ext:function-info FN 'key))))
+  (progn
+    ;; on lambda-list with some stuff in it
+    (let ((FN (eval (read-from-string "(lambda (a b) (+ a b))"))))
+      (assert-eql nil   (ansify.ext:function-info FN 'key))
+      (assert-eql #\LFD (setf (ansify.ext:function-info FN 'key) #\LFD))
+      (assert-eql #\LFD (ansify.ext:function-info FN 'key) #\LFD)))
+  )
+
+
 ;;;; Function fdefinition
 
 (define-test fdefinition-read-symbol

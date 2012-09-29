@@ -73,7 +73,43 @@
                       ;function-lambda-expression
                       fboundp
                       fmakunbound
-                      )))
+                      ))
+  (export-from :ansify.ext
+               '(#:function-info
+                 ))
+  )
+
+
+;;;; Accessor function-info
+
+(defconstant +fn-info-marker+ '#:fn-info)
+
+(lisp:defun %fn-info-table (fn &optional create)
+  (let* ((lambda-list (second (si:closure-body fn)))
+         (aux-list    (member '&aux lambda-list))
+         (table       (dolist (aux aux-list)
+                        (when (and (consp aux)
+                                   (eq (car aux) +fn-info-marker+))
+                          (return (second aux))))))
+    (cond (table table)
+          (create
+            (let* ((table (make-hash-table :test #'eql)))
+              (setf (second (si:closure-body fn))
+                    (append (copy-list lambda-list)
+                            (unless aux-list (list &aux))
+                            (list (list +fn-info-marker+ table))))
+              table)))))
+
+(lisp:defun function-info (function key)
+  (let ((table (%fn-info-table function)))
+    (when (hash-table-p table)
+      (gethash key table))))
+
+(defsetf function-info (function key) (new-value)
+  `(setf (gethash ,key (%fn-info-table ,function t)) ,new-value))
+
+
+;;;; function name 
 
 (lisp:defun setf-function-name-p (x)
   (and (consp x)
