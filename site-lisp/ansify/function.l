@@ -73,6 +73,7 @@
                       ;function-lambda-expression
                       fboundp
                       fmakunbound
+                      trace untrace
                       ))
   (export-from :ansify.ext
                '(#:function-info
@@ -260,10 +261,51 @@
   (%finalize-fwrapped-function function)
   function)
 
+;;;; trace
 
+(defparameter *trace-depth* nil)
 
+(define-fwrapper trace (&rest args)
+  (let ((*trace-depth* (1+ (or *trace-depth* -1))))
+    (format t "~&~V,0Ttrace> (~S ~{~S~^ ~})~%"
+            *trace-depth*
+            *this-function*
+            ;(function-name *this-function*)
+            args)
+    (let ((values (multiple-value-list (call-next-function))))
+      (format t "~:{~&~V,0T=> ~S~}"
+              (mapcar (lambda (val)
+                        (list *trace-depth* val))
+                      values))
+      (values-list values))))
 
+(defparameter *traced-functions* nil)
 
+;; [CLHS: Macro TRACE, UNTRACE]: http://www.lispworks.com/documentation/HyperSpec/Body/m_tracec.htm
+(defmacro trace (&rest function-names)
+  `(if ',function-names
+     (mapc (lambda (name)
+             (unless (or (symbolp name)
+                         (setf-function-name-p name))
+               (error 'type-error
+                      :datum name
+                      :expected-type 'function-name)) ;FIXME: undefined typespec
+             (pushnew name *traced-functions*)
+             (fwrap (fdefinition name) 'trace 'trace))
+           ',function-names)
+     *traced-functions*))
+
+(defmacro untrace (&rest function-names)
+  `(mapc (lambda (name)
+           (unless (or (symbolp name)
+                       (setf-function-name-p name))
+             (error 'type-error
+                    :datum name
+                    :expected-type 'function-name)) ;FIXME: undefined typespec
+           (funwrap (fdefinition name) 'trace)
+           (setf *traced-functions* (delete name *traced-functions*)))
+         (or ',function-names
+             *traced-functions*)))
 
 
 
