@@ -65,6 +65,9 @@
   (require "ansify/condition")
   (require "ansify/restart"))
 
+(eval-when (:execute :compile-toplevel)
+  (require "ansify/destructuring-bind"))
+
 (in-package :ansify)
 
 (eval-when (:execute :compile-toplevel :load-toplevel)
@@ -165,9 +168,17 @@
 ;;;;; define-fwrapper
 
 (lisp:defun gen-fwrapper-thunk (name fw-lambda-list decls body)
-  `(lambda ,fw-lambda-list
-     ,@decls
-     ,@body))
+  `(si:*set-function-name
+    (lambda (next-fns &rest call-args)
+      ,@decls
+      (destructuring-bind ,fw-lambda-list call-args
+        (labels ((call-next-function (&rest next-args)
+                   (apply (first next-fns)
+                          (rest next-fns)
+                          (or next-args call-args))))
+          ,@body)))
+    '(fwrapper ,name)))
+
 
 (defmacro define-fwrapper (name fw-lambda-list &body body)
   ;; FIXME: define-fwrapper docstring
@@ -209,42 +220,32 @@
                   ;(when (symbolp name) (documentation name 'function))
                   )))))
 
+(lisp:defun %fwrapper-thunk-list (active-fwrappers) ; being a plist (INDICATOR FWRAPPER...)
+  (let ((thunks '()))
+    (do ((rest active-fwrappers (cddr rest)))
+        ((null rest))
+      (push (fwrapper-thunk (second rest)) thunks))
+    (nreverse thunks)))
+
 (lisp:defun %finalize-fwrapped-function (fn)
   (let ((primary    (function-info fn 'primary-function))
         (fwrappers  (function-info fn 'active-fwrappers))
         (closure    (si:closure-body fn)))
-    (if fwrappers
-      ;; activate all
-      (labels ((wrap-body (next fwrappers)
-                 (if (null fwrappers)
-                   `((let ((*this-function* ,fn))
-                       ,@next))
-                   (wrap-body `((let ((*next-functions*
-                                        (cons ,next *next-functions*)))
-                                  (apply ,(first fwrappers)
-                                         *call-arguments*)))
-                              (cdr fwrappers)))))
-        (let* ((fwrapped-lambda-list
-                 `(&rest *call-arguments*
-                         &aux (,+fn-info-marker+ ,(%fn-info-table fn))))
-               (primary-body-thunk
-                 `(lambda ,(remove-if (lambda (x) ;remove fn-info-table
-                                        (and (consp x) (eq (car x) +fn-info-marker+)))
-                                      (first primary)) ;primary lambda-list
-                    ,@(second primary))) ;primary body
-               (fwrapper-thunks
-                 ;; gather fwrapper-thunks of active ones
-                 (let ((thunks '()))
-                   (do ((r fwrappers (cddr r)))
-                       ((null r))
-                     (push (fwrapper-thunk (second r)) thunks))
-                   (nreverse thunks))))
-          (setf (second closure) fwrapped-lambda-list
-                (cddr   closure) (wrap-body primary-body-thunk
-                                            fwrapper-thunks))))
+    (if (null fwrappers)
       ;; restore primary function
       (setf (second closure) (first primary)
-            (cddr closure)   (second primary)))))
+            (cddr closure)   (second primary))
+      ;; wrap the function
+      (let ((next-function-list
+              (append (%fwrapper-thunk-list fwrappers)
+                      (list `(lambda (#:next-fns ,@(copy-list (first primary)))
+                               ,@(second primary))))))
+        (setf (second closure) `(&rest initial-args
+                                 &aux (,+fn-info-marker+ ,(%fn-info-table fn)))
+              (cddr closure)   `((let ((*this-function* ,fn))
+                                   (apply ,(first next-function-list)
+                                          (list ,@(rest next-function-list))
+                                          initial-args))))))))
 
 
 (lisp:defun fwrap (function fwrapper &optional (indicator (gensym "fwrap-")))
