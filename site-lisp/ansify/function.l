@@ -195,17 +195,10 @@
 ;; NOTE: fwrappers are applied to a function first. then it is executed
 ;; later when the fwrapped function is called.
 
-(defparameter *next-functions* nil)
-
-(defparameter *call-arguments* nil)
-
 (defparameter *this-function* nil)
 
 (lisp:defun call-next-function (&rest next-args)
-  (let ((next-fn          (first *next-functions*))
-        (*call-arguments* (or next-args *call-arguments*))
-        (*next-functions* (cdr *next-functions*)))
-    (apply next-fn *call-arguments*)))
+  (error "call-next-function called out of fwrapper."))
 
 (lisp:defun %ensure-primary-function-backup (fn)
   "Store things needed to rebuild the primary function."
