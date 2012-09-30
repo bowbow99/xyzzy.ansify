@@ -125,6 +125,27 @@
   `(setf (gethash ,key (%fn-info-table ,function t)) ,new-value))
 
 
+;;;; lambda-list
+
+(lisp:defun lambda-list-arg-spec (lambda-list)
+  "=> (N-REQ N-OPT REST-OR-KEY)"
+  (let ((n-req  0)
+        (n-opt  0)
+        (rest   nil)
+        (state  '&required))
+    (dolist (x lambda-list)
+      (if (member x lambda-list-keywords)
+        (setf state x)
+        (case state
+          (&required (incf n-req))
+          (&optional (incf n-opt))
+          (&rest     (setf rest '&rest))
+          (&key      (setf rest '&key))
+          (&aux)
+          (otherwise (error 'invalid-lambda-list :datum lambda-list)))))
+    (list n-req n-opt rest)))
+
+
 ;;;; function name 
 
 (lisp:defun setf-function-name-p (x)
@@ -158,7 +179,9 @@
             (:print-function print-fwrapper))
   name
   documentation
-  thunk)
+  thunk
+  arg-spec
+  lambda-list)
 
 (defparameter *fwrapper-list* nil
   "Global namespace for fwrapper.")
@@ -234,10 +257,14 @@ fwrapper の BODY では、関数 call-next-function を呼び出すことで元の関数の
   => 11"
   (multiple-value-bind (body decls doc intr)
       (parse-body body)
-    `(%store-fwrapper
-      (make-fwrapper
-       :name ',name :documentation ,doc
-       :thunk ,(gen-fwrapper-thunk name fw-lambda-list decls body)))))
+    `(progn
+       (%store-fwrapper
+        (make-fwrapper
+         :name ',name :documentation ,doc
+         :thunk ,(gen-fwrapper-thunk name fw-lambda-list decls body)
+         :arg-spec ',(lambda-list-arg-spec fw-lambda-list)
+         :lambda-list ',fw-lambda-list))
+       ',name)))
 (set-indent 'define-fwrapper 'defun)
 
 ;;;;; apply/execute fwrapper
@@ -303,6 +330,33 @@ fwrapper の BODY では、関数 call-next-function を呼び出すことで元の関数の
         ;; FIXME: compile the fwrapped function?
         ))))
 
+(define-condition fw-lambda-list-incongruent (error)
+  (fwrapper required-spec)
+  (:report (lambda (x out)
+             (format out "受け入れる引数が合いません: ~S"
+                     (fwrapper-name (si:*slot-value x :fwrapper))))))
+
+(lisp:defun %check-lambda-list-congruency (fwrapper fn)
+  (let ((fw-spec (fwrapper-arg-spec fwrapper))
+        (fn-spec (lambda-list-arg-spec (first (function-info fn 'primary-function)))))
+    ;; NOTE: SPEC ::= (N-REQ N-OPT REST-OR-KEY)
+    (labels ((n-req+opt (spec)
+               (+ (first spec) (second spec))))
+      (unless (and (<= (first fw-spec) (first fn-spec)) ;required portion
+                   (case (third fn-spec)
+                     (&rest
+                       (eq (third fw-spec) &rest))
+                     (&key
+                       (case (third fw-spec)
+                         (&rest t)
+                         (&key  (= (n-req+opt fw-spec) (n-req+opt fn-spec)))
+                         (t     nil)))
+                     ((nil)
+                       (or (>= (n-req+opt fw-spec) (n-req+opt fn-spec))
+                           (eq (third fw-spec) '&rest)))))
+        (error 'fw-lambda-list-incongruent
+               :fwrapper fwrapper
+               :required-spec fn-spec)))))
 
 (lisp:defun fwrap (function fwrapper &optional (indicator (gensym "fwrap-")))
   "関数 FUNCTION を FWRAPPER でラップします。
@@ -318,8 +372,8 @@ fwrapper の BODY では、関数 call-next-function を呼び出すことで元の関数の
 
 INDICATOR を指定しておくと、同じ INDICATOR を指定して別の fwrapper で
 ラップしたり、ラップを外したりできます。"
-  ;; FIXME: check the args
   (%ensure-primary-function-backup function)
+  (%check-lambda-list-congruency (find-fwrapper fwrapper) function)
   (setf (getf (function-info function 'active-fwrappers) indicator) (find-fwrapper fwrapper))
   (%finalize-fwrapped-function function)
   function)

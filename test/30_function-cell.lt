@@ -143,7 +143,7 @@
 
 ;;;; fwrapper
 
-(define-test fwrapper
+(define-test fwrapper-basic
   (define-fwrapper just-call-next-function ()
     (call-next-function))
   (define-fwrapper return-nil ()
@@ -176,5 +176,46 @@
       (funwrap fn 'inner)
       (assert-equal '("hello" "foo") (funcall fn)))
     ))
+
+(define-test fwrapper-lambda-list-congruency
+  (define-fwrapper just-one-arg (x) t)
+  (define-fwrapper two-args (x y) t)
+  (define-fwrapper one-to-many (x &rest y) t)
+  (define-fwrapper two-and-keys (x y &key z) t)
+  (progn
+    (let ((fn (lambda () 3)))
+      (assert-error 'error (fwrap fn 'just-one-arg))
+      (assert-error 'error (fwrap fn 'two-args))
+      (assert-error 'error (fwrap fn 'one-to-many))
+      (assert-error 'error (fwrap fn 'two-and-keys)))
+    (let ((fn (lambda (x) 3)))
+      (assert-true         (fwrap fn 'just-one-arg))
+      (assert-error 'error (fwrap fn 'two-args))
+      (assert-true         (fwrap fn 'one-to-many))
+      (assert-error 'error (fwrap fn 'two-and-keys)))
+    (let ((fn (lambda (x y) 3)))
+      (assert-error 'error (fwrap fn 'just-one-arg))
+      (assert-true         (fwrap fn 'two-args))
+      (assert-true         (fwrap fn 'one-to-many))
+      (assert-true         (fwrap fn 'two-and-keys)))
+    (let ((fn (lambda (x y z) 3)))
+      (assert-error 'error (fwrap fn 'just-one-arg))
+      (assert-error 'error (fwrap fn 'two-args))
+      (assert-true         (fwrap fn 'one-to-many))
+      #+nil(assert-error 'error (fwrap fn 'two-and-keys)))
+    (let ((fn (lambda (&rest x) 3)))
+      (assert-error 'error (fwrap fn 'just-one-arg))
+      (assert-error 'error (fwrap fn 'two-args))
+      (assert-error 'error (fwrap fn 'one-to-many))
+      (assert-error 'error (fwrap fn 'two-and-keys)))
+    (let ((fn (lambda (x &key y z) 3)))
+      (assert-error 'error (fwrap fn 'just-one-arg))
+      (assert-error 'error (fwrap fn 'two-args))
+      (assert-true         (fwrap fn 'one-to-many))
+      (assert-error 'error (fwrap fn 'two-and-keys)))
+    ))
+
+
+
 
 ;;; test/30_function-cell.lt ends here.
