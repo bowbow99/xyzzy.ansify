@@ -1,0 +1,70 @@
+;;; -*- mode: lisp; package: test.ansify.gfm -*-
+;;;
+;;; ansify/test/70_gfm.lt
+
+;;; Test:
+
+(require "lisp-unit")
+;(require "ansify/gfm")
+
+(defpackage :test.ansify.gfm
+  (:use :lisp :lisp-unit))
+
+(in-package :test.ansify.gfm)
+
+(shadowing-import
+ (mapcar (lambda (name)
+           (find-symbol (string name) :ansify.gfm))
+         '(#:find-class #:class-name #:class-of #:subclassp
+           #:generic-function #:structure-object #:structure-class
+           #:builtin-function)))
+
+;;;; class system modoki
+
+(defstruct test-example a b)
+
+(defparameter *built-in-classes-and-example-objects*
+  `((t)
+    (symbol foo bar #:baz)
+    (keyword :foo :bar)
+    (sequence)
+    (list)
+    (cons (1 . 2) (1 2 3))
+    (null nil)
+    (array #2A((1 2) (3 4)))
+    (vector #(a b c))
+    (string "hello")
+    (number 1 2.0 -3 #C(4 5))
+    (function ,(lambda (x) (1+ x)))
+    (generic-function) ;example missing
+    (builtin-function ,#'car)
+    (character #\a)
+    (stream ,*standard-output*)
+    (hash-table ,(make-hash-table))
+    ;(structure-object ,(make-test-example :a 1 :b 2))
+    ;(structure-class  ,(get 'test-example 'si:structure-definition))
+    ))
+
+(define-test BIC-existance
+  (dolist (name (mapcar #'car *built-in-classes-and-example-objects*))
+    (assert-true (find-class name) name)))
+
+(define-test BIC-find-class
+  (dolist (example *built-in-classes-and-example-objects*)
+    (let ((class-name (first example)))
+      (dolist (object (cdr example))
+        (assert-eql (find-class class-name) (class-of object)
+          class-name object)))))
+
+
+
+
+
+
+
+
+
+
+
+
+;;; ansify/test/70_gfm.lt ends here.
