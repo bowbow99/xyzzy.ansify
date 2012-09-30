@@ -31,10 +31,12 @@
 (defpackage :ansify.gfm
   (:use :lisp :ansify.util)
   (:shadowing-import-from :ansify
+    ;; To define
     #:find-class #:class-of #:class-name #:subclassp
     #:generic-function #:builtin-function #:structure-object #:structure-class
     #:defgeneric #:generic-function-p #:ensure-generic-function
     #:defmethod #:add-method #:next-method-p #:call-next-method
+    ;; To use
     #:destructuring-bind #:fboundp #:fdefinition)
   (:import-from :ansify.ext
     #:optimize-type-check
@@ -145,10 +147,18 @@
             (:copier nil)
             (:print-function print-%BIC))
   "Built-in-class object modoki."
-  name
-  predicate
-  superclasses
-  subclasses)
+  (name (error "initialization required: %BIC-name")
+    ;; symbol naming the BIC
+    :type symbol)
+  (predicate (error "initialization required: %BIC-predicate")
+    ;; predicate function to check an object is instance of the BIC or not
+    :type function)
+  (superclasses nil
+    ;; list of direct superclass
+    :type list)
+  (subclasses nil
+    ;; list of direct subclass
+    :type list))
 
 (defun new-BIC (name predicate &key superclasses subclasses)
   (make-%BIC :name name :predicate predicate
@@ -172,18 +182,33 @@
         (error "Unknown built-in-class: ~S" name))))
 
 (defmacro %define-BIC (name (&rest superclasses) &key predicate type)
+  "Define a BIC (built-in-class).
+
+NAME is a symbol naming the BIC.
+
+SUPERCLASSES are symbols naming other BICs which are direct superclass of
+the BIC being defined.
+
+PREDICATE (evaluates to a function) or TYPE (evaluates to typespec) can be
+used to specify how to check an object is instance of this BIC or not.
+PREDICATE takes priority over TYPE. If none of them are specified, symbol
+NAME is used as a typespec."
   `(progn
      (let* ((superclasses
               (mapcar #'%find-BIC ',(or superclasses '(t))))
             (class
-              (new-BIC ',name ,(or predicate `(typepred ,(or type `',name)))
-                       :superclasses superclasses)))
+              (make-%BIC
+               :name ',name
+               :superclasses superclasses
+               :predicate ,(or predicate `(typepred ,(or type `',name))))))
        (setf *BIC-namespace* (acons ',name class *BIC-namespace*))
        (dolist (super superclasses)
          (push class (%BIC-subclasses super)))
        class)))
+(set-indent '%define-BIC 2)
 
 (defun %initialize-BICs ()
+  "Initialize BICs."
 
   ;; initialize BIC namespace
   (setf *the-t-class*   (new-BIC t (lambda (x) t))
@@ -230,6 +255,7 @@
 ;;;;; class APIs
 
 (defun class-name (class)
+  "Return symbol naming CLASS."
   (cond ((si:*structure-definition-p class)
           (si:*structure-definition-name class))
         ((%BIC-p class)
@@ -238,12 +264,14 @@
 
 (defun find-class (name &optional (errorp t) environment)
   (declare (ignore environment))
+  "Return class object named NAME."
   (or (get name 'si:structure-definition)
       (%find-BIC name nil)
       (when errorp
         (error "Class not found: ~S" name))))
 
 (defun class-of (object)
+  "Return class object that OBJECT is instance of."
   (if (si:*structurep object)
     (si:*structure-definition object)
     (labels ((search (BIC)
@@ -258,6 +286,7 @@
         direct-class))))
 
 (defun %BIC-precedence-list (BIC)
+  "Return list of BICs sorted in order of precedence."
   ;; NOTE: Doing topological-sort in place, hopefully
   (let ((sorted  '())
         (visited '()))
@@ -271,6 +300,7 @@
       sorted)))
 
 (defun subclassp (class1 class2)
+  "Return true if CLASS1 is subclass of CLASS2."
   (when (symbolp class1)
     (setf class1 (find-class class1)))
   (when (symbolp class2)
@@ -298,23 +328,34 @@
 ;; FIXME: invoke GF interactively
 
 (defstruct gf-info
-  name
-  lambda-list
-  methods
-  documentation)
+  (name (error "initialization required: gf-info-name")
+    ;; function-name of the GF
+    :type function-name) ;FIXME: undefined typespec
+  (lambda-list (error "initialization required: gf-info-lambda-list")
+    ;; gf-lambda-list
+    :type lambda-list) ;FIXME: undefined typespec
+  (methods nil
+    ;; list of method defined on the GF
+    :type list)
+  (documentation nil
+    ;; GF's own docstring
+    :type (or string null)))
 
 (defmacro gf-info (gf)
   `(cdr (assoc 'GF-INFO (si:closure-variable ,gf))))
 
 (defun generic-function-p (object)
+  "Return true if OBJECT is a generic-function."
   (and (si:*closurep object)
+       ;; FIXME: using `gf-info-p` breaks existing GFs on re-defining `gf-info`
        (gf-info-p (gf-info object))))
 
 ;;;;; construction
 
 (defun %make-generic-function (gf-name lambda-list documentation)
   (let ((GF-INFO
-          ;; NOET: don't change this name (see macro `gf-info`)
+          ;; *** CAUTION *** don't change this name ***
+          ;; Holding this variable in lexenv is vital (see macro `gf-info`)
           (make-gf-info :name gf-name
                         :lambda-list lambda-list
                         :documentation documentation)))
@@ -338,6 +379,24 @@
 ;; - method-combination
 (defun ensure-generic-function
         (function-name &key documentation lambda-list environment)
+  "FUNCTION-NAME を総称関数にします。
+
+関数が定義されていなければ総称関数として定義します。
+（総称関数ではない）関数であればエラーになります。
+既に総称関数であればオプションに応じて必要なら変更します。
+
+オプション:
+  :documentation 説明文（文字列）
+      説明文を書いておきます。
+
+  :lambda-list   ラムダリスト
+      総称関数が受け付ける引数を指定するラムダリストです。
+      形式は通常の関数と同じです。
+
+  :environment   環境オブジェクト
+      ※マクロの &environment でもらえるアレです
+      今のところ使ってません。
+"
   (cond
    ;; A. undefined function
    ((not (fboundp function-name))
@@ -380,6 +439,22 @@
     (values doc (nreverse method-descs))))
 
 (defmacro defgeneric (name gf-lambda-list &rest options)
+  "総称関数 NAME を定義します。
+
+NAME は関数として未定義か、定義済みの総称関数でなければなりません。
+（通常の関数であればエラーになります。）
+
+オプションは (:OPTION-TYPE ...) というリストで指定します。指定できる
+OPTION-TYPE は以下の通りです。
+
+  (:documentation 説明文)
+
+;; 以下未実装
+  (:method METHOD-LAMBDA-LIST &body BODY)
+      総称関数を定義する時に、ついでにメソッドを追加します。
+      このオプションで定義されたメソッドは総称関数が再定義されると
+      消えてしまいます。
+    "
   (multiple-value-bind (doc method-descs)
       (%parse-defgeneric-options options name)
     `(progn
@@ -407,15 +482,27 @@
 
 (defstruct (*method
             (:print-function print-*method))
-  name
-  lambda-list
-  specializers
-  thunk
-  documentation)
+  (name (error "initialization required: *method-name")
+    ;; name of GF the method lives in
+    :type function-name) ;FIXME: undefined typespec
+  (lambda-list (error "initialization required: *method-lambda-list")
+    ;; method's specialized lambda-list
+    :type lambda-list) ;FIXME: undefined typespec
+  (specializers (error "initialization required: *method-specializers")
+    ;; list of specializers (in canonicalized form)
+    :type list)
+  (thunk (error "initialization required: *method-thunk")
+    ;; function executes what the method does
+    :type function)
+  (documentation nil
+    ;; docstring of the method
+    :type (or string null)))
 
 ;;;;; construction
 
 (defun %gen-specializer-form (spec)
+  "Return a form evaluates to canonical form of specializer.
+SPECM must be a specializer in form appear in method-lambda-list."
   ;; (eql FORM) --> (cons 'eql FORM)          --> (eql . OBJECT)
   ;; CLASS-NAME --> (cons 'class 'CLASS-NAME) --> (class . CLASS-NAME)
   ;; #<CLASS>   --> (cons 'class 'CLASS-NAME) --> (class . CLASS-NAME)
@@ -486,11 +573,15 @@
 ;;;;; add method to GF
 
 (defun %methods-agree-p (method1 method2)
+  "Return true if two methods same specializer."
   ;; NOTE: ANSI inconfirmance - no support for qualifier
   (equal (*method-specializers method1)
          (*method-specializers method2)))
 
 (defun add-method (generic-function new-method)
+  "Add method NEW-METHOD to GENERIC-FUNCTION.
+If there's a method which has same specializer with NEW-METHOD on the GF,
+it is replaced with NEW-METHOD."
   (let* ((gf-info (gf-info generic-function)))
     (setf (gf-info-methods gf-info)
           (cons new-method
@@ -503,6 +594,22 @@
 
 (defmacro defmethod (&environment env
                      name method-lambda-list &body body)
+  "総称関数 NAME にメソッドを定義（追加）します。
+
+引数:
+  NAME : メソッドを追加する総称関数の名前
+  METHOD-LAMBDA-LIST : 特定のクラスなどに特定化するラムダリスト
+  BODY : 処理本体
+
+定義されたメソッドは METHOD-LAMBDA-LIST で特定化したクラスのオブジェクト
+を引数に総称関数が呼び出された時に実行されます。
+METHOD-LAMBDA-lIST は基本的には通常の関数で指定するラムダリストと同様
+ですが、必須引数を特定のクラスに特定化することができます。
+
+    (defmethod GF-NAME ((x string) (y list) &optional z)
+      ...)
+
+詳しくは... ;; FIXME: ...書くの？"
   (multiple-value-bind (*body decls doc intr)
       (parse-body body)
     `(progn
