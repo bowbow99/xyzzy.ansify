@@ -555,6 +555,7 @@ SPECM must be a specializer in form appear in method-lambda-list."
       `(make-*method
         :name ',name
         :specializers (list ,@(mapcar #'%gen-specializer-form specializers))
+        :lambda-list ',method-lambda-list
         :documentation ,doc
         :thunk (si:*set-function-name
                 (lambda (&rest #0=#:method-args)
