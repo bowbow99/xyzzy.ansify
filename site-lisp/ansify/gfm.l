@@ -240,6 +240,7 @@ NAME is used as a typespec."
   (%define-BIC character ())
   (%define-BIC stream ())
   (%define-BIC hash-table ())
+  (%define-BIC package ())
 
   (%define-BIC structure-object () :predicate 'si:*structurep)
   (%define-BIC structure-class ()  :predicate 'si:*structure-definition-p)
