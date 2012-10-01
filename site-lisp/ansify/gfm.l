@@ -309,6 +309,7 @@ NAME is used as a typespec."
   (cond ((eq class1 class2) t)
         ((si:*structure-definition-p class1)
           (or (eq class2 *the-structure-object-class*)
+              (eq class2 *the-t-class*)
               (and (si:*structure-definition-p class2)
                    (si:*structure-subtypep class1 class2))))
         ((%BIC-p class1)
