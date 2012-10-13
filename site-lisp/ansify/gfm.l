@@ -509,7 +509,7 @@ OPTION-TYPE ‚ÍˆÈ‰º‚Ì’Ê‚è‚Å‚·B
 
 (defun %gen-specializer-form (spec)
   "Return a form evaluates to canonical form of specializer.
-SPECM must be a specializer in form appear in method-lambda-list."
+SPEC must be a specializer in form appear in method-lambda-list."
   ;; (eql FORM) --> (cons 'eql FORM)          --> (eql . OBJECT)
   ;; CLASS-NAME --> (cons 'class 'CLASS-NAME) --> (class . CLASS-NAME)
   ;; #<CLASS>   --> (cons 'class 'CLASS-NAME) --> (class . CLASS-NAME)
