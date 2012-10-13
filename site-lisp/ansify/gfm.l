@@ -350,7 +350,6 @@ NAME is used as a typespec."
 (defun generic-function-p (object)
   "Return true if OBJECT is a generic-function."
   (and (si:*closurep object)
-       ;; FIXME: using `gf-info-p` breaks existing GFs on re-defining `gf-info`
        (gf-info object)))
 
 ;;;;; construction
