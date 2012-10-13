@@ -360,21 +360,21 @@ NAME is used as a typespec."
 (defun check-gf-lambda-list (gf-lambda-list)
   (macrolet ((check (test)
                `(unless ,test (error 'invalid-lambda-list :datum lambda-list))))
-  (let ((state '&required)
-        (required-exists-p nil))
-    (dolist (x gf-lambda-list)
-      (cond ((member x lambda-list-keywords)
-              (check (member x '(&optional &rest &key &allow-other-keys)))
-              (setf state x))
-            ((case state
-               (&required
-                 (check (symbolp x))
-                 (setf required-exists-p t))
-               (&optional (check (or (symbolp x) (null (cdr x)))))
-               (&rest     (check (symbolp x)))
-               (&key      (check (or (symbolp x) (null (cdr x)))))
-               (&allow-other-keys (check nil))))))
-    (check required-exists-p))))
+    (let ((state '&required)
+          (required-exists-p nil))
+      (dolist (x gf-lambda-list)
+        (cond ((member x lambda-list-keywords)
+                (check (member x '(&optional &rest &key &allow-other-keys)))
+                (setf state x))
+              ((case state
+                 (&required
+                   (check (symbolp x))
+                   (setf required-exists-p t))
+                 (&optional (check (or (symbolp x) (null (cdr x)))))
+                 (&rest     (check (symbolp x)))
+                 (&key      (check (or (symbolp x) (null (cdr x)))))
+                 (&allow-other-keys (check nil))))))
+      (check required-exists-p))))
 
 (defun %make-generic-function (gf-name lambda-list documentation)
   (let ((GF-INFO
@@ -652,23 +652,23 @@ METHOD-LAMBDA-lIST は基本的には通常の関数で指定するラムダリストと同様
   (multiple-value-bind (*body decls doc intr)
       (parse-body body)
     (let ((gf-lambda-list (%parse-method-lambda-list method-lambda-list)))
-    `(progn
-       (unless (and (fboundp ',name)
-                    (generic-function-p (fdefinition ',name)))
-         (ensure-generic-function ',name
-           ;; FIXME: METHOD-LAMBDA-LIST is different form GF-LAMBDA-LIST
-           ;; For now, the difference doesn't do any harm.
-           :lambda-list ',gf-lambda-list
-           :documentation ,doc
-           :environment ',env))
-       (let ((gf-info (gf-info (fdefinition ',name))))
-         (unless (lambda-list-congruent-p ',method-lambda-list
-                                          (gf-info-lambda-list gf-info))
-           (error "Method lambda list incongruent: ~S: ~S"
-                  ',name ',method-lambda-list))
-         (let ((method ,(gen-make-method-form name method-lambda-list body)))
-           (add-method (fdefinition ',name) method)
-           method))))))
+      `(progn
+         (unless (and (fboundp ',name)
+                      (generic-function-p (fdefinition ',name)))
+           (ensure-generic-function ',name
+             ;; FIXME: METHOD-LAMBDA-LIST is different form GF-LAMBDA-LIST
+             ;; For now, the difference doesn't do any harm.
+             :lambda-list ',gf-lambda-list
+             :documentation ,doc
+             :environment ',env))
+         (let ((gf-info (gf-info (fdefinition ',name))))
+           (unless (lambda-list-congruent-p ',method-lambda-list
+                                            (gf-info-lambda-list gf-info))
+             (error "Method lambda list incongruent: ~S: ~S"
+                    ',name ',method-lambda-list))
+           (let ((method ,(gen-make-method-form name method-lambda-list body)))
+             (add-method (fdefinition ',name) method)
+             method))))))
 (setf (get 'defmethod 'ed:lisp-indent-hook) 'defun)
 
 
