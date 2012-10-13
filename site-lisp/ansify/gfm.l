@@ -405,6 +405,14 @@ NAME is used as a typespec."
    ((not (fboundp function-name))
      (setf (fdefinition function-name) (%make-generic-function
                                         function-name lambda-list documentation))
+     (when (ansify::setf-function-name-p function-name)
+       (let ((reader (second function-name))
+             (writer (canonicalize-function-name function-name)))
+         (setf (get reader 'lisp::setf-lambda)
+               `((&rest #1=#:args) (#2=#:new-value)
+                 `(,',writer ,#2# ,@#1#)))
+         (remprop reader 'lisp::setf-method)
+         (remprop reader 'lisp::setf-update)))
      (let ((sym (canonicalize-function-name function-name)))
        (if documentation
          (setf (get sym 'lisp::function-documentation) documentation)
