@@ -480,7 +480,11 @@ OPTION-TYPE ÇÕà»â∫ÇÃí ÇËÇ≈Ç∑ÅB
     (declare (ignore depth))
     (format out "#<method: ~S ~S #{~8S}>"
             (*method-name m)
-            (*method-lambda-list m)
+            (mapcar (lambda (spec)
+                      (case (car spec)
+                        (class (cdr spec))
+                        (eql   (list 'eql (cdr spec)))))
+                    (*method-specializers m))
             (si:address-of m))))
 
 (defstruct (*method
