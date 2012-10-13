@@ -8,7 +8,8 @@
 ;;;; Package
 
 (eval-when (:execute :compile-toplevel :load-toplevel)
-  (require "ansify/base"))
+  (require "ansify/base")
+  (require "ansify/function"))
 
 (in-package :ansify)
 
@@ -37,7 +38,7 @@
     #:defgeneric #:generic-function-p #:ensure-generic-function
     #:defmethod #:add-method #:next-method-p #:call-next-method
     ;; To use
-    #:destructuring-bind #:fboundp #:fdefinition)
+    #:destructuring-bind #:fboundp #:fdefinition #:canonicalize-function-name)
   (:import-from :ansify.ext
     #:optimize-type-check
     ))
@@ -403,11 +404,11 @@ NAME is used as a typespec."
    ;; A. undefined function
    ((not (fboundp function-name))
      (setf (fdefinition function-name) (%make-generic-function
-                                        function-name lambda-list documentation)
-           ;; FIXME: Store docstring for generic-function
-           ;; How can I do that on `(setf READER)` name?
-           ;(documentation function-name) documentation
-           ))
+                                        function-name lambda-list documentation))
+     (let ((sym (canonicalize-function-name function-name)))
+       (if documentation
+         (setf (get sym 'lisp::function-documentation) documentation)
+         (remprop sym 'lisp::function-documentation))))
    ;; B. defined as ordinary function, macro, or special operator
    ((not (generic-function-p (fdefinition function-name)))
      ;; NOTE: `fmakunbound` via restart might be useful
