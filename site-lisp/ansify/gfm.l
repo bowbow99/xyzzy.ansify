@@ -651,13 +651,14 @@ METHOD-LAMBDA-lIST は基本的には通常の関数で指定するラムダリストと同様
 詳しくは... " ;; FIXME: ...書くの？
   (multiple-value-bind (*body decls doc intr)
       (parse-body body)
+    (let ((gf-lambda-list (%parse-method-lambda-list method-lambda-list)))
     `(progn
        (unless (and (fboundp ',name)
                     (generic-function-p (fdefinition ',name)))
          (ensure-generic-function ',name
            ;; FIXME: METHOD-LAMBDA-LIST is different form GF-LAMBDA-LIST
            ;; For now, the difference doesn't do any harm.
-           :lambda-list ',method-lambda-list
+           :lambda-list ',gf-lambda-list
            :documentation ,doc
            :environment ',env))
        (let ((gf-info (gf-info (fdefinition ',name))))
@@ -667,7 +668,7 @@ METHOD-LAMBDA-lIST は基本的には通常の関数で指定するラムダリストと同様
                   ',name ',method-lambda-list))
          (let ((method ,(gen-make-method-form name method-lambda-list body)))
            (add-method (fdefinition ',name) method)
-           method)))))
+           method))))))
 (setf (get 'defmethod 'ed:lisp-indent-hook) 'defun)
 
 
