@@ -648,7 +648,7 @@ METHOD-LAMBDA-lIST は基本的には通常の関数で指定するラムダリストと同様
     (defmethod GF-NAME ((x string) (y list) &optional z)
       ...)
 
-詳しくは... ;; FIXME: ...書くの？"
+詳しくは... " ;; FIXME: ...書くの？
   (multiple-value-bind (*body decls doc intr)
       (parse-body body)
     `(progn
