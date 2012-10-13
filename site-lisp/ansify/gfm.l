@@ -38,7 +38,8 @@
     #:defgeneric #:generic-function-p #:ensure-generic-function
     #:defmethod #:add-method #:next-method-p #:call-next-method
     ;; To use
-    #:destructuring-bind #:fboundp #:fdefinition #:canonicalize-function-name)
+    #:destructuring-bind #:fboundp #:fdefinition #:canonicalize-function-name
+    #:setf-function-name-p)
   (:import-from :ansify.ext
     #:optimize-type-check
     ))
@@ -574,7 +575,8 @@ SPEC must be a specializer in form appear in method-lambda-list."
                 (lambda (&rest #0=#:method-args)
                   ,@(when intr `(,intr)) ;NOTE: interactive invocation not supported on GF side
                   ,@decls ;FIXME: is order of INTR and DECLS right?
-                  (block ,name
+                  (block ,(cond ((setf-function-name-p name) (second name))
+                                (t name))
                     (destructuring-bind ,lambda-list #0#
                       (labels ((next-method-p ()
                                  (and *appricable-method-list* t))
