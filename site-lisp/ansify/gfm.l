@@ -53,7 +53,8 @@
 
 (defun typepred (typespec)
   (let ((form (optimize-type-check '#1=#:object typespec)))
-    (if (and (= (length form) 2)
+    (if (and (consp form)
+             (= (length form) 2)
              (symbolp (first form))
              (eq (second form) '#1#))
       (first form)
