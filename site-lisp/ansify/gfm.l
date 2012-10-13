@@ -356,6 +356,26 @@ NAME is used as a typespec."
 
 ;;;;; construction
 
+;; [CLHS: 3.4.2 Generic Function Lambda Lists](http://www.lispworks.com/documentation/HyperSpec/Body/03_db.htm)
+(defun check-gf-lambda-list (gf-lambda-list)
+  (macrolet ((check (test)
+               `(unless ,test (error 'invalid-lambda-list :datum lambda-list))))
+  (let ((state '&required)
+        (required-exists-p nil))
+    (dolist (x gf-lambda-list)
+      (cond ((member x lambda-list-keywords)
+              (check (member x '(&optional &rest &key &allow-other-keys)))
+              (setf state x))
+            ((case state
+               (&required
+                 (check (symbolp x))
+                 (setf required-exists-p t))
+               (&optional (check (or (symbolp x) (null (cdr x)))))
+               (&rest     (check (symbolp x)))
+               (&key      (check (or (symbolp x) (null (cdr x)))))
+               (&allow-other-keys (check nil))))))
+    (check required-exists-p))))
+
 (defun %make-generic-function (gf-name lambda-list documentation)
   (let ((GF-INFO
           ;; *** CAUTION *** don't change this name ***
@@ -401,6 +421,7 @@ NAME is used as a typespec."
       ※マクロの &environment でもらえるアレです
       今のところ使ってません。
 "
+  (check-gf-lambda-list lambda-list)
   (cond
    ;; A. undefined function
    ((not (fboundp function-name))
