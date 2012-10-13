@@ -680,8 +680,6 @@ METHOD-LAMBDA-lIST は基本的には通常の関数で指定するラムダリストと同様
          (unless (and (fboundp ',name)
                       (generic-function-p (fdefinition ',name)))
            (ensure-generic-function ',name
-             ;; FIXME: METHOD-LAMBDA-LIST is different form GF-LAMBDA-LIST
-             ;; For now, the difference doesn't do any harm.
              :lambda-list ',gf-lambda-list
              :documentation ,doc
              :environment ',env))
