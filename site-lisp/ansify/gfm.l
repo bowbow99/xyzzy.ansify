@@ -631,6 +631,29 @@ it is replaced with NEW-METHOD."
 
 ;;;;; macro `defmethod`
 
+(defun %method-lambda-list-to-gf-lambda-list (method-lambda-list)
+  (let ((gf-lambda-list '())
+        (state '&required))
+    (labels ((symbol-or-car (x)
+               (if (symbolp x) x (car x))))
+      (dolist (x method-lambda-list)
+        (cond ((member x lambda-list-keywords)
+                (push x gf-lambda-list)
+                (setf state x))
+              ((case state
+                 (&required (push (symbol-or-car x) gf-lambda-list))
+                 (&optional (push (symbol-or-car x) gf-lambda-list))
+                 (&rest     (push x gf-lambda-list))
+                 (&key
+                   (push (cond ((and (consp x) (consp (car x))) ; ((KEYWORD VAR) INIT SP)
+                                 (second (car x)))
+                               ((consp x) (car x))
+                               (t x))
+                         gf-lambda-list))
+                 ((&allow-other-keys &aux))
+                 (t (error 'invalid-lambda-list :datum method-lambda-list))))))
+      (nreverse gf-lambda-list))))
+
 (defmacro defmethod (&environment env
                      name method-lambda-list &body body)
   "総称関数 NAME にメソッドを定義（追加）します。
@@ -651,7 +674,8 @@ METHOD-LAMBDA-lIST は基本的には通常の関数で指定するラムダリストと同様
 詳しくは... " ;; FIXME: ...書くの？
   (multiple-value-bind (*body decls doc intr)
       (parse-body body)
-    (let ((gf-lambda-list (%parse-method-lambda-list method-lambda-list)))
+    (let ((gf-lambda-list
+            (%method-lambda-list-to-gf-lambda-list method-lambda-list)))
       `(progn
          (unless (and (fboundp ',name)
                       (generic-function-p (fdefinition ',name)))
