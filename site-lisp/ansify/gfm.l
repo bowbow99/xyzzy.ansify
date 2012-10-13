@@ -359,7 +359,7 @@ NAME is used as a typespec."
 ;; [CLHS: 3.4.2 Generic Function Lambda Lists](http://www.lispworks.com/documentation/HyperSpec/Body/03_db.htm)
 (defun check-gf-lambda-list (gf-lambda-list)
   (macrolet ((check (test)
-               `(unless ,test (error 'invalid-lambda-list :datum lambda-list))))
+               `(unless ,test (error 'invalid-lambda-list :datum gf-lambda-list))))
     (let ((state '&required)
           (required-exists-p nil))
       (dolist (x gf-lambda-list)
