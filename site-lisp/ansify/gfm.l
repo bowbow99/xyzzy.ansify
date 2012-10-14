@@ -336,10 +336,10 @@ NAME is used as a typespec."
 (defstruct gf-info
   (name (error "initialization required: gf-info-name")
     ;; function-name of the GF
-    :type function-name) ;FIXME: undefined typespec
+    :type function-name) ;NOTE: undefined typespec
   (lambda-list (error "initialization required: gf-info-lambda-list")
     ;; gf-lambda-list
-    :type lambda-list) ;FIXME: undefined typespec
+    :type lambda-list) ;NOTE: undefined typespec
   (methods nil
     ;; list of method defined on the GF
     :type list)
@@ -396,7 +396,7 @@ NAME is used as a typespec."
           #1#)))
      gf-name)))
 
-;; FIXME: missing args for `ensure-generic-function`
+;; NOTE: missing args for `ensure-generic-function`
 ;; - argument-precedence-order
 ;; - declare
 ;; - generic-function-class
@@ -531,10 +531,10 @@ OPTION-TYPE ÇÕà»â∫ÇÃí ÇËÇ≈Ç∑ÅB
             (:print-function print-method))
   (name (error "initialization required: method-name")
     ;; name of GF the method lives in
-    :type function-name) ;FIXME: undefined typespec
+    :type function-name) ;NOTE: undefined typespec
   (lambda-list (error "initialization required: method-lambda-list")
     ;; method's specialized lambda-list
-    :type lambda-list) ;FIXME: undefined typespec
+    :type lambda-list) ;NOTE: undefined typespec
   (specializers (error "initialization required: method-specializers")
     ;; list of specializers (in canonicalized form)
     :type list)
