@@ -431,7 +431,8 @@ NAME is used as a typespec."
      (let ((sym (canonicalize-function-name function-name)))
        (if documentation
          (setf (get sym 'lisp::function-documentation) documentation)
-         (remprop sym 'lisp::function-documentation))))
+         (remprop sym 'lisp::function-documentation)))
+     (fdefinition function-name))
    ;; B. defined as ordinary function, macro, or special operator
    ((not (generic-function-p (fdefinition function-name)))
      ;; NOTE: `fmakunbound` via restart might be useful
@@ -457,7 +458,8 @@ NAME is used as a typespec."
                     (gf-info-methods gf-info))
            (setf (gf-info-lambda-list gf-info) lambda-list)
            (error "New lambda-list is not congruent with existing method: ~S"
-                  function-name)))))))
+                  function-name)))
+       (fdefinition function-name)))))
 (setf (get 'ensure-generic-function 'ed:lisp-indent-hook) 1)
 
 ;;;;; macro `defgeneric`
