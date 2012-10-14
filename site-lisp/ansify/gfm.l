@@ -18,10 +18,11 @@
   (shadowing-export
    '(;; class APIs and names
      find-class class-of class-name subclassp
-     generic-function builtin-function structure-object structure-class
+     builtin-function structure-object structure-class defgeneric
      ;; GF/method
-     defgeneric generic-function-p ensure-generic-function
-     defmethod add-method next-method-p call-next-method
+     generic-function-p ensure-generic-function defmethod
+     add-method next-method-p call-next-method
+     generic-function method ; type/class name
      ))
 
   (export-from :ansify.ext
@@ -506,29 +507,29 @@ OPTION-TYPE は以下の通りです。
 ;; applied to a set of arguments the method is specialized to.
 
 (eval-when (:execute :compile-toplevel :load-toplevel)
-  (defun print-*method (m out depth)
+  (defun print-method (m out depth)
     (declare (ignore depth))
     (format out "#<method: ~S ~S #{~8S}>"
-            (*method-name m)
+            (method-name m)
             (mapcar (lambda (spec)
                       (case (car spec)
                         (class (cdr spec))
                         (eql   (list 'eql (cdr spec)))))
-                    (*method-specializers m))
+                    (method-specializers m))
             (si:address-of m))))
 
-(defstruct (*method
-            (:print-function print-*method))
-  (name (error "initialization required: *method-name")
+(defstruct (method
+            (:print-function print-method))
+  (name (error "initialization required: method-name")
     ;; name of GF the method lives in
     :type function-name) ;FIXME: undefined typespec
-  (lambda-list (error "initialization required: *method-lambda-list")
+  (lambda-list (error "initialization required: method-lambda-list")
     ;; method's specialized lambda-list
     :type lambda-list) ;FIXME: undefined typespec
-  (specializers (error "initialization required: *method-specializers")
+  (specializers (error "initialization required: method-specializers")
     ;; list of specializers (in canonicalized form)
     :type list)
-  (thunk (error "initialization required: *method-thunk")
+  (thunk (error "initialization required: method-thunk")
     ;; function executes what the method does
     :type function)
   (documentation nil
@@ -587,7 +588,7 @@ SPEC must be a specializer in form appear in method-lambda-list."
       (%parse-method-lambda-list method-lambda-list)
     (multiple-value-bind (body decls doc intr)
         (parse-body body)
-      `(make-*method
+      `(make-method
         :name ',name
         :specializers (list ,@(mapcar #'%gen-specializer-form specializers))
         :lambda-list ',method-lambda-list
@@ -614,8 +615,8 @@ SPEC must be a specializer in form appear in method-lambda-list."
 (defun %methods-agree-p (method1 method2)
   "Return true if two methods same specializer."
   ;; NOTE: ANSI inconfirmance - no support for qualifier
-  (equal (*method-specializers method1)
-         (*method-specializers method2)))
+  (equal (method-specializers method1)
+         (method-specializers method2)))
 
 (defun add-method (generic-function new-method)
   "Add method NEW-METHOD to GENERIC-FUNCTION.
@@ -705,7 +706,7 @@ METHOD-LAMBDA-lIST は基本的には通常の関数で指定するラムダリストと同様
                (eql   (eql arg spec-datum))
                (class (subclassp arg-class (find-class spec-datum)))
                (t     (error "Invalid specializer: ~S" spec)))))
-         (*method-specializers method)
+         (method-specializers method)
          args))
 
 (defun %specializer-more-specific-p (spec1 spec2)
@@ -715,8 +716,8 @@ METHOD-LAMBDA-lIST は基本的には通常の関数で指定するラムダリストと同様
         ((subclassp (cdr spec1) (cdr spec2)) t)))
 
 (defun %method-more-specific-p (method1 method2)
-  (do ((specs1 (*method-specializers method1) (cdr specs1))
-       (specs2 (*method-specializers method2) (cdr specs2)))
+  (do ((specs1 (method-specializers method1) (cdr specs1))
+       (specs2 (method-specializers method2) (cdr specs2)))
       ((null specs1) nil)
     (let ((spec1 (car specs1))
           (spec2 (car specs2)))
@@ -732,7 +733,7 @@ METHOD-LAMBDA-lIST は基本的には通常の関数で指定するラムダリストと同様
 
 (defun %apply-method (method-list args)
   (let ((*appricable-method-list* (cdr method-list)))
-    (apply (*method-thunk (car method-list)) args)))
+    (apply (method-thunk (car method-list)) args)))
 
 ;;;; next-method dummies
 
