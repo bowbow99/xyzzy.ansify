@@ -130,6 +130,24 @@
         gf-lambda-list)))
   )
 
+;;;;; method invocation
+
+(define-test method-invocation
+  (progn
+    (fmakunbound 'foo)
+    (defmethod foo (x) x)
+    (assert-eql 3 (foo 3)))
+  (progn
+    (let ((setf-fn-sym (ansify::canonicalize-function-name '(setf foo))))
+      (fmakunbound setf-fn-sym)
+      (dolist (prop '(lisp::setf-lambda lisp::setf-method lisp::setf-update))
+        (remprop setf-fn-sym prop)))
+    (let ((foo '#:initial))
+      (defmethod (setf foo) (new-value)
+        (setf foo new-value))
+      (assert-eql :new (setf (foo) :new))
+      (assert-eql :new foo))))
+
 ;;;;; method dispatch
 
 (define-test method-dispatch-disjoint
