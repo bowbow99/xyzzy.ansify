@@ -12,12 +12,17 @@
 
 (in-package :test.ansify.gfm)
 
+;; FIXME: public APIs should be exported from ansify
 (shadowing-import
  (mapcar (lambda (name)
            (find-symbol (string name) :ansify.gfm))
          '(#:find-class #:class-name #:class-of #:subclassp
            #:generic-function #:structure-object #:structure-class
-           #:builtin-function)))
+           #:builtin-function
+           #:defgeneric #:defmethod #:call-next-method #:next-method-p
+           #:ensure-generic-function #:generic-function-p
+           ;; from ansify
+           #:fdefinition #:fmakunbound #:fboundp)))
 
 ;;;; class system modoki
 
@@ -57,14 +62,178 @@
           class-name object)))))
 
 
+;;;; GF/method modoki
+
+(defun fresh-symbol (&optional (name "generic function test sample"))
+  (when (find-symbol name :user)
+    (unintern (find-symbol name :user) :user))
+  (intern name :user))
+
+;;;;; ensure-generic-function
+
+(define-test ensure-generic-function
+  (let ((name (fresh-symbol)))
+    (fmakunbound name)
+    (ensure-generic-function name :lambda-list '(a b))
+    (assert-true (fboundp name))
+    (assert-true (generic-function-p (fdefinition name))))
+  (let ((name (fresh-symbol)))
+    (fmakunbound name)
+    (ensure-generic-function name
+      :lambda-list '(a b)
+      :documentation "documentation")
+    (assert-equal "documentation" (documentation name 'function)))
+  (let ((name `(setf ,(fresh-symbol))))
+    (fmakunbound name)
+    (ensure-generic-function name
+      :lambda-list  '(a b))
+    (assert-true (fboundp name))
+    (assert-true (generic-function-p (fdefinition name))))
+  )
+
+(define-test ensure-generic-function-checks-gf-lambda-list
+  ;; valid gf-lambda-list
+  (dolist (gf-lambda-list `((a)
+                            (a b)
+                            (a &optional b)
+                            (a &rest b)
+                            (a b &optional c)
+                            (a b &key c d)
+                            (a b &key ((:key x)))))
+    (let ((name (fresh-symbol)))
+      (assert-eql t (progn
+                      (ensure-generic-function name
+                        :lambda-list gf-lambda-list)
+                      t)
+        gf-lambda-list)))
+  ;; invalid gf-lambda-list
+  (dolist (gf-lambda-list `(;; required
+                            ()
+                            (&optional x y)
+                            (&rest all)
+                            (&key foo bar)
+                            ((a integer))
+                            ((a (eql t)))
+                            ;; &optional with extra
+                            (a &optional (b "default"))
+                            (a &optional (b nil b-supplied-p))
+                            ;; &key with extra
+                            (a &key (b "default"))
+                            (b &key (b nil b-supplied-p))
+                            ;; &aux
+                            (a &aux b)
+                            (a &aux (b 1))))
+    (let ((name (fresh-symbol)))
+      (assert-error 'invalid-lambda-list
+          (ensure-generic-function name
+            :lambda-list gf-lambda-list)
+        gf-lambda-list)))
+  )
+
+;;;;; method dispatch
+
+(define-test method-dispatch-disjoint
+  (progn
+    (fmakunbound 'foo)
+    (defmethod foo ((a string)) :string)
+    (defmethod foo ((a number)) :number)
+    (defmethod foo ((a symbol)) :symbol)
+    (defmethod foo ((a structure-object)) :structure)
+    (assert-eql :string (foo "foo"))
+    (assert-eql :number (foo 1))
+    (assert-eql :number (foo 1.0))
+    (assert-eql :number (foo 1/2))
+    (assert-eql :number (foo #C(1 2)))
+    (assert-eql :symbol (foo 'foo))
+    (assert-eql :symbol (foo :foo))
+    (assert-eql :structure (foo (make-test-example)))))
+
+(define-test method-dispatch-precedence
+  (progn
+    (fmakunbound 'foo)
+    (defmethod foo ((a array)) :array)
+    (defmethod foo ((a vector)) :vector)
+    (defmethod foo ((a string)) :string)
+    (assert-eql :array  (foo (make-array '(1 2))))
+    (assert-eql :vector (foo #(1 2 3)))
+    (assert-eql :string (foo "foo")))
+  (progn
+    (fmakunbound 'foo)
+    (defmethod foo ((a string)) :string)
+    (defmethod foo ((a vector)) :vector)
+    (defmethod foo ((a array)) :array)
+    (assert-eql :array  (foo (make-array '(1 2))))
+    (assert-eql :vector (foo #(1 2 3)))
+    (assert-eql :string (foo "foo")))
+  (progn
+    (fmakunbound 'foo)
+    (defmethod foo ((a symbol)) :symbol)
+    (defmethod foo ((a keyword)) :keyword)
+    (assert-eql :symbol  (foo 'foo))
+    (assert-eql :keyword (foo :foo)))
+  (progn
+    (fmakunbound 'foo)
+    (defmethod foo ((a keyword)) :keyword)
+    (defmethod foo ((a symbol)) :symbol)
+    (assert-eql :symbol  (foo 'foo))
+    (assert-eql :keyword (foo :foo)))
+  (progn
+    (fmakunbound 'foo)
+    (defmethod foo ((a cons)) :cons)
+    (defmethod foo ((a list)) :list) ;never called directly
+    (defmethod foo ((a null)) :null)
+    (assert-eql :null (foo nil))
+    (assert-eql :cons (foo '(1)))
+    (assert-eql :cons (foo '(1 2))))
+  (progn
+    (fmakunbound 'foo)
+    (defstruct foo)
+    (defstruct (bar (:include foo)))
+    (defstruct (baz (:include bar)))
+    (defmethod foo ((a foo)) :foo)
+    (defmethod foo ((a bar)) :bar)
+    (defmethod foo ((a baz)) :baz)
+    (assert-eql :foo (foo (make-foo)))
+    (assert-eql :bar (foo (make-bar)))
+    (assert-eql :baz (foo (make-baz))))
+  (progn
+    (fmakunbound 'foo)
+    (defstruct (bar))
+    (defstruct (bar-a (:include bar)))
+    (defstruct (bar-b (:include bar)))
+    (defmethod foo ((a bar)) :bar)
+    (assert-eql :bar (foo (make-bar)))
+    (assert-eql :bar (foo (make-bar-a)))
+    (assert-eql :bar (foo (make-bar-b))))
+  )
 
 
+;;;;; next-method
 
-
-
-
-
-
+(define-test next-method
+  (progn
+    (fmakunbound 'foo)
+    (defmethod foo ((a symbol))  (next-method-p))
+    (defmethod foo ((a keyword)) (next-method-p))
+    (assert-false (foo 'symbol))
+    (assert-true  (foo :keyword)))
+  (progn
+    (fmakunbound 'foo)
+    (defmethod foo ((a symbol))  :symbol)
+    (defmethod foo ((a keyword)) (list :keyword (call-next-method)))
+    (assert-equal '(:keyword :symbol) (foo :foo))
+    (assert-eql   :symbol             (foo 'foo)))
+  (progn
+    (fmakunbound 'foo)
+    (defmethod foo ((a array))  :array)
+    (defmethod foo ((a vector)) (list :vector (call-next-method)))
+    (defmethod foo ((a string)) (list* :string (call-next-method)))
+    (assert-eql :array
+        (foo #2A((1 2) (3 4))))
+    (assert-equal '(:vector :array)
+        (foo #(1 2 3)))
+    (assert-equal '(:string :vector :array)
+        (foo "foo"))))
 
 
 ;;; ansify/test/70_gfm.lt ends here.
