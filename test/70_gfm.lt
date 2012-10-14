@@ -91,6 +91,33 @@
     (assert-true (generic-function-p (fdefinition name))))
   )
 
+(define-test ensure-generic-function-update-lambda-list
+  (let ((name (fresh-symbol)))
+    (fmakunbound name)
+    (ensure-generic-function name :lambda-list '(a))
+    (ensure-generic-function name :lambda-list '(a b))
+    (assert-error 'too-few-arguments  (funcall name 1))
+    (assert-error 'too-many-arguments (funcall name 1 2 3)))
+  (let ((name (fresh-symbol)))
+    (fmakunbound name)
+    (ensure-generic-function name :lambda-list '(a b))
+    (ensure-generic-function name :lambda-list '(a))
+    (assert-error 'too-many-arguments (funcall name 1 2)))
+  (let ((name (fresh-symbol)))
+    (fmakunbound name)
+    (ensure-generic-function name :lambda-list '(a b))
+    (ensure-generic-function name :lambda-list '(a b c))
+    (assert-error 'too-few-arguments  (funcall name 1 2))
+    (assert-error 'too-many-arguments (funcall name 1 2 3 4)))
+  )
+
+(define-test ensure-generic-function-update-documentation
+  (let ((name (fresh-symbol)))
+    (fmakunbound name)
+    (ensure-generic-function name :lambda-list '(x) :documentation "foo")
+    (ensure-generic-function name :lambda-list '(x) :documentation "bar")
+    (assert-equal "bar" (documentation name 'function))))
+
 (define-test ensure-generic-function-checks-gf-lambda-list
   ;; valid gf-lambda-list
   (dolist (gf-lambda-list `((a)

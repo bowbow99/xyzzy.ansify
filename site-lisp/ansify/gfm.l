@@ -39,8 +39,8 @@
     #:defgeneric #:generic-function-p #:ensure-generic-function
     #:defmethod #:add-method #:next-method-p #:call-next-method
     ;; To use
-    #:destructuring-bind #:fboundp #:fdefinition #:canonicalize-function-name
-    #:setf-function-name-p)
+    #:destructuring-bind #:fboundp #:fdefinition #:fmakunbound
+    #:canonicalize-function-name #:setf-function-name-p)
   (:import-from :ansify.ext
     #:optimize-type-check
     ))
@@ -384,17 +384,17 @@ NAME is used as a typespec."
           (make-gf-info :name gf-name
                         :lambda-list lambda-list
                         :documentation documentation)))
-    (multiple-value-bind (nargs-min nargs-max)
-        (lambda-list-nargs lambda-list)
-      (si:*set-function-name
-       (lambda (&rest #1=#:args)
+    (si:*set-function-name
+     (lambda (&rest #1=#:args)
+       (multiple-value-bind (nargs-min nargs-max)
+           (lambda-list-nargs (gf-info-lambda-list GF-INFO))
          (%assert-list-length #1# nargs-min nargs-max)
          (%apply-method
           (or (appricable-method-list (gf-info-methods GF-INFO)
                                       #2=(subseq #1# 0 nargs-min)) ;just required portion
               (error "No appricable method: ~S: ~S" gf-name #2#))
-          #1#))
-       gf-name))))
+          #1#)))
+     gf-name)))
 
 ;; FIXME: missing args for `ensure-generic-function`
 ;; - argument-precedence-order
@@ -435,12 +435,29 @@ NAME is used as a typespec."
    ;; B. defined as ordinary function, macro, or special operator
    ((not (generic-function-p (fdefinition function-name)))
      ;; NOTE: `fmakunbound` via restart might be useful
+     ;; NOTE: CLHS defines that the error to be signalled is `type-error`
      (error "Already fbound to something other than GF: ~S" function-name))
    ;; C. already a GF
    ((generic-function-p (fdefinition function-name))
-     ;; FIXME: modify existing GF if necessary
-     ;; See [CLHS: Function ENSURE-GENERIC-FUNCTION]
-     )))
+     (let ((symbol  (canonicalize-function-name function-name))
+           (gf-info (gf-info (fdefinition function-name))))
+       ;; documentation
+       (unless (equal documentation
+                      (gf-info-documentation gf-info))
+         (setf (gf-info-documentation gf-info) documentation)
+         (if documentation
+           (setf (get symbol 'lisp::function-documentation) documentation)
+           (remprop symbol 'lisp::function-documentation)))
+       ;; lambda-list
+       (unless (equal lambda-list
+                      (gf-info-lambda-list gf-info))
+         (if (every (lambda (method)
+                      (lambda-list-congruent-p lambda-list
+                                               (method-lambda-list method)))
+                    (gf-info-methods gf-info))
+           (setf (gf-info-lambda-list gf-info) lambda-list)
+           (error "New lambda-list is not congruent with existing method: ~S"
+                  function-name)))))))
 (setf (get 'ensure-generic-function 'ed:lisp-indent-hook) 1)
 
 ;;;;; macro `defgeneric`
