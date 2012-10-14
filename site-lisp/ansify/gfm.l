@@ -604,8 +604,8 @@ SPEC must be a specializer in form appear in method-lambda-list."
         :documentation ,doc
         :thunk (si:*set-function-name
                 (lambda (&rest #0=#:method-args)
+                  ,@decls
                   ,@(when intr `(,intr)) ;NOTE: interactive invocation not supported on GF side
-                  ,@decls ;FIXME: is order of INTR and DECLS right?
                   (block ,(cond ((setf-function-name-p name) (second name))
                                 (t name))
                     (destructuring-bind ,lambda-list #0#
