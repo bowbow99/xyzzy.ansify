@@ -9,7 +9,9 @@
 
 (eval-when (:execute :compile-toplevel :load-toplevel)
   (require "ansify/base")
-  (require "ansify/function"))
+  (require "ansify/function")
+  (require "ansify/typespec+")
+  (require "ansify/autoload-defs"))
 
 (in-package :ansify)
 
