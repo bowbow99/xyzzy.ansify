@@ -79,7 +79,7 @@
                       trace untrace
                       ))
   (export-from :ansify.ext
-               '(#:function-info
+               '(#:function-info #:function-name
                  #:fwrapper #:find-fwrapper #:define-fwrapper #:fwrap #:funwrap
                  #:call-next-function #:*this-function*
                  ))
@@ -143,6 +143,30 @@
 (lisp:defun canonicalize-function-name (name)
   (if (symbolp name) name
     (get-setf-function-symbol name)))
+
+;; NOTE: When getter for `si:*set-function-name` got implemented, use it.
+(lisp:defun function-name (fn)
+  "関数の名前であるシンボル等を探して、見つかればそれを、無名関数だったり
+関数名を見つけられない場合などには nil を返します。
+
+(setf READER) のようなヘンな名前を返す事もあるので気を付けるべし。"
+  (labels ((fn-repr (fn)
+             (let ((*package* (find-package :keyword)))
+               (prin1-to-string fn))))
+    (cond ((si:*closurep fn)
+            (or (function-info fn 'function-name)
+                (setf (function-info fn 'function-name)
+                      (if (compiled-function-p fn)
+                        (when (ed:string-match "^#<lexical-closure: \\(.+\\)>$"
+                                               (fn-repr fn))
+                          (read-from-string (ed:match-string 1)))
+                        (second (caddr (si:closure-body fn)))))))
+          ((si:*builtin-function-p fn)
+            (when (ed:string-match "^#<function: \\(.+\\)>$" (fn-repr fn))
+              (or (find-symbol (ed:match-string 1) :editor)
+                  (find-symbol (ed:match-string 1) :system))))
+          (t
+            (error 'type-error :datum fn :expected-type 'function)))))
 
 
 ;;;; fwrapper
