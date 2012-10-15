@@ -341,7 +341,10 @@ NAME is used as a typespec."
     ;; gf-lambda-list
     :type lambda-list) ;NOTE: undefined typespec
   (methods nil
-    ;; list of method defined on the GF
+    ;; list of all method added to the GF
+    :type list)
+  (inherent-methods nil
+    ;; list of method added by `defgeneric` form
     :type list)
   (documentation nil
     ;; GF's own docstring
@@ -503,10 +506,26 @@ OPTION-TYPE ÇÕà»â∫ÇÃí ÇËÇ≈Ç∑ÅB
   (multiple-value-bind (doc method-descs)
       (%parse-defgeneric-options options name)
     `(progn
+       ;; remove methods added by previous `defgeneric`
+       (when (and (fboundp ',name)
+                  (generic-function-p (fdefinition ',name)))
+         (let ((gf (fdefinition ',name)))
+           (dolist (m (gf-info-inherent-methods (gf-info gf)))
+             (remove-method gf m))
+           (setf (gf-info-inherent-methods (gf-info gf)) nil)))
+       ;; do `ensure-generic-function`
        (ensure-generic-function ',name
          :lambda-list ',gf-lambda-list
          :documentation ,doc)
-       ;; FIXME: Add support for :method options
+       ;; add methods specified by `:method` options
+       (let* ((gf (fdefinition ',name))
+              (gf-info (gf-info gf)))
+         ,@(mapcar (lambda (method-desc)
+                     `(let ((method ,(gen-make-method-form name (car method-desc) (cdr method-desc))))
+                        (add-method gf method)
+                        (push method (gf-info-inherent-methods gf-info))))
+                   method-descs)
+         gf)
        )))
 (set-indent 'defgeneric 'defun)
 
@@ -621,7 +640,7 @@ SPEC must be a specializer in form appear in method-lambda-list."
                         ,@body))))
                 ',name)))))
 
-;;;;; add method to GF
+;;;;; add/remove method to/from GF
 
 (defun %methods-agree-p (method1 method2)
   "Return true if two methods same specializer."
@@ -640,6 +659,17 @@ it is replaced with NEW-METHOD."
                              (%methods-agree-p existing new-method))
                            (gf-info-methods gf-info))))
     generic-function))
+
+;; [CLHS: Standard Generic Function REMOVE-METHOD]: http://www.lispworks.com/documentation/HyperSpec/Body/f_rm_met.htm
+(defun remove-method (generic-function method)
+  (let ((gf-info (gf-info generic-function)))
+    (unless (member method (gf-info-methods gf-info))
+      (error "Not a method added to the GF: ~S: ~S" method generic-function))
+    (setf (gf-info-methods gf-info) (delete method (gf-info-methods gf-info))
+          (gf-info-inherent-methods gf-info) (delete method (gf-info-inherent-methods gf-info)))
+    generic-function))
+
+
 
 ;;;;; macro `defmethod`
 

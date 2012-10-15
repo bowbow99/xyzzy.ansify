@@ -280,5 +280,39 @@
     (assert-equal '(:string :vector :array)
         (foo "foo"))))
 
+;;;; defgeneric
+
+(define-test defgeneric
+  (progn
+    (fmakunbound 'foo)
+    (defgeneric foo (x)
+      (:documentation "empty foo"))
+    (assert-true (fboundp 'foo))
+    (assert-equal "empty foo" (documentation 'foo 'function))
+    (assert-error 'simple-error (foo 3))
+    (assert-error 'simple-error (foo "foo"))))
+
+(define-test defgeneric-with-method
+  (progn
+    (fmakunbound 'foo)
+    (defgeneric foo (x)
+      (:documentation "foo with method for string and symbol")
+      (:method ((x string)) :string)
+      (:method ((x symbol)) "symbol"))
+    (assert-eql :string (foo "foo"))
+    (assert-equal "symbol" (foo 'foo))))
+
+
+(define-test defgeneric-again
+  (progn
+    (fmakunbound 'foo)
+    (defgeneric foo (x)
+      (:documentation "Initial foo with method for string")
+      (:method ((x string)) :string))
+    (defgeneric foo (x)
+      (:documentation "Second foo with method for symbol")
+      (:method ((x symbol)) "symbol"))
+    (assert-equal "symbol" (foo 'foo))
+    (assert-error 'simple-error (foo "string"))))
 
 ;;; ansify/test/70_gfm.lt ends here.
