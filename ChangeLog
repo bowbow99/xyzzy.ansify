@@ -1,3 +1,21 @@
+2012-10-15  bowbow99  <bowbow99@gmail.com>
+
+	* いろいろマージした
+
+	* GFM: generic function modoki
+	- 総称関数の半端な実装
+	- クラスシステムは、（CLOS でいうところの）built-in-class は
+	紛い物をでっち上げて、structure-class は `si:*structure-subtypep`
+	をそのまま使ってる。standard-class （`defclass` で定義する奴） 
+	は無い。
+	- メソッドは specializer による dispatch のみで、qualifier （
+	:before, :around, :after とか）は無い。
+
+	* function-info と fwrapper
+	- ↓の 2012-09-30 に書いてある奴
+
+	* おまけ: typepred が a) 関数になって b) ansify.ext に引っ越した。
+
 2012-09-30  bowbow99  <bowbow99@gmail.com>
 
 	* ansify.ext:function-info を追加
