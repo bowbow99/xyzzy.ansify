@@ -1,0 +1,335 @@
+;;; -*- mode: lisp; package: test.ansify.gfm -*-
+;;;
+;;; ansify/test/70_gfm.lt
+
+;;; Test:
+
+(require "lisp-unit")
+;(require "ansify/gfm")
+
+(defpackage :test.ansify.gfm
+  (:use :lisp :lisp-unit))
+
+(in-package :test.ansify.gfm)
+
+;; FIXME: public APIs should be exported from ansify
+(shadowing-import
+ (mapcar (lambda (name)
+           (find-symbol (string name) :ansify.gfm))
+         '(#:find-class #:class-name #:class-of #:subclassp
+           #:generic-function #:structure-object #:structure-class
+           #:builtin-function
+           #:defgeneric #:defmethod #:call-next-method #:next-method-p
+           #:ensure-generic-function #:generic-function-p
+           ;; from ansify
+           #:fdefinition #:fmakunbound #:fboundp)))
+
+;;;; class system modoki
+
+(defstruct test-example a b)
+
+(defparameter *built-in-classes-and-example-objects*
+  `((t)
+    (symbol foo bar #:baz)
+    (keyword :foo :bar)
+    (sequence)
+    (list)
+    (cons (1 . 2) (1 2 3))
+    (null nil)
+    (array #2A((1 2) (3 4)))
+    (vector #(a b c))
+    (string "hello")
+    (number 1 2.0 -3 #C(4 5))
+    (function ,(lambda (x) (1+ x)))
+    (generic-function) ;example missing
+    (builtin-function ,#'car)
+    (character #\a)
+    (stream ,*standard-output*)
+    (hash-table ,(make-hash-table))
+    ;(structure-object ,(make-test-example :a 1 :b 2))
+    ;(structure-class  ,(get 'test-example 'si:structure-definition))
+    ))
+
+(define-test BIC-existance
+  (dolist (name (mapcar #'car *built-in-classes-and-example-objects*))
+    (assert-true (find-class name) name)))
+
+(define-test BIC-find-class
+  (dolist (example *built-in-classes-and-example-objects*)
+    (let ((class-name (first example)))
+      (dolist (object (cdr example))
+        (assert-eql (find-class class-name) (class-of object)
+          class-name object)))))
+
+
+;;;; GF/method modoki
+
+(defun fresh-symbol (&optional (name "generic function test sample"))
+  (when (find-symbol name :user)
+    (unintern (find-symbol name :user) :user))
+  (intern name :user))
+
+;;;;; ensure-generic-function
+
+(define-test ensure-generic-function
+  (let ((name (fresh-symbol)))
+    (fmakunbound name)
+    (ensure-generic-function name :lambda-list '(a b))
+    (assert-true (fboundp name))
+    (assert-true (generic-function-p (fdefinition name))))
+  (let ((name (fresh-symbol)))
+    (fmakunbound name)
+    (ensure-generic-function name
+      :lambda-list '(a b)
+      :documentation "documentation")
+    (assert-equal "documentation" (documentation name 'function)))
+  (let ((name `(setf ,(fresh-symbol))))
+    (fmakunbound name)
+    (ensure-generic-function name
+      :lambda-list  '(a b))
+    (assert-true (fboundp name))
+    (assert-true (generic-function-p (fdefinition name))))
+  )
+
+(define-test ensure-generic-function-update-lambda-list
+  (let ((name (fresh-symbol)))
+    (fmakunbound name)
+    (ensure-generic-function name :lambda-list '(a))
+    (ensure-generic-function name :lambda-list '(a b))
+    (assert-error 'too-few-arguments  (funcall name 1))
+    (assert-error 'too-many-arguments (funcall name 1 2 3)))
+  (let ((name (fresh-symbol)))
+    (fmakunbound name)
+    (ensure-generic-function name :lambda-list '(a b))
+    (ensure-generic-function name :lambda-list '(a))
+    (assert-error 'too-many-arguments (funcall name 1 2)))
+  (let ((name (fresh-symbol)))
+    (fmakunbound name)
+    (ensure-generic-function name :lambda-list '(a b))
+    (ensure-generic-function name :lambda-list '(a b c))
+    (assert-error 'too-few-arguments  (funcall name 1 2))
+    (assert-error 'too-many-arguments (funcall name 1 2 3 4)))
+  )
+
+(define-test ensure-generic-function-update-documentation
+  (let ((name (fresh-symbol)))
+    (fmakunbound name)
+    (ensure-generic-function name :lambda-list '(x) :documentation "foo")
+    (ensure-generic-function name :lambda-list '(x) :documentation "bar")
+    (assert-equal "bar" (documentation name 'function))))
+
+(define-test ensure-generic-function-checks-gf-lambda-list
+  ;; valid gf-lambda-list
+  (dolist (gf-lambda-list `((a)
+                            (a b)
+                            (a &optional b)
+                            (a &rest b)
+                            (a b &optional c)
+                            (a b &key c d)
+                            (a b &key ((:key x)))))
+    (let ((name (fresh-symbol)))
+      (assert-eql t (progn
+                      (ensure-generic-function name
+                        :lambda-list gf-lambda-list)
+                      t)
+        gf-lambda-list)))
+  ;; invalid gf-lambda-list
+  (dolist (gf-lambda-list `(;; required
+                            ()
+                            (&optional x y)
+                            (&rest all)
+                            (&key foo bar)
+                            ((a integer))
+                            ((a (eql t)))
+                            ;; &optional with extra
+                            (a &optional (b "default"))
+                            (a &optional (b nil b-supplied-p))
+                            ;; &key with extra
+                            (a &key (b "default"))
+                            (b &key (b nil b-supplied-p))
+                            ;; &aux
+                            (a &aux b)
+                            (a &aux (b 1))))
+    (let ((name (fresh-symbol)))
+      (assert-error 'invalid-lambda-list
+          (ensure-generic-function name
+            :lambda-list gf-lambda-list)
+        gf-lambda-list)))
+  )
+
+;;;;; method invocation
+
+(define-test method-invocation
+  (progn
+    (fmakunbound 'foo)
+    (defmethod foo (x) x)
+    (assert-eql 3 (foo 3)))
+  (progn
+    (let ((setf-fn-sym (ansify::canonicalize-function-name '(setf foo))))
+      (fmakunbound setf-fn-sym)
+      (dolist (prop '(lisp::setf-lambda lisp::setf-method lisp::setf-update))
+        (remprop setf-fn-sym prop)))
+    (let ((foo '#:initial))
+      (defmethod (setf foo) (new-value)
+        (setf foo new-value))
+      (assert-eql :new (setf (foo) :new))
+      (assert-eql :new foo))))
+
+;;;;; method dispatch
+
+(define-test method-dispatch-disjoint
+  (progn
+    (fmakunbound 'foo)
+    (defmethod foo ((a string)) :string)
+    (defmethod foo ((a number)) :number)
+    (defmethod foo ((a symbol)) :symbol)
+    (defmethod foo ((a structure-object)) :structure)
+    (assert-eql :string (foo "foo"))
+    (assert-eql :number (foo 1))
+    (assert-eql :number (foo 1.0))
+    (assert-eql :number (foo 1/2))
+    (assert-eql :number (foo #C(1 2)))
+    (assert-eql :symbol (foo 'foo))
+    (assert-eql :symbol (foo :foo))
+    (assert-eql :structure (foo (make-test-example)))))
+
+(define-test method-dispatch-precedence
+  (progn
+    (fmakunbound 'foo)
+    (defmethod foo ((a array)) :array)
+    (defmethod foo ((a vector)) :vector)
+    (defmethod foo ((a string)) :string)
+    (assert-eql :array  (foo (make-array '(1 2))))
+    (assert-eql :vector (foo #(1 2 3)))
+    (assert-eql :string (foo "foo")))
+  (progn
+    (fmakunbound 'foo)
+    (defmethod foo ((a string)) :string)
+    (defmethod foo ((a vector)) :vector)
+    (defmethod foo ((a array)) :array)
+    (assert-eql :array  (foo (make-array '(1 2))))
+    (assert-eql :vector (foo #(1 2 3)))
+    (assert-eql :string (foo "foo")))
+  (progn
+    (fmakunbound 'foo)
+    (defmethod foo ((a symbol)) :symbol)
+    (defmethod foo ((a keyword)) :keyword)
+    (assert-eql :symbol  (foo 'foo))
+    (assert-eql :keyword (foo :foo)))
+  (progn
+    (fmakunbound 'foo)
+    (defmethod foo ((a keyword)) :keyword)
+    (defmethod foo ((a symbol)) :symbol)
+    (assert-eql :symbol  (foo 'foo))
+    (assert-eql :keyword (foo :foo)))
+  (progn
+    (fmakunbound 'foo)
+    (defmethod foo ((a cons)) :cons)
+    (defmethod foo ((a list)) :list) ;never called directly
+    (defmethod foo ((a null)) :null)
+    (assert-eql :null (foo nil))
+    (assert-eql :cons (foo '(1)))
+    (assert-eql :cons (foo '(1 2))))
+  (progn
+    (fmakunbound 'foo)
+    (defstruct foo)
+    (defstruct (bar (:include foo)))
+    (defstruct (baz (:include bar)))
+    (defmethod foo ((a foo)) :foo)
+    (defmethod foo ((a bar)) :bar)
+    (defmethod foo ((a baz)) :baz)
+    (assert-eql :foo (foo (make-foo)))
+    (assert-eql :bar (foo (make-bar)))
+    (assert-eql :baz (foo (make-baz))))
+  (progn
+    (fmakunbound 'foo)
+    (defstruct (bar))
+    (defstruct (bar-a (:include bar)))
+    (defstruct (bar-b (:include bar)))
+    (defmethod foo ((a bar)) :bar)
+    (assert-eql :bar (foo (make-bar)))
+    (assert-eql :bar (foo (make-bar-a)))
+    (assert-eql :bar (foo (make-bar-b))))
+  )
+
+
+;;;;; next-method
+
+(define-test next-method
+  (progn
+    (fmakunbound 'foo)
+    (defmethod foo ((a symbol))  (next-method-p))
+    (defmethod foo ((a keyword)) (next-method-p))
+    (assert-false (foo 'symbol))
+    (assert-true  (foo :keyword)))
+  (progn
+    (fmakunbound 'foo)
+    (defmethod foo ((a symbol))  :symbol)
+    (defmethod foo ((a keyword)) (list :keyword (call-next-method)))
+    (assert-equal '(:keyword :symbol) (foo :foo))
+    (assert-eql   :symbol             (foo 'foo)))
+  (progn
+    (fmakunbound 'foo)
+    (defmethod foo ((a array))  :array)
+    (defmethod foo ((a vector)) (list :vector (call-next-method)))
+    (defmethod foo ((a string)) (list* :string (call-next-method)))
+    (assert-eql :array
+        (foo #2A((1 2) (3 4))))
+    (assert-equal '(:vector :array)
+        (foo #(1 2 3)))
+    (assert-equal '(:string :vector :array)
+        (foo "foo"))))
+
+;;;; defgeneric
+
+(define-test defgeneric
+  (progn
+    (fmakunbound 'foo)
+    (defgeneric foo (x)
+      (:documentation "empty foo"))
+    (assert-true (fboundp 'foo))
+    (assert-equal "empty foo" (documentation 'foo 'function))
+    (assert-error 'simple-error (foo 3))
+    (assert-error 'simple-error (foo "foo"))))
+
+(define-test defgeneric-with-method
+  (progn
+    (fmakunbound 'foo)
+    (defgeneric foo (x)
+      (:documentation "foo with method for string and symbol")
+      (:method ((x string)) :string)
+      (:method ((x symbol)) "symbol"))
+    (assert-eql :string (foo "foo"))
+    (assert-equal "symbol" (foo 'foo))))
+
+
+(define-test defgeneric-again
+  (progn
+    (fmakunbound 'foo)
+    (defgeneric foo (x)
+      (:documentation "Initial foo with method for string")
+      (:method ((x string)) :string))
+    (defgeneric foo (x)
+      (:documentation "Second foo with method for symbol")
+      (:method ((x symbol)) "symbol"))
+    (assert-equal "symbol" (foo 'foo))
+    (assert-error 'simple-error (foo "string")))
+  (progn
+    (fmakunbound 'foo)
+    (defgeneric foo (x)
+      (:documentation "Initial foo with method for string")
+      (:method ((x string))
+        :string))
+    (defmethod foo ((x string))
+      "Method for string is replaced by `defmethod`."
+      (list :string :defmethod))
+    (defgeneric foo (x)
+      (:documentation "Second foo with method for symbol.")
+      (:method ((x symbol))
+        "symbol"))
+    (assert-equal '(:string :defmethod) (foo "foo"))
+    (assert-equal "symbol"              (foo 'foo)))
+  )
+
+
+;;; ansify/test/70_gfm.lt ends here.
