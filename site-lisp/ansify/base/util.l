@@ -25,6 +25,9 @@
           ;; symbols
           mksym
           mkkwd
+          ;; macro helpers
+          operator-form-p
+          parse-body
           ;; binding macros
           with-ca/dr
           with-places
@@ -101,6 +104,34 @@ Symbols to be exported are interned into PACKAGE first."
 
 (defun mkkwd (name)
   (intern (string name) :keyword))
+
+
+;;;; Macro helpers
+
+(defun operator-form-p (thing operator)
+  "Return true if THING is a form applying OPERATOR."
+  (and (consp thing) (eq (car thing) operator)))
+
+(defun parse-body (body)
+  "Return actual body forms, declarations, docstring, and interactive form."
+  (let ((doc   nil)
+        (decls '())
+        (intr  nil))
+    (labels ((%return (body)
+               (return-from parse-body
+                 (values body (nreverse decls) doc intr))))
+      (do ((rest body (cdr rest)))
+          ((null rest))
+        (let ((x (car rest)))
+          (cond ((and (stringp x) (not doc) (cdr rest))
+                  (setf doc x))
+                ((operator-form-p x 'declare)
+                  (push x decls))
+                ((and (operator-form-p x 'ed:interactive) (not intr))
+                  (setf intr x))
+                (t
+                  (%return rest)))))
+      (%return rest))))
 
 
 ;;;; Binding Macros
