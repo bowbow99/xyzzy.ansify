@@ -1,3 +1,38 @@
+Ver. 0.04.xx （予定）
+=====================
+
+- `ansify.ext:function-info`
+  - シンボルのプロパティやハッシュテーブルみたいに、関数オブジェクトに
+    データを保存しておくもの。
+  - `(setf (function-info #'FUNC 'KEY) DATA)` で保存
+  - `(function-info #'FUNC 'KEY)` で取り出し
+
+- `ansify.ext:fwrapper`
+  - 関数が呼び出された時に処理を乗っ取るなにか。
+  - `(ansify.ext:define-fwrapper NAME ...)` で fwrapper を定義しておいて、
+    `(ansify.ext:fwrap #'FUNC 'NAME)` で fwrap する。
+  - fwrap すると、fwrap された関数が呼び出された時に fwrapper の本体が
+    実行される。
+  - fwrapper の本体の中から `(ansify.ext:call-next-function ...)` すると
+    本来の処理（fwrap された方）を呼び出せる。
+
+- `trace`, `untrace` を追加
+
+- GFM (Generic Function Modoki)
+  - 総称関数の半端な実装
+  - 総称関数側: 引数のクラスによる dispatch するだけ
+  - クラス側: built-in-class のようなものだけ実装（structure-class は
+    `si:*structure-subtypep` をそのまま使ってる）
+  - キャッシュとかしてない
+  - FIXME: ここに追加したシンボルを書く
+
+- バグ修正など
+  - `(defun (setf READER) ..)` で定義した関数のブロック名がおかしかった
+    のを、ちゃんと `READER` になるように修正
+- 細々したオペレータ
+  - `function-lambda-expression`
+
+
 Ver. 0.03.xx
 ============
 
