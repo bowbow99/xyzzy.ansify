@@ -21,6 +21,7 @@
         #:fdefinition
         #:fboundp
         #:fmakunbound
+        #:function-lambda-expression
         ))
 
 (mapc (lambda (name) (shadowing-import (find-symbol (string name) :ansify.ext)))
@@ -139,6 +140,28 @@
             ;; an error when expanding setf form instead of run-time.
             (assert-error 'error (setf (hoge 3) "fuga"))))
       (setf (symbol-function 'hoge) hoge-def))))
+
+
+
+;;;; Function function-lambda-expression
+
+(define-test function-lambda-expression
+  (progn
+    (multiple-value-bind (lambda-expr closure-p name)
+        (function-lambda-expression #'car)
+      (assert-eql nil  lambda-expr)
+      (assert-eql t    closure-p)
+      (assert-eql 'car name)))
+  (progn
+    (fmakunbound 'foo)
+    (defun foo (x) (* x (+ x x)))
+    (multiple-value-bind (lambda-expr closure-p name)
+        (function-lambda-expression #'foo)
+      (assert-equal '(lambda (x) (* x (+ x x))) lambda-expr)
+      (assert-eql nil  closure-p)
+      (assert-eql 'foo name))))
+
+
 
 
 ;;;; fwrapper
