@@ -59,31 +59,6 @@
 (defun !!type-error (datum expected-type)
   (error 'type-error :datum datum :expected-type expected-type))
 
-(defun operator-form-p (thing operator)
-  (and (consp thing) (eq (car thing) operator)))
-
-(defun parse-body (body)
-  "=> BODY, DECLS, DOC, INTERACTIVE"
-  (let ((doc   nil)
-        (decls '())
-        (intr  nil))
-    (labels ((%return (body)
-               (return-from parse-body
-                 (values body (nreverse decls) doc intr))))
-      (do* ((rest body (cdr rest))
-            (x #1=(first rest) #1#))
-          ((null rest))
-        (cond ((and (stringp x) (cdr rest) (not doc))
-                (setf doc x))
-              ((operator-form-p x 'declare)
-                (push x decls))
-              ((and (operator-form-p x 'ed:interactive) (not intr))
-                (setf intr x))
-              (t
-                (%return rest))))
-      (%return nil))))
-
-
 ;;; borrowed from ansify/destructuring-bind.l
 (defmacro %assert-list-length (list min max)
   `(let ((#1=#:list ,list)
