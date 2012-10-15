@@ -115,8 +115,8 @@
 
 ;; assertion.l
 (define-test ansify/assertion.l
-  (%assert-symbol "assert" :macro :autoload "ansify/assertion")
-  (%assert-symbol "check-type" :macro :autoload "ansify/assertion"))
+  (%assert-symbol "assert" :macro)
+  (%assert-symbol "check-type" :macro))
 
 
 ;;;;
@@ -124,17 +124,17 @@
 
 ;; symbol-macrolet.l
 (define-test ansify/symbol-macrolet.l
-  (%assert-symbol "symbol-macrolet" :macro :autoload "ansify/symbol-macrolet"))
+  (%assert-symbol "symbol-macrolet" :macro))
 
 ;; destructuring-bind.l
 (define-test ansify/destructuring-bind
-  (%assert-symbol "destructuring-bind" :macro :autoload "ansify/destructuring-bind"))
+  (%assert-symbol "destructuring-bind" :macro))
 
 ;; typecase.l
 (define-test ansify/typecase.l
-  (%assert-symbol "typecase"  :macro :autoload "ansify/typecase")
-  (%assert-symbol "etypecase" :macro :autoload "ansify/typecase")
-  (%assert-symbol "ctypecase" :macro :autoload "ansify/typecase"))
+  (%assert-symbol "typecase"  :macro)
+  (%assert-symbol "etypecase" :macro)
+  (%assert-symbol "ctypecase" :macro))
 
 
 ;;; test/00_exports.lt ends here.
