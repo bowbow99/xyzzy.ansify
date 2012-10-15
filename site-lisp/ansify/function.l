@@ -400,12 +400,21 @@ INDICATOR が指定されればその INDICATOR を指定してラップした fwrapper を、
                 ,(check-redefinition name name)
                 (lisp:defun ,name ,lambda-list ,@body)))
             ((consp name)
-             (let ((sym (get-setf-function-symbol name)))
-               `(progn
-                  ,(check-redefinition sym name)
-                  (lisp:defun ,sym ,lambda-list ,@body)
-                  (defsetf ,(second name) ,(cdr lambda-list) (,(car lambda-list))
-                    (list ',sym ,@lambda-list)))))))))
+             (let ((sym    (get-setf-function-symbol name))
+                   (reader (second name)))
+               (multiple-value-bind (body decls doc intr)
+                   (parse-body body)
+                 `(progn
+                    ,(check-redefinition sym name)
+                    (setf (fdefinition ',name)
+                          (si:*set-function-name
+                           (lambda ,lambda-list ,@decls ,@(when intr `(,intr))
+                             (block ,reader ,@body))
+                           ',name))
+                    ,(if doc
+                       `(setf (get ',sym 'lisp::function-documentation) ,doc)
+                       `(remprop ',sym 'lisp::function-documentation))
+                    ',name))))))))
 (set-indent 'defun 'defun)
 
 ;; http://www.lispworks.com/documentation/HyperSpec/Body/f_fdefin.htm
