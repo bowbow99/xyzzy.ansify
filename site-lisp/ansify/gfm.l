@@ -11,7 +11,8 @@
   (require "ansify/base")
   (require "ansify/function")
   (require "ansify/typespec+")
-  (require "ansify/autoload-defs"))
+  (require "ansify/autoload-defs")
+  (require "ansify/misc"))
 
 (in-package :ansify)
 
@@ -42,7 +43,7 @@
     #:defmethod #:add-method #:next-method-p #:call-next-method
     ;; To use
     #:destructuring-bind #:fboundp #:fdefinition #:fmakunbound
-    #:canonicalize-function-name #:setf-function-name-p)
+    #:canonicalize-function-name #:setf-function-name-p #:%assert-list-length)
   (:import-from :ansify.ext
     #:optimize-type-check #:typepred
     ))
@@ -55,19 +56,6 @@
 
 
 ;;;; utilities
-
-;;; borrowed from ansify/destructuring-bind.l
-(defmacro %assert-list-length (list min max)
-  `(let ((#1=#:list ,list)
-         (#2=#:min  ,min)
-         (#3=#:max  ,max))
-     (unless (listp #1#)
-       (error 'type-error :datum #1# :expected-type 'list))
-     (unless (or (null #2#) (zerop #2#) (nthcdr (1- #2#) #1#))
-       (error 'too-few-arguments :datum #1#))
-     (unless (or (null #3#) (<= (list-length #1#) #3#))
-       (error 'too-many-arguments :datum #1#))
-     #1#))
 
 (defun lambda-list-spec (lambda-list)
   (let ((n-req 0)

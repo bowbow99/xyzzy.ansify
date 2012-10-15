@@ -32,18 +32,6 @@
 (defconstant +destructuring-lambda-list-keywords+
   '(&environment &whole &required &optional &body &rest &key &allow-other-keys &aux))
 
-(defmacro %assert-list-length (list min max)
-  `(let ((#1=#:list ,list)
-         (#2=#:min ,min)
-         (#3=#:max ,max))
-     (unless (listp #1#)
-       (error 'type-error :datum #1# :expected-type 'list))
-     (unless (or (null #2#) (zerop #2#) (nthcdr (1- #2#) #1#))
-       (error 'too-few-arguments :datum #1#))
-     (unless (or (null #3#) (<= (list-length #1#) #3#))
-       (error 'too-many-arguments :datum #1#))
-     #1#))
-
 (defmacro %ASSERT-LAMBDA-LIST (&rest tests)
   `(unless (and ,@tests)
      (error 'invalid-lambda-list :datum *lambda-list*)))

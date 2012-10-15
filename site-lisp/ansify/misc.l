@@ -19,6 +19,18 @@
   (shadowing-export '(#:print-unreadable-object #:constantly #:type-of
                       #:the #:nth-value #:special-operator-p #:sleep)))
 
+;; NOTE: Used by destructuring-bind and gfm
+(defmacro %assert-list-length (list min max)
+  `(let ((#1=#:list ,list)
+         (#2=#:min  ,min)
+         (#3=#:max  ,max))
+     (unless (listp #1#)
+       (error 'type-error :datum #1# :expected-type 'list))
+     (unless (or (null #2#) (zerop #2#) (nthcdr (1- #2#) #1#))
+       (error 'too-few-arguments :datum #1#))
+     (unless (or (null #3#) (<= (list-length #1#) #3#))
+       (error 'too-many-arguments :datum #1#))
+     #1#))
 
 ;; NOTE: Used in expansion of `destructuring-bind`
 (defun %assert-keyword-list (keyword-list allowed-keywords allow-other-keys)
