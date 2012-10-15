@@ -44,7 +44,7 @@
     #:destructuring-bind #:fboundp #:fdefinition #:fmakunbound
     #:canonicalize-function-name #:setf-function-name-p)
   (:import-from :ansify.ext
-    #:optimize-type-check
+    #:optimize-type-check #:typepred
     ))
 
 (in-package :ansify.gfm)
@@ -55,15 +55,6 @@
 
 
 ;;;; utilities
-
-(defun typepred (typespec)
-  (let ((form (optimize-type-check '#1=#:object typespec)))
-    (if (and (consp form)
-             (= (length form) 2)
-             (symbolp (first form))
-             (eq (second form) '#1#))
-      (first form)
-      (coerce `(lambda (#1#) ,form) 'function))))
 
 (defun !!type-error (datum expected-type)
   (error 'type-error :datum datum :expected-type expected-type))

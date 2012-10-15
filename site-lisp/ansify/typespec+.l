@@ -24,6 +24,7 @@
   (export-from :ansify.ext
                '(#:canonicalize-typespec
                  #:optimize-type-check
+                 #:typepred
                  ))
 
   ) ; end of `eval-when`
@@ -487,13 +488,29 @@ as argument for another typespec."
 
 ;;;; Macro `typepred`
 
-(defmacro typepred (typespec)
-  "Create a function which takes an object and return true if the object is type of TYPESPEC."
+(defun typepred (typespec)
+  "受け取ったオブジェクトが TYPESPEC の型かどうか判別する関数を返します。
+
+引数:
+  TYPESPEC: 型指定子
+
+使用例:
+  (typepred '(or string symbol))
+  ;; == (lambda (#1=#:object) (or (stringp #1#) (symbolp #1#)))
+  => #<lexical-closure: (anonymous)>
+
+  (remove-if-not (typepred `(or function
+                                (and symbol (satisfies fboundp))))
+                 (list 'list 'symbol (lambda (x) x) (typepred 'fixnum)))
+  => (list #<lexical-closure: <anonymous> #<function: *fixnump>)
+"
   (let ((form (optimize-type-check '#1=#:object typespec)))
-    (if (and (= (length form) 2)
-             (eql (second form) '#1#))
-      `#',(car form)
-      `(lambda (#1#) ,form))))
+    (if (and (consp form)
+             (= (length form) 2)
+             (symbolp (first form))
+             (eq (second form) '#1#))
+      (first form)
+      (coerce `(lambda (#1#) ,form) 'function))))
 
 
 (provide "ansify/typespec+")
