@@ -488,11 +488,13 @@ as argument for another typespec."
 
 ;;;; Macro `typepred`
 
-(defun typepred (typespec)
+(defun typepred (typespec &optional (compile t))
   "受け取ったオブジェクトが TYPESPEC の型かどうか判別する関数を返します。
 
 引数:
   TYPESPEC: 型指定子
+  COMPILE:  non-nil なら作った関数をコンパイルします（デフォルト = t）
+
 
 使用例:
   (typepred '(or string symbol))
@@ -510,7 +512,9 @@ as argument for another typespec."
              (symbolp (first form))
              (eq (second form) '#1#))
       (first form)
-      (coerce `(lambda (#1#) ,form) 'function))))
+      (if compile
+        (compile nil `(lambda (#1#) ,form))
+        (coerce `(lambda (#1#) ,form) 'function)))))
 
 
 (provide "ansify/typespec+")
