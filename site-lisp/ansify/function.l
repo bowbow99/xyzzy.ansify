@@ -391,18 +391,18 @@ INDICATOR が指定されればその INDICATOR を指定してラップした fwrapper を、
 
 (eval-when (:execute :compile-toplevel :load-toplevel)
   (defmacro defun (name (&rest lambda-list) &body body)
-    (labels ((warn-redefinition (sym name)
+    (labels ((check-redefinition (sym name)
                `(when (and (fboundp ',sym)
                            *warn-on-redefine-function*)
                   (warn 'redefining-function :name ',name :type 'function))))
       (cond ((symbolp name)
              `(progn
-                ,(warn-redefinition name name)
+                ,(check-redefinition name name)
                 (lisp:defun ,name ,lambda-list ,@body)))
             ((consp name)
              (let ((sym (get-setf-function-symbol name)))
                `(progn
-                  ,(warn-redefinition sym name)
+                  ,(check-redefinition sym name)
                   (lisp:defun ,sym ,lambda-list ,@body)
                   (defsetf ,(second name) ,(cdr lambda-list) (,(car lambda-list))
                     (list ',sym ,@lambda-list)))))))))
