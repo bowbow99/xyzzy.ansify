@@ -73,7 +73,7 @@
 (eval-when (:execute :compile-toplevel :load-toplevel)
   (shadowing-export '(defun
                       fdefinition
-                      ;function-lambda-expression
+                      function-lambda-expression
                       fboundp
                       fmakunbound
                       trace untrace
@@ -171,6 +171,38 @@
                   (find-symbol (ed:match-string 1) :system))))
           (t
             (error 'type-error :datum fn :expected-type 'function)))))
+
+
+;;;; function-lambda-expression
+;;
+;; [CLHS: Function FUNCTION-LAMBDA-EXPRESSION]: http://www.lispworks.com/documentation/HyperSpec/Body/f_fn_lam.htm
+(lisp:defun function-lambda-expression (function)
+  "関数の 1) ラムダ式 2) 環境の有無 3) 名前を返します。
+
+1) ラムダ式 はただのラムダ式です。わからん場合は nil を返します。
+2) 環境の有無 は関数が持っているレキシカル環境に何かあるかどうかです。
+空のレキシカル環境であれば nil を返しますが、それ以外（わからない場合
+を含む）は non-nil を返します。
+3) 名前 は関数の名前です。通常はシンボルですがたまに違うものだったり
+します。わからなければ nil を返します。"
+  (labels ((null-closure-p (fn)
+             (and (null (si:closure-variable fn))
+                  (null (si:closure-frame fn))
+                  (null (si:closure-function fn))
+                  t)))
+    (cond ((si:*builtin-function-p function)
+            (values nil t (function-name function)))
+          ((and (si:*closurep function)
+                (compiled-function-p function))
+            (values (function-info function 'lambda-expression)
+                    (not (null-closure-p function))
+                    (function-name function)))
+          ((si:*closurep function)
+            (values (si:closure-body function)
+                    (not (null-closure-p function))
+                    (function-name function)))
+          (t
+            (error 'type-error :datum function :expected-type 'function)))))
 
 
 ;;;; fwrapper
