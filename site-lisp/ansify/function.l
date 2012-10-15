@@ -198,7 +198,8 @@
                     (not (null-closure-p function))
                     (function-name function)))
           ((si:*closurep function)
-            (values (si:closure-body function)
+            (values (or (function-info function 'lambda-expression)
+                        (si:closure-body function))
                     (not (null-closure-p function))
                     (function-name function)))
           (t
