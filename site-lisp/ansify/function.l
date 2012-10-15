@@ -449,6 +449,8 @@ INDICATOR が指定されればその INDICATOR を指定してラップした fwrapper を、
              *traced-functions*)))
 
 
+
+;;;; Macro defun
 
 (eval-when (:execute :compile-toplevel :load-toplevel)
   (defmacro defun (name (&rest lambda-list) &body body)
@@ -459,22 +461,27 @@ INDICATOR が指定されればその INDICATOR を指定してラップした fwrapper を、
       (cond ((symbolp name)
              `(progn
                 ,(check-redefinition name name)
-                (lisp:defun ,name ,lambda-list ,@body)))
+                (lisp:defun ,name ,lambda-list ,@body)
+                (setf (function-info #',name 'lambda-expression)
+                      '(lambda ,lambda-list ,@body))
+                ',name))
             ((consp name)
              (let ((sym    (get-setf-function-symbol name))
                    (reader (second name)))
-               (multiple-value-bind (body decls doc intr)
+               (multiple-value-bind (nbody decls doc intr)
                    (parse-body body)
                  `(progn
                     ,(check-redefinition sym name)
                     (setf (fdefinition ',name)
                           (si:*set-function-name
                            (lambda ,lambda-list ,@decls ,@(when intr `(,intr))
-                             (block ,reader ,@body))
+                             (block ,reader ,@nbody))
                            ',name))
                     ,(if doc
                        `(setf (get ',sym 'lisp::function-documentation) ,doc)
                        `(remprop ',sym 'lisp::function-documentation))
+                    (setf (function-info (fdefinition ',name) 'lambda-expression)
+                          '(lambda ,lambda-list ,@body))
                     ',name))))))))
 (set-indent 'defun 'defun)
 
