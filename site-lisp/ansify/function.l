@@ -73,13 +73,13 @@
 (eval-when (:execute :compile-toplevel :load-toplevel)
   (shadowing-export '(defun
                       fdefinition
-                      ;function-lambda-expression
+                      function-lambda-expression
                       fboundp
                       fmakunbound
                       trace untrace
                       ))
   (export-from :ansify.ext
-               '(#:function-info
+               '(#:function-info #:function-name
                  #:fwrapper #:find-fwrapper #:define-fwrapper #:fwrap #:funwrap
                  #:call-next-function #:*this-function*
                  ))
@@ -143,6 +143,67 @@
 (lisp:defun canonicalize-function-name (name)
   (if (symbolp name) name
     (get-setf-function-symbol name)))
+
+(deftype function-name ()
+  `(or symbol
+       (cons (eql setf) (cons symbol null))))
+
+;; NOTE: When getter for `si:*set-function-name` got implemented, use it.
+(lisp:defun function-name (fn)
+  "関数の名前であるシンボル等を探して、見つかればそれを、無名関数だったり
+関数名を見つけられない場合などには nil を返します。
+
+(setf READER) のようなヘンな名前を返す事もあるので気を付けるべし。"
+  (labels ((fn-repr (fn)
+             (let ((*package* (find-package :keyword)))
+               (prin1-to-string fn))))
+    (cond ((si:*closurep fn)
+            (or (function-info fn 'function-name)
+                (setf (function-info fn 'function-name)
+                      (if (compiled-function-p fn)
+                        (when (ed:string-match "^#<lexical-closure: \\(.+\\)>$"
+                                               (fn-repr fn))
+                          (read-from-string (ed:match-string 1)))
+                        (second (caddr (si:closure-body fn)))))))
+          ((si:*builtin-function-p fn)
+            (when (ed:string-match "^#<function: \\(.+\\)>$" (fn-repr fn))
+              (or (find-symbol (ed:match-string 1) :editor)
+                  (find-symbol (ed:match-string 1) :system))))
+          (t
+            (error 'type-error :datum fn :expected-type 'function)))))
+
+
+;;;; function-lambda-expression
+;;
+;; [CLHS: Function FUNCTION-LAMBDA-EXPRESSION]: http://www.lispworks.com/documentation/HyperSpec/Body/f_fn_lam.htm
+(lisp:defun function-lambda-expression (function)
+  "関数の 1) ラムダ式 2) 環境の有無 3) 名前を返します。
+
+1) ラムダ式 はただのラムダ式です。わからん場合は nil を返します。
+2) 環境の有無 は関数が持っているレキシカル環境に何かあるかどうかです。
+空のレキシカル環境であれば nil を返しますが、それ以外（わからない場合
+を含む）は non-nil を返します。
+3) 名前 は関数の名前です。通常はシンボルですがたまに違うものだったり
+します。わからなければ nil を返します。"
+  (labels ((null-closure-p (fn)
+             (and (null (si:closure-variable fn))
+                  (null (si:closure-frame fn))
+                  (null (si:closure-function fn))
+                  t)))
+    (cond ((si:*builtin-function-p function)
+            (values nil t (function-name function)))
+          ((and (si:*closurep function)
+                (compiled-function-p function))
+            (values (function-info function 'lambda-expression)
+                    (not (null-closure-p function))
+                    (function-name function)))
+          ((si:*closurep function)
+            (values (or (function-info function 'lambda-expression)
+                        (si:closure-body function))
+                    (not (null-closure-p function))
+                    (function-name function)))
+          (t
+            (error 'type-error :datum function :expected-type 'function)))))
 
 
 ;;;; fwrapper
@@ -388,6 +449,8 @@ INDICATOR が指定されればその INDICATOR を指定してラップした fwrapper を、
              *traced-functions*)))
 
 
+
+;;;; Macro defun
 
 (eval-when (:execute :compile-toplevel :load-toplevel)
   (defmacro defun (name (&rest lambda-list) &body body)
@@ -398,22 +461,27 @@ INDICATOR が指定されればその INDICATOR を指定してラップした fwrapper を、
       (cond ((symbolp name)
              `(progn
                 ,(check-redefinition name name)
-                (lisp:defun ,name ,lambda-list ,@body)))
+                (lisp:defun ,name ,lambda-list ,@body)
+                (setf (function-info #',name 'lambda-expression)
+                      '(lambda ,lambda-list ,@body))
+                ',name))
             ((consp name)
              (let ((sym    (get-setf-function-symbol name))
                    (reader (second name)))
-               (multiple-value-bind (body decls doc intr)
+               (multiple-value-bind (nbody decls doc intr)
                    (parse-body body)
                  `(progn
                     ,(check-redefinition sym name)
                     (setf (fdefinition ',name)
                           (si:*set-function-name
                            (lambda ,lambda-list ,@decls ,@(when intr `(,intr))
-                             (block ,reader ,@body))
+                             (block ,reader ,@nbody))
                            ',name))
                     ,(if doc
                        `(setf (get ',sym 'lisp::function-documentation) ,doc)
                        `(remprop ',sym 'lisp::function-documentation))
+                    (setf (function-info (fdefinition ',name) 'lambda-expression)
+                          '(lambda ,lambda-list ,@body))
                     ',name))))))))
 (set-indent 'defun 'defun)
 
