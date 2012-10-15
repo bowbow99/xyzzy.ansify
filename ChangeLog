@@ -1,5 +1,12 @@
 2012-10-15  bowbow99  <bowbow99@gmail.com>
 
+	* `ansify:function-lambda-expression` を実装
+	- ついでに関数 `ansify.ext:function-name` を実装。関数名を探して
+	返す。がてきとーなのでヘンなものを返す可能性アリ。
+	- ついでに型指定子 `ansify.ext:function-name` を定義。
+
+	* `(defun (setf READER) ..)` のブロック名がおかしかったのを直した。
+
 	* いろいろマージした
 
 	* GFM: generic function modoki
