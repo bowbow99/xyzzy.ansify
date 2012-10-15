@@ -144,6 +144,10 @@
   (if (symbolp name) name
     (get-setf-function-symbol name)))
 
+(deftype function-name ()
+  `(or symbol
+       (cons (eql setf) (cons symbol null))))
+
 ;; NOTE: When getter for `si:*set-function-name` got implemented, use it.
 (lisp:defun function-name (fn)
   "関数の名前であるシンボル等を探して、見つかればそれを、無名関数だったり
