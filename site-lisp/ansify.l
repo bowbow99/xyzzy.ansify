@@ -22,6 +22,7 @@
 (require "ansify/autoload-defs")
 (require "ansify/function")
 (require "ansify/setf")
+(require "ansify/gfm")
 (require "ansify/typespec+")
 (require "ansify/restart")
 (require "ansify/compiler-package")
