@@ -648,16 +648,18 @@ SPEC must be a specializer in form appear in method-lambda-list."
   (equal (method-specializers method1)
          (method-specializers method2)))
 
+;; [CLHS: Standard Generic Function ADD-METHOD]: http://www.lispworks.com/documentation/HyperSpec/Body/f_add_me.htm
 (defun add-method (generic-function new-method)
   "Add method NEW-METHOD to GENERIC-FUNCTION.
 If there's a method which has same specializer with NEW-METHOD on the GF,
 it is replaced with NEW-METHOD."
-  (let* ((gf-info (gf-info generic-function)))
-    (setf (gf-info-methods gf-info)
-          (cons new-method
-                (delete-if (lambda (existing)
-                             (%methods-agree-p existing new-method))
+  (let* ((gf-info (gf-info generic-function))
+         (old-one (find-if (lambda (existing-method)
+                             (%methods-agree-p existing-method new-method))
                            (gf-info-methods gf-info))))
+    (when old-one
+      (remove-method generic-function old-one))
+    (push new-method (gf-info-methods gf-info))
     generic-function))
 
 ;; [CLHS: Standard Generic Function REMOVE-METHOD]: http://www.lispworks.com/documentation/HyperSpec/Body/f_rm_met.htm

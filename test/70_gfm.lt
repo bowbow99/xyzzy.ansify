@@ -313,6 +313,23 @@
       (:documentation "Second foo with method for symbol")
       (:method ((x symbol)) "symbol"))
     (assert-equal "symbol" (foo 'foo))
-    (assert-error 'simple-error (foo "string"))))
+    (assert-error 'simple-error (foo "string")))
+  (progn
+    (fmakunbound 'foo)
+    (defgeneric foo (x)
+      (:documentation "Initial foo with method for string")
+      (:method ((x string))
+        :string))
+    (defmethod foo ((x string))
+      "Method for string is replaced by `defmethod`."
+      (list :string :defmethod))
+    (defgeneric foo (x)
+      (:documentation "Second foo with method for symbol.")
+      (:method ((x symbol))
+        "symbol"))
+    (assert-equal '(:string :defmethod) (foo "foo"))
+    (assert-equal "symbol"              (foo 'foo)))
+  )
+
 
 ;;; ansify/test/70_gfm.lt ends here.
