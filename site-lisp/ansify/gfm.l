@@ -56,9 +56,6 @@
 
 ;;;; utilities
 
-(defun !!type-error (datum expected-type)
-  (error 'type-error :datum datum :expected-type expected-type))
-
 ;;; borrowed from ansify/destructuring-bind.l
 (defmacro %assert-list-length (list min max)
   `(let ((#1=#:list ,list)
@@ -233,7 +230,7 @@ NAME is used as a typespec."
           (si:*structure-definition-name class))
         ((%BIC-p class)
           (%BIC-name class))
-        ((!!type-error class 'class))))
+        ((error 'type-error :datum class :expected-type 'class))))
 
 (defun find-class (name &optional (errorp t) environment)
   (declare (ignore environment))
