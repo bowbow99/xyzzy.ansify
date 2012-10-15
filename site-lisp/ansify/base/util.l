@@ -121,7 +121,7 @@ Symbols to be exported are interned into PACKAGE first."
                (return-from parse-body
                  (values body (nreverse decls) doc intr))))
       (do ((rest body (cdr rest)))
-          ((null rest))
+          ((null rest) (%return nil))
         (let ((x (car rest)))
           (cond ((and (stringp x) (not doc) (cdr rest))
                   (setf doc x))
@@ -130,8 +130,7 @@ Symbols to be exported are interned into PACKAGE first."
                 ((and (operator-form-p x 'ed:interactive) (not intr))
                   (setf intr x))
                 (t
-                  (%return rest)))))
-      (%return rest))))
+                  (%return rest))))))))
 
 
 ;;;; Binding Macros
