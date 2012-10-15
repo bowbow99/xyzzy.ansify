@@ -33,26 +33,6 @@
                  ))
   )
 
-(defpackage :ansify.gfm
-  (:use :lisp :ansify.util)
-  (:shadowing-import-from :ansify
-    ;; To define
-    #:find-class #:class-of #:class-name #:subclassp
-    #:generic-function #:builtin-function #:structure-object #:structure-class
-    #:defgeneric #:generic-function-p #:ensure-generic-function
-    #:defmethod #:add-method #:next-method-p #:call-next-method
-    ;; To use
-    #:destructuring-bind #:fboundp #:fdefinition #:fmakunbound
-    #:canonicalize-function-name #:setf-function-name-p #:%assert-list-length)
-  (:import-from :ansify.ext
-    #:optimize-type-check #:typepred
-    ))
-
-(in-package :ansify.gfm)
-
-(when (find-package :lisp-unit)
-  (use-package :lisp-unit))
-
 
 
 ;;;; utilities

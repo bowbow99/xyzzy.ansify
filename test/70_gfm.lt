@@ -15,7 +15,7 @@
 ;; FIXME: public APIs should be exported from ansify
 (shadowing-import
  (mapcar (lambda (name)
-           (find-symbol (string name) :ansify.gfm))
+           (find-symbol (string name) :ansify))
          '(#:find-class #:class-name #:class-of #:subclassp
            #:generic-function #:structure-object #:structure-class
            #:builtin-function
