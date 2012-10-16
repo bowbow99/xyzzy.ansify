@@ -88,25 +88,26 @@
 
 ;;;; Accessor function-info
 
-(defconstant +fn-info-marker+ '#:fn-info)
+(defparameter +function-info-key+ 'function-info)
 
 (lisp:defun %fn-info-table (fn &optional create)
-  (let* ((lambda-list (second (si:closure-body fn)))
-         (aux-list    (member '&aux lambda-list))
-         (table       (dolist (aux aux-list)
-                        (when (and (consp aux)
-                                   (eq (car aux) +fn-info-marker+))
-                          (return (second aux))))))
+  (let* ((body (cddr (si:closure-body fn)))
+         (decl (when (operator-form-p (first body) 'declare)
+                 (first body)))
+         (table (dolist (x decl)
+                  (when (operator-form-p x +function-info-key+)
+                    (return x)))))
     (cond (table table)
           (create
-            (let* ((table (make-hash-table :test #'eql)))
-              (setf (second (si:closure-body fn))
-                    (append (copy-list lambda-list)
-                            (unless aux-list (list &aux))
-                            (list (list +fn-info-marker+ table))))
-              table)))))
+            (let ((entry (list +function-info-key+)))
+              (if decl
+                (setf (cdr (last decl)) (list entry))
+                (setf (cddr (si:closure-body fn))
+                      (cons `(declare ,entry)
+                            (cddr (si:closure-body fn)))))
+              entry)))))
 
-(lisp:defun function-info (function key)
+(lisp:defun function-info (func key)
   "関数 FUNCTION に保存されたデータを取得します。
 データを保存するのには setf を使います。
 
@@ -117,12 +118,12 @@
   ;; 取得する
   (function-info #'some-fn 'some-key)
   => \"some data\""
-  (let ((table (%fn-info-table function)))
-    (when (hash-table-p table)
-      (gethash key table))))
+  (cdr (assoc key (cdr (%fn-info-table func)))))
 
-(defsetf function-info (function key) (new-value)
-  `(setf (gethash ,key (%fn-info-table ,function t)) ,new-value))
+(defsetf function-info (func key) (new-value)
+  `(let ((table (%fn-info-table ,func t)))
+     (setf (cdr table) (acons ,key ,new-value (cdr table)))
+     ,new-value))
 
 
 ;;;; function name 
@@ -153,7 +154,7 @@
   "関数の名前であるシンボル等を探して、見つかればそれを、無名関数だったり
 関数名を見つけられない場合などには nil を返します。
 
-(setf READER) のようなヘンな名前を返す事もあるので気を付けるべし。"
+\(setf READER) のようなヘンな名前を返す事もあるので気を付けるべし。"
   (labels ((fn-repr (fn)
              (let ((*package* (find-package :keyword)))
                (prin1-to-string fn))))
@@ -164,7 +165,9 @@
                         (when (ed:string-match "^#<lexical-closure: \\(.+\\)>$"
                                                (fn-repr fn))
                           (read-from-string (ed:match-string 1)))
-                        (second (caddr (si:closure-body fn)))))))
+                        (dolist (form (cddr (si:closure-body fn)))
+                          (when (operator-form-p form 'block)
+                            (return (second form))))))))
           ((si:*builtin-function-p fn)
             (when (ed:string-match "^#<function: \\(.+\\)>$" (fn-repr fn))
               (or (find-symbol (ed:match-string 1) :editor)
@@ -350,7 +353,16 @@ fwrapper の BODY では、関数 call-next-function を呼び出すことで元の関数の
       (let ((next-function-list
               (append (%fwrapper-thunk-list fwrappers)
                       (list `(lambda (#:next-fns ,@(copy-list (first primary)))
-                               ,@(second primary))))))
+                               ,@(second primary)))))
+            (function-info-table
+              (%fn-info-table fn)))
+        (setf (second closure) `(&rest initial-args)
+              (cddr closure)   `((declare ,function-info-table)
+                                 (let ((*this-function* ,fn))
+                                   (apply ,(first next-function-list)
+                                          (list ,@(rest next-function-list))
+                                          initial-args))))
+        #+nil
         (setf (second closure) `(&rest initial-args
                                  ;; NOTE: Keep track of function-info of fwrapped/primary function
                                  ;; We're replacing where function-info table living, and
@@ -463,7 +475,7 @@ INDICATOR が指定されればその INDICATOR を指定してラップした fwrapper を、
                 ,(check-redefinition name name)
                 (lisp:defun ,name ,lambda-list ,@body)
                 (setf (function-info #',name 'lambda-expression)
-                      '(lambda ,lambda-list ,@body))
+                      '(lambda ,lambda-list ,@(copy-tree body)))
                 ',name))
             ((consp name)
              (let ((sym    (get-setf-function-symbol name))
@@ -481,7 +493,7 @@ INDICATOR が指定されればその INDICATOR を指定してラップした fwrapper を、
                        `(setf (get ',sym 'lisp::function-documentation) ,doc)
                        `(remprop ',sym 'lisp::function-documentation))
                     (setf (function-info (fdefinition ',name) 'lambda-expression)
-                          '(lambda ,lambda-list ,@body))
+                          '(lambda ,lambda-list ,@(copy-tree body)))
                     ',name))))))))
 (set-indent 'defun 'defun)
 
