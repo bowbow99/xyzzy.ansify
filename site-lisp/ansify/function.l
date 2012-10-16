@@ -475,7 +475,7 @@ INDICATOR が指定されればその INDICATOR を指定してラップした fwrapper を、
                 ,(check-redefinition name name)
                 (lisp:defun ,name ,lambda-list ,@body)
                 (setf (function-info #',name 'lambda-expression)
-                      '(lambda ,lambda-list ,@body))
+                      '(lambda ,lambda-list ,@(copy-tree body)))
                 ',name))
             ((consp name)
              (let ((sym    (get-setf-function-symbol name))
@@ -493,7 +493,7 @@ INDICATOR が指定されればその INDICATOR を指定してラップした fwrapper を、
                        `(setf (get ',sym 'lisp::function-documentation) ,doc)
                        `(remprop ',sym 'lisp::function-documentation))
                     (setf (function-info (fdefinition ',name) 'lambda-expression)
-                          '(lambda ,lambda-list ,@body))
+                          '(lambda ,lambda-list ,@(copy-tree body)))
                     ',name))))))))
 (set-indent 'defun 'defun)
 
