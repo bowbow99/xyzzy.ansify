@@ -154,7 +154,7 @@
   "関数の名前であるシンボル等を探して、見つかればそれを、無名関数だったり
 関数名を見つけられない場合などには nil を返します。
 
-(setf READER) のようなヘンな名前を返す事もあるので気を付けるべし。"
+\(setf READER) のようなヘンな名前を返す事もあるので気を付けるべし。"
   (labels ((fn-repr (fn)
              (let ((*package* (find-package :keyword)))
                (prin1-to-string fn))))
