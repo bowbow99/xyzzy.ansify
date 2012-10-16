@@ -165,7 +165,9 @@
                         (when (ed:string-match "^#<lexical-closure: \\(.+\\)>$"
                                                (fn-repr fn))
                           (read-from-string (ed:match-string 1)))
-                        (second (caddr (si:closure-body fn)))))))
+                        (dolist (form (cddr (si:closure-body fn)))
+                          (when (operator-form-p form 'block)
+                            (return (second form))))))))
           ((si:*builtin-function-p fn)
             (when (ed:string-match "^#<function: \\(.+\\)>$" (fn-repr fn))
               (or (find-symbol (ed:match-string 1) :editor)
