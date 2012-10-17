@@ -103,7 +103,15 @@
               (if decl
                 (setf (cdr (last decl)) (list entry))
                 (setf (cddr (si:closure-body fn))
-                      (cons `(declare ,entry)
+                      ;; NOTE: (special #:dummy) workaround
+                      ;; When a lexical closure has declarations at beginning of
+                      ;; its' body forms, xyzzy generally ignores them. But when
+                      ;; a) there's no declaration with `special` and b) environment
+                      ;; of function call contains binding for special variable,
+                      ;; they aren't ignored and result in an error (try to eval
+                      ;; the `declare` form as usual functio call).
+                      ;; Insert dummy special declaration to prevent this.
+                      (cons `(declare ,entry (special #:dummy))
                             (cddr (si:closure-body fn)))))
               entry)))))
 
