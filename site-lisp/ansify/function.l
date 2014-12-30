@@ -121,7 +121,7 @@
 
 Žg—p—á:
   ;; •Û‘¶‚·‚é
-  (setf (function-name #'some-fn 'some-key) \"some data\")
+  (setf (function-info #'some-fn 'some-key) \"some data\")
 
   ;; Žæ“¾‚·‚é
   (function-info #'some-fn 'some-key)
