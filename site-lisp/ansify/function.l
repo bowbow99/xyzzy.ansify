@@ -252,17 +252,18 @@
 
 ;;;;; define-fwrapper
 
-(lisp:defun gen-fwrapper-thunk (name fw-lambda-list decls body)
-  `(si:*set-function-name
-    (lambda (next-fns &rest call-args)
-      ,@decls
-      (destructuring-bind ,fw-lambda-list call-args
-        (labels ((call-next-function (&rest next-args)
-                   (apply (first next-fns)
-                          (rest next-fns)
-                          (or next-args call-args))))
-          ,@body)))
-    '(fwrapper ,name)))
+(eval-when (:execute :compile-toplevel :load-toplevel)
+  (lisp:defun gen-fwrapper-thunk (name fw-lambda-list decls body)
+    `(si:*set-function-name
+      (lambda (next-fns &rest call-args)
+        ,@decls
+        (destructuring-bind ,fw-lambda-list call-args
+          (labels ((call-next-function (&rest next-args)
+                     (apply (first next-fns)
+                            (rest next-fns)
+                            (or next-args call-args))))
+            ,@body)))
+      '(fwrapper ,name))))
 
 
 (defmacro define-fwrapper (name fw-lambda-list &body body)
