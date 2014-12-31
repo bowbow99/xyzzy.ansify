@@ -6,26 +6,40 @@
 
 (in-package :user)
 
-
-;;;; Clean up existing (possibly older version of) ansify stuff from xyzzy.
+(defparameter *ansify-root* (merge-pathnames ".." (directory-namestring *load-pathname*)))
 
-;;;;; Delete ansify packages
-(dolist (pkg '(:ansify :ansify.ext))
-  (when (find-package pkg)
-    (mapc (lambda (using)
-            (unuse-package pkg using))
-          (package-used-by-list pkg))
-    (delete-package pkg)))
+(defun remove-ansify ()
+  "ansify 関連のものを削除する。"
+  (interactive)
+  ;; Package
+  (dolist (pkg (remove-if-not (lambda (pkg)
+                                (string-match "^ansify" (package-name pkg)))
+                              (list-all-packages)))
+    (dolist (using (package-used-by-list pkg))
+      (unuse-package pkg using))
+    (delete-package pkg))
+  ;; Module info
+  (setf *modules* (delete-if (lambda (m) (string-match "^ansify" m)) *modules*))
+  t)
 
-;;;;; Clear module info
-(setf *modules* (delete-if (lambda (m) (string-match "^ansify" m)) *modules*))
-
-
-;;;; Compile all the files
-
-(directory (merge-pathnames "../site-lisp/ansify"
-                            (directory-namestring *load-pathname*))
-           :wild "*.l" :absolute t :recursive t
-           :callback #'compile-file)
+(defun byte-compile-ansify ()
+  "ansify をコンパイルする"
+  (interactive)
+  ;; Delete all fasls
+  (directory (merge-pathnames "site-lisp" *ansify-root*) :wild "*.lc"
+             :recursive t :absolute t
+             :callback #'delete-file)
+  ;; Compile all sources
+  (labels ((msg (fmt &rest args)
+             (if (interactive-p)
+               (apply #'message fmt args)
+               (apply #'format t (concat fmt "~%") args))))
+    (dolist (src (directory (merge-pathnames "site-lisp" *ansify-root*) :wild "*.l"
+                            :recursive t :absolute t))
+      (remove-ansify)
+      (msg ";;; Compiling ~A..." src)
+      (compile-file src)
+      (msg ";;; Compiling ~A...done" src))
+    t))
 
 ;; ansify/tool/build.l ends here.
