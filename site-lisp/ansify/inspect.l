@@ -141,4 +141,4 @@
 
 
 (provide "ansify/inspect")
-;;;; ansify/restart.l ends here.
+;;;; ansify/inspect.l ends here.
