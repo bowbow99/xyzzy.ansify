@@ -37,6 +37,9 @@
     (princ x out)
     (prin1 x out)))
 
+(defun %prin*-to-string (x)
+  (with-output-to-string (s) (%prin* x s)))
+
 (defconstant +undefined+ '#:undefined)
 
 (defun maybe-undef (acc)
@@ -66,16 +69,14 @@
   reader
   writer
   undefined-label
+  type
   )
 
-
-(defun inspectable (name label &key reader writer accessor (undefined-label "<undefined>"))
+(defun %inspectable (name label type &key reader writer accessor (undefined-label "[undefined]"))
   (when accessor
-    (setf reader accessor
-          writer accessor))
-  (make-inspectable :name name :label label :reader reader :writer writer
-                    :undefined-label undefined-label))
-
+    (setf reader accessor  writer accessor))
+  (make-inspectable :name name  :label label  :reader reader  :writer writer
+                    :undefined-label undefined-label  :type type))
 
 
 (defgeneric inspect-object (object)
@@ -86,17 +87,39 @@
   (list (inspectable 'car "car の値" :accessor 'car)
         (inspectable 'cdr "cdr の値" :accessor 'cdr)))
 
+(defmacro definspect (class &rest specs)
+  `(defmethod inspect-object ((,class ,class))
+     (list ,@(mapcar (lambda (spec)
+                       (apply (lambda (name label type &rest args)
+                                `(%inspectable ',name ,label ',type ,@args))
+                              spec))
+                     specs))))
+(setf (get 'definspect 'ed:lisp-indent-hook) 'defun
+      (get 'definspect 'ed::lisp-indent-clause) 2)
 
+(definspect symbol
+  (name         "シンボル名"      string    :reader 'symbol-name)
+  (home-package "所属パッケージ"  package   :reader 'symbol-package)
+  (fdefinition  "関数定義"        function  :accessor (maybe-undef 'fdefinition))
+  (value        "変数としての値"  t         :accessor (maybe-undef 'symbol-value))
+  (symbol-plist "プロパティ"      plist     :reader 'symbol-plist))
 
-(defmethod inspect-object ((sym symbol))
-  (list (inspectable 'name "名前" :reader 'symbol-name)
-        (inspectable 'home-package "所属パッケージ" :reader 'symbol-package)
-        (inspectable 'fdefinition "関数" :accessor (maybe-undef 'fdefinition))
-        (inspectable 'symbol-value "変数としての値" :accessor (maybe-undef 'symbol-value))
-        (inspectable 'symbol-plist "プロパティ" :reader 'symbol-plist)))
+(definspect package
+  (name         "パッケージ名" string
+    :reader 'package-name)
+  (nicknames    "ニックネーム" (list-of string)
+    :accessor 'package-nicknames)
+  (using        "use-package されているパッケージ" (list-of package)
+    :reader 'package-use-list)
+  (used-by      "use-package しているパッケージ" (list-of package)
+    :reader 'package-used-by-list)
+  (documentation "説明文" docstring
+    :reader (lambda (x) (or (documentation package t) +undefined+))
+    :undefined-label "[無し]")
+  ;external-symbols
+  ;internal-symbols
+  )
 
-(defun inspect-test (object)
-  (inspect-object object))
 
 
 
@@ -108,12 +131,30 @@
 
 (defun %describe-inspectable-bit (object inspectable out)
   (let ((label (inspectable-label inspectable))
-        (value (funcall (inspectable-reader inspectable) object)))
-    (format out "~&~A:~16,4T" label)
-    (if (eq value +undefined+)
-      (princ (inspectable-undefined-label inspectable) out)
-      (%prin* value out))
-    (terpri out)))
+        (value (funcall (inspectable-reader inspectable) object))
+        (type  (inspectable-type inspectable)))
+    (cond ((eq value +undefined+)
+            (format out "~&~A:~16,4T~A~%" label (inspectable-undefined-label inspectable)))
+          ((listp type)
+            (lisp:case (car type)
+              (list-of
+                (format out "~&~A:~%~{    ~A~%~}"
+                        label
+                        (mapcar #'%prin*-to-string value)))))
+          ((symbolp type)
+            (lisp:case type
+              (plist
+                (format out "~&~A:~%" label)
+                (do ((rest value (cddr rest)))
+                    ((null rest))
+                  (format out "    ~S~20,4T~A~%"
+                          (first rest)
+                          (%prin*-to-string (second rest)))))
+              (docstring
+                (format out "~&~A:~%~{    ~A~%~}" label
+                        (ed:split-string value #\LFD)))
+              (otherwise
+                (format out "~&~A:~16,4T~A~%" label (%prin*-to-string value))))))))
 
 (defmethod describe-object ((object t) stream)
   (let ((out (canonicalize-output-stream stream)))
