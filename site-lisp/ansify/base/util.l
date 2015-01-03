@@ -25,6 +25,7 @@
           ;; symbols
           mksym
           mkkwd
+          gensymp
           ;; macro helpers
           operator-form-p
           parse-body
@@ -104,6 +105,10 @@ Symbols to be exported are interned into PACKAGE first."
 
 (defun mkkwd (name)
   (intern (string name) :keyword))
+
+(defun gensymp (x)
+  (and (symbolp x)
+       (null (symbol-package x))))
 
 
 ;;;; Macro helpers
