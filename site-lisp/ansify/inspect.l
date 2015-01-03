@@ -309,13 +309,15 @@
       (push (structure-slot-description-text def i) descs))
     (nreverse descs)))
 
+(defun structure-definition-documentation (def)
+  (documentation (si:*structure-definition-name def) 'structure))
+
 (definspect structure-class
   (name "名前" symbol :reader 'si:*structure-definition-name)
   (type "構造体の種類" symbol :reader 'si:*structure-definition-type)
+  (documentation "説明文" docstring :reader 'structure-definition-documentation)
   (slot-defs "スロット定義" (list-of text)
     :reader 'structure-definition-slot-descriptions))
-
-
 
 
 ;;;; Describe
