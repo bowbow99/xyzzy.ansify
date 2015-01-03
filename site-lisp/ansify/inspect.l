@@ -322,9 +322,18 @@
 
 ;;;; Describe
 
+(defparameter *describe-depth* 0)
+
+(defparameter *describe-depth-limit* 3)
+
+(defparameter *describe-list-limit* 12)
+
 (defgeneric describe-object (object stream)
   (:documentation
    "OBJECT ÇÃê‡ñæÇ STREAM Ç…èoóÕÇ∑ÇÈÅB"))
+
+
+;;;;; Default describe-object using inspect protocol
 
 (defun %describe-inspectable-bit-value (object inspectable)
   (funcall (inspectable-reader inspectable) object))
@@ -335,23 +344,33 @@
         ((listp type)
           (case (car type)
             (list-of
-             (let ((type* (second type)))
+             (let ((type* (second type))
+                   (count 0))
                (dolist (x value)
+                 (when (and *describe-list-limit*
+                            (> (incf count) *describe-list-limit*))
+                   (format t "...à»â∫è»ó™~%")
+                   (return))
                  (%print-inspectable-bit-value x type*)
                  (fresh-line))))
             (plist-of
              (let ((key-type (second type))
                    (value-type (third type)))
                (princ (with-output-to-string (*standard-output*)
-                        (do ((rest value (cddr rest)))
+                        (do ((rest value (cddr rest))
+                             (i    0     (1+ i)))
                             ((null rest))
+                          (when (and *describe-list-limit*
+                                     (> i *describe-list-limit*))
+                            (format t "...à»â∫è»ó™~%")
+                            (return))
                           (%print-inspectable-bit-value (first rest) key-type)
                           (format t "~20,4T= ")
                           (%print-inspectable-bit-value (second rest) value-type)
                           (terpri))))))))
         (:otherwise
           (case type
-            (docstring (princ value))
+            (docstring (if value (princ value) "[Ç»Çµ]"))
             (boolean   (format t "~:[No~;Yes~]" value))
             (text      (princ value))
             (otherwise (%prin* value))))))
@@ -408,12 +427,6 @@
       (%describe-inspectable-bit object x out))
     (format out "------------------------------------------------------------------------~%")
     ))
-
-
-
-(defparameter *describe-depth* 0)
-
-(defparameter *describe-depth-limit* 3)
 
 (defun describe (object &optional (stream *standard-output*))
   (let ((out (canonicalize-output-stream stream)))
