@@ -236,7 +236,23 @@
 
 ;; FIXME: hash-table
 
+(defun %hash-table-entries-to-plist (table)
+  (let (plist)
+    (maphash (lambda (k v)
+               (setf plist (list* k v plist)))
+             table)
+    plist))
 
+(definspect hash-table
+  (count "エントリ数" number :reader 'hash-table-count)
+  (size  "サイズ" number :reader 'hash-table-size)
+  (test  "比較関数" symbol :reader 'hash-table-test)
+  ;; hash-table-rehash-size
+  ;; hash-table-rehash-threshold
+  (entries "エントリ" (plist-of t t)
+    :reader '%hash-table-entries-to-plist))
+
+;; package
 (definspect package
   (name         "パッケージ名" string
     :reader 'package-name)
